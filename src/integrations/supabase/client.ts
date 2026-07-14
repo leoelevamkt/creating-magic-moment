@@ -38,8 +38,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
   },
   auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    persistSession: typeof window !== 'undefined',
+    autoRefreshToken: typeof window !== 'undefined',
   }
 });
