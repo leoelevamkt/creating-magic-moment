@@ -1,5 +1,9 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { useServerFn } from '@tanstack/react-start'
 import { supabase } from '@/integrations/supabase/client'
+import { AppShell } from '@/components/app-shell'
+import { getMyProfile } from '@/lib/profile.functions'
 
 export const Route = createFileRoute('/_authenticated')({
   ssr: false,
@@ -8,5 +12,18 @@ export const Route = createFileRoute('/_authenticated')({
     if (error || !data.user) throw redirect({ to: '/auth' })
     return { user: data.user }
   },
-  component: () => <Outlet />,
+  component: AuthenticatedLayout,
 })
+
+function AuthenticatedLayout() {
+  const fn = useServerFn(getMyProfile)
+  const { data } = useQuery({
+    queryKey: ['profile'],
+    queryFn: () => fn(),
+  })
+  return (
+    <AppShell userName={data?.name ?? 'Usuária'} role={data?.role ?? 'staff'}>
+      <Outlet />
+    </AppShell>
+  )
+}

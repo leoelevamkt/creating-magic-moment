@@ -1,8 +1,9 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { BrainCircuit, LogOut, Sparkles } from 'lucide-react'
-import { supabase } from '@/integrations/supabase/client'
-import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { useServerFn } from '@tanstack/react-start'
+import { CalendarDays, ClipboardList, Library, Users } from 'lucide-react'
+import { patientStats } from '@/lib/patients.functions'
+import { getMyProfile } from '@/lib/profile.functions'
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   head: () => ({ meta: [{ title: 'Painel — NeuroFlux' }] }),
@@ -10,63 +11,68 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 })
 
 function Dashboard() {
-  const { user } = Route.useRouteContext()
-  const navigate = useNavigate()
+  const stats = useServerFn(patientStats)
+  const profile = useServerFn(getMyProfile)
+  const statsQ = useQuery({ queryKey: ['stats'], queryFn: () => stats() })
+  const profileQ = useQuery({ queryKey: ['profile'], queryFn: () => profile() })
 
-  async function signOut() {
-    await supabase.auth.signOut()
-    toast.success('Sessão encerrada.')
-    navigate({ to: '/auth', replace: true })
-  }
+  const cards = [
+    {
+      label: 'Pacientes',
+      value: statsQ.data?.patients ?? 0,
+      icon: Users,
+      to: '/patients' as const,
+    },
+    {
+      label: 'Avaliações',
+      value: statsQ.data?.evaluations ?? 0,
+      icon: ClipboardList,
+      to: '/kanban' as const,
+    },
+    {
+      label: 'Tarefas',
+      value: statsQ.data?.tasks ?? 0,
+      icon: CalendarDays,
+      to: '/agenda' as const,
+    },
+    {
+      label: 'Catálogo',
+      value: '25+',
+      icon: Library,
+      to: '/catalog' as const,
+    },
+  ]
 
   return (
-    <main className="mx-auto flex min-h-svh max-w-4xl flex-col gap-8 p-8">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3 text-primary">
-          <BrainCircuit size={28} />
-          <span className="font-serif text-2xl font-semibold">NeuroFlux</span>
-        </div>
-        <Button variant="outline" size="sm" onClick={signOut}>
-          <LogOut />
-          Sair
-        </Button>
+    <div className="mx-auto flex max-w-6xl flex-col gap-8">
+      <header>
+        <p className="text-sm font-medium text-primary">Visão geral</p>
+        <h1 className="font-serif text-3xl font-semibold">
+          Olá, {profileQ.data?.name ?? 'clínica'}
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Panorama da clínica e atalhos para os principais fluxos.
+        </p>
       </header>
 
-      <section className="rounded-2xl border border-primary/25 bg-primary/5 p-8">
-        <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-          <Sparkles size={16} /> Migração em andamento
-        </div>
-        <h1 className="mt-3 font-serif text-3xl font-semibold text-foreground">
-          Bem-vinda, {user?.email}
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          O login e o banco de dados já estão funcionando aqui no Lovable. A próxima etapa é
-          reconstruir as telas de <strong>pacientes, agenda, quadro clínico, catálogo e
-          configurações</strong>, além da integração com a IA para a síntese neuropsicológica. Vou
-          fazer isso na próxima mensagem.
-        </p>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map((c) => {
+          const Icon = c.icon
+          return (
+            <Link
+              key={c.label}
+              to={c.to}
+              className="group flex flex-col gap-3 rounded-2xl border bg-card p-5 transition-colors hover:border-primary/50"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">{c.label}</span>
+                <Icon className="text-primary" size={18} />
+              </div>
+              <p className="font-serif text-3xl font-semibold text-foreground">{c.value}</p>
+            </Link>
+          )
+        })}
       </section>
-
-      <section className="grid gap-4 sm:grid-cols-2">
-        {[
-          { title: 'Autenticação', done: true, desc: 'E-mail e senha via Lovable Cloud' },
-          { title: 'Banco de dados', done: true, desc: 'Pacientes, avaliações, tarefas, sessões, catálogo, papéis (RLS ativa)' },
-          { title: 'Rotas clínicas', done: false, desc: 'Pacientes, prontuário, agenda, kanban, catálogo, configurações' },
-          { title: 'IA — síntese', done: false, desc: 'Classificação e síntese com Lovable AI Gateway' },
-        ].map((item) => (
-          <div key={item.title} className="rounded-xl border bg-card p-5">
-            <div className="flex items-center justify-between">
-              <p className="font-medium text-foreground">{item.title}</p>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-medium ${item.done ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}
-              >
-                {item.done ? 'Pronto' : 'Em fila'}
-              </span>
-            </div>
-            <p className="mt-2 text-sm text-muted-foreground">{item.desc}</p>
-          </div>
-        ))}
-      </section>
-    </main>
+    </div>
   )
 }
