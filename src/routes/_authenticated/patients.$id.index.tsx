@@ -218,11 +218,12 @@ function PatientDetailPage() {
             </section>
 
             <ProfessionalsCard
-              list={
-                Array.isArray((patient as { professionals?: unknown }).professionals)
-                  ? ((patient as { professionals?: Array<{ name: string; role?: string | null; contact?: string | null }> }).professionals ?? [])
+              list={(() => {
+                const raw = (patient as unknown as { professionals?: unknown }).professionals
+                return Array.isArray(raw)
+                  ? (raw as Array<{ name: string; role?: string | null; contact?: string | null }>)
                   : []
-              }
+              })()}
             />
 
             <ContactsCard
