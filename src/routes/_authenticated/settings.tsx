@@ -206,3 +206,80 @@ function Item({ label, value }: { label: string; value: React.ReactNode }) {
     </div>
   )
 }
+
+function GoogleCalendarSection() {
+  const start = useServerFn(startGoogleConnect)
+  const save = useServerFn(saveGoogleConnection)
+  const status = useServerFn(getGoogleConnectionStatus)
+  const disc = useServerFn(disconnectGoogle)
+  const qc = useQueryClient()
+
+  const q = useQuery({ queryKey: ['google-status'], queryFn: () => status() })
+  const [busy, setBusy] = useState(false)
+
+  const connectMut = useMutation({
+    mutationFn: async () => {
+      const result = await connectAppUser({
+        connectorId: 'google_calendar',
+        gatewayBaseUrl: 'https://connector-gateway.lovable.dev',
+        start: (targetOrigin) => start({ data: targetOrigin }),
+      })
+      if (!result.success) throw new Error(result.error ?? 'Falha ao conectar')
+      if (!result.connectionAPIKey) throw new Error('Consentimento sem chave (offline access desativado no cliente).')
+      await save({ data: { connectionAPIKey: result.connectionAPIKey } })
+    },
+    onSuccess: () => {
+      toast.success('Google Calendar conectado.')
+      qc.invalidateQueries({ queryKey: ['google-status'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+    onSettled: () => setBusy(false),
+  })
+
+  const discMut = useMutation({
+    mutationFn: () => disc(),
+    onSuccess: () => {
+      toast.success('Desconectado.')
+      qc.invalidateQueries({ queryKey: ['google-status'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  return (
+    <section className="rounded-2xl border bg-card p-6">
+      <span className="flex size-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+        <CalendarCheck size={20} />
+      </span>
+      <h2 className="mt-4 font-serif text-2xl font-semibold">Google Calendar &amp; Meet</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Conecte sua conta Google para agendar sessões diretamente no seu calendário e gerar link do Meet automaticamente.
+      </p>
+      <div className="mt-4 flex flex-col gap-3">
+        {q.data?.connected ? (
+          <>
+            <div className="flex items-center gap-2 rounded-lg border bg-background p-3 text-sm">
+              <Video size={16} className="text-primary" />
+              <span className="font-medium">Conectado</span>
+              {q.data.email ? <span className="text-muted-foreground">· {q.data.email}</span> : null}
+            </div>
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => discMut.mutate()} disabled={discMut.isPending}>
+                Desconectar
+              </Button>
+            </div>
+          </>
+        ) : (
+          <Button
+            onClick={() => {
+              setBusy(true)
+              connectMut.mutate()
+            }}
+            disabled={busy || connectMut.isPending}
+          >
+            <CalendarCheck /> {busy ? 'Abrindo…' : 'Conectar Google Calendar'}
+          </Button>
+        )}
+      </div>
+    </section>
+  )
+}
