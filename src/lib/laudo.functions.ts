@@ -247,9 +247,9 @@ export const generateLaudoDocx = createServerFn({ method: 'POST' })
       PageOrientation,
       Header,
       Footer,
-      Footer: _F, // eslint-disable-line @typescript-eslint/no-unused-vars
       ImageRun,
       PageNumber,
+      BorderStyle,
       HorizontalPositionRelativeFrom,
       HorizontalPositionAlign,
       VerticalPositionRelativeFrom,
