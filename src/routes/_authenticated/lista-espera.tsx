@@ -146,6 +146,24 @@ function WaitlistPage() {
             <option value="archived">Arquivados</option>
             <option value="all">Todos</option>
           </select>
+          <ExportCsvButton
+            rows={rows}
+            columns={[
+              { header: 'Paciente', value: (r) => (r.patients as { name?: string } | null)?.name ?? r.patient_name ?? '' },
+              { header: 'Telefone', value: (r) => r.contact_phone ?? '' },
+              { header: 'E-mail', value: (r) => r.contact_email ?? '' },
+              { header: 'Tipo de sessão', value: (r) => r.session_type ?? '' },
+              { header: 'Modalidade', value: (r) => r.modality },
+              { header: 'Prioridade', value: (r) => r.priority },
+              { header: 'Dias preferidos', value: (r) => (Array.isArray(r.preferred_weekdays) ? r.preferred_weekdays.map((d: number) => WEEKDAYS[d]).join('|') : '') },
+              { header: 'Janela início', value: (r) => r.preferred_start_time ?? '' },
+              { header: 'Janela fim', value: (r) => r.preferred_end_time ?? '' },
+              { header: 'Status', value: (r) => r.status },
+              { header: 'Observações', value: (r) => r.notes ?? '' },
+              { header: 'Criado em', value: (r) => r.created_at ?? '' },
+            ]}
+            filename="lista-espera"
+          />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger render={<Button />}>
               <Plus /> Novo
