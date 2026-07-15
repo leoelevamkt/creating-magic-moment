@@ -308,7 +308,12 @@ export const updatePatient = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => UpdatePatientInput.parse(i))
   .handler(async ({ context, data }) => {
-    const patch: Record<string, unknown> = {
+    const patch: {
+      name: string; birth_date: string; cpf: string; schooling: string; city: string;
+      hypotheses: string | null; notes: string | null;
+      status?: 'active' | 'archived' | 'discharged';
+      has_guardians?: boolean; guardians?: Guardian[]; emergency_contact?: EmergencyContact | null;
+    } = {
       name: data.name,
       birth_date: data.birthDate,
       cpf: data.cpf,
