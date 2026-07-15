@@ -910,9 +910,17 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
     guardians: initialGuardians.length > 0 ? initialGuardians : (patient.has_guardians ? [{ ...EMPTY_GUARDIAN }] : []),
     emergencyContact: initialEmergency ?? { ...EMPTY_EMERGENCY },
   })
+  const initialProfessionals = Array.isArray((patient as { professionals?: unknown }).professionals)
+    ? ((patient as { professionals?: Professional[] }).professionals ?? [])
+    : []
+  const [professionals, setProfessionals] = useState<Professional[]>(initialProfessionals)
   const mut = useMutation({
     mutationFn: (v: {
-      name: string; birthDate: string; cpf: string; schooling: string; city: string;
+      name: string;
+      sex: 'feminino' | 'masculino' | 'outro' | 'nao_informado' | null;
+      birthDate: string; cpf: string; schooling: string; city: string;
+      phone: string; medications: string;
+      professionals: Professional[];
       hypotheses: string; notes: string;
       hasGuardians: boolean;
       guardians: GuardianRec[];
@@ -933,12 +941,17 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
       toast.error('Preencha ao menos um responsável ou desmarque "Possui responsável(eis)".')
       return
     }
+    const sexRaw = String(fd.get('sex') ?? '')
     mut.mutate({
       name: String(fd.get('name') ?? ''),
+      sex: (sexRaw ? sexRaw : null) as 'feminino' | 'masculino' | 'outro' | 'nao_informado' | null,
       birthDate: String(fd.get('birthDate') ?? ''),
       cpf: String(fd.get('cpf') ?? ''),
       schooling: String(fd.get('schooling') ?? ''),
       city: String(fd.get('city') ?? ''),
+      phone: String(fd.get('phone') ?? ''),
+      medications: String(fd.get('medications') ?? ''),
+      professionals: normalizeProfessionals(professionals),
       hypotheses: String(fd.get('hypotheses') ?? ''),
       notes: String(fd.get('notes') ?? ''),
       ...contactPayload,
