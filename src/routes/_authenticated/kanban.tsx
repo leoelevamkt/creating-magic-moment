@@ -407,6 +407,9 @@ function KanbanPage() {
                     const acronym = (t.test_catalog as { acronym: string | null } | null)?.acronym ?? '—'
                     const patient = (t.patients as { name: string } | null)?.name ?? '—'
                     const isDragging = dragId === t.id
+                    const stale = isStale(t)
+                    const dCol = daysInColumn(t)
+                    const threshold = KANBAN_STALE_DAYS[col.id]
                     return (
                       <article
                         key={t.id}
@@ -420,14 +423,23 @@ function KanbanPage() {
                           setDragId(null)
                           setOverCol(null)
                         }}
-                        className={`flex cursor-grab flex-col gap-2 rounded-xl border bg-background p-3 text-sm active:cursor-grabbing ${isDragging ? 'opacity-50' : ''}`}
+                        className={`flex cursor-grab flex-col gap-2 rounded-xl border bg-background p-3 text-sm active:cursor-grabbing ${isDragging ? 'opacity-50' : ''} ${stale ? 'border-amber-500 ring-1 ring-amber-500/40' : ''}`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <p className="text-xs font-semibold text-primary">{acronym}</p>
                             <p className="font-serif text-base font-semibold">{patient}</p>
                           </div>
+                          {stale && threshold != null && dCol != null ? (
+                            <span
+                              className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
+                              title={`Parada há ${dCol} dia(s) — limite desta coluna é ${threshold}`}
+                            >
+                              <AlertTriangle size={10} /> {dCol}d
+                            </span>
+                          ) : null}
                         </div>
+
                         <dl className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                           {t.created_at ? (
                             <div className="flex justify-between gap-2">
