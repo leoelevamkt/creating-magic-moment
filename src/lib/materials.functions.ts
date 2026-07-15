@@ -33,7 +33,7 @@ export const createMaterial = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => CreateMaterial.parse(i))
   .handler(async ({ context, data }) => {
-    await requireAdmin(context)
+    await assertAdmin(context.supabase, context.userId)
     const { error } = await context.supabase.from('materials').insert({
       name: data.name,
       category: data.category,
@@ -50,7 +50,7 @@ export const deleteMaterial = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { id: string }) => i)
   .handler(async ({ context, data }) => {
-    await requireAdmin(context)
+    await assertAdmin(context.supabase, context.userId)
     const { error } = await context.supabase.from('materials').delete().eq('id', data.id)
     if (error) throw new Error(error.message)
     return { ok: true }
