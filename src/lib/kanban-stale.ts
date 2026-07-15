@@ -17,9 +17,37 @@ export function daysSince(iso: string | null | undefined): number | null {
   return Math.floor(ms / 86400000)
 }
 
-export function isStale(status: TaskStatus, updatedAt: string | null | undefined): boolean {
-  const th = KANBAN_STALE_DAYS[status]
+type TaskLike = {
+  status: TaskStatus | string
+  created_at: string | null
+  started_at: string | null
+  completed_at: string | null
+  approved_at: string | null
+}
+
+export function columnEnteredAt(t: TaskLike): string | null {
+  switch (t.status) {
+    case 'todo':
+      return t.created_at
+    case 'correcting':
+      return t.started_at ?? t.created_at
+    case 'review':
+      return t.completed_at ?? t.started_at ?? t.created_at
+    case 'approved':
+      return t.approved_at
+    default:
+      return t.created_at
+  }
+}
+
+export function daysInColumn(t: TaskLike): number | null {
+  return daysSince(columnEnteredAt(t))
+}
+
+export function isStale(t: TaskLike): boolean {
+  const th = KANBAN_STALE_DAYS[t.status as TaskStatus]
   if (th == null) return false
-  const d = daysSince(updatedAt)
+  const d = daysInColumn(t)
   return d != null && d >= th
 }
+
