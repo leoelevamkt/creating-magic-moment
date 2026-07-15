@@ -313,6 +313,50 @@ export type Database = {
           },
         ]
       }
+      patient_notes: {
+        Row: {
+          color: string
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          patient_id: string
+          pinned: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          content?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          patient_id: string
+          pinned?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          patient_id?: string
+          pinned?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_notes_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           birth_date: string
@@ -437,6 +481,7 @@ export type Database = {
       }
       sessions_plan: {
         Row: {
+          checklist: Json
           create_meet: boolean
           created_at: string
           created_by: string
@@ -450,6 +495,7 @@ export type Database = {
           patient_id: string
           planned_test_ids: string[]
           session_date: string
+          session_number: number | null
           start_time: string | null
           status: string
           title: string
@@ -457,6 +503,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          checklist?: Json
           create_meet?: boolean
           created_at?: string
           created_by: string
@@ -470,6 +517,7 @@ export type Database = {
           patient_id: string
           planned_test_ids?: string[]
           session_date: string
+          session_number?: number | null
           start_time?: string | null
           status?: string
           title?: string
@@ -477,6 +525,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          checklist?: Json
           create_meet?: boolean
           created_at?: string
           created_by?: string
@@ -490,6 +539,7 @@ export type Database = {
           patient_id?: string
           planned_test_ids?: string[]
           session_date?: string
+          session_number?: number | null
           start_time?: string | null
           status?: string
           title?: string
