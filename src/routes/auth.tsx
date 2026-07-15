@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
 import { useEffect, useState } from 'react'
 import { Loader2, ShieldCheck } from 'lucide-react'
 import logoAsset from '@/assets/neuroflux-logo.png.asset.json'
@@ -6,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { checkLoginRateLimit, resetLoginRateLimit } from '@/lib/auth-rate-limit.functions'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/auth')({
