@@ -16,6 +16,13 @@ const EmergencyContactSchema = z.object({
 export type Guardian = z.infer<typeof GuardianSchema>
 export type EmergencyContact = z.infer<typeof EmergencyContactSchema>
 
+const ProfessionalSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  role: z.string().trim().max(80).optional().nullable(),
+  contact: z.string().trim().max(120).optional().nullable(),
+})
+export type Professional = z.infer<typeof ProfessionalSchema>
+
 const CreateInput = z.object({
   name: z.string().min(2),
   sex: z.enum(['feminino', 'masculino', 'outro', 'nao_informado']).optional().nullable(),
@@ -23,6 +30,9 @@ const CreateInput = z.object({
   cpf: z.string().optional().nullable(),
   schooling: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  medications: z.string().optional().nullable(),
+  professionals: z.array(ProfessionalSchema).max(20).optional().default([]),
   hypotheses: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   hasGuardians: z.boolean().optional().default(false),
