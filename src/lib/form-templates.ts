@@ -308,6 +308,107 @@ export const formTemplates: FormTemplate[] = [
       { key: 'clin_protecao', label: 'Fatores de proteção e recursos do avaliado', type: 'textarea' },
       { key: 'clin_observacoes', label: 'Observações sobre comportamento, rapport e esforço', type: 'textarea' },
     ],
+  {
+    id: PRE_CADASTRO_TEMPLATE_ID,
+    title: 'Pré-cadastro — Agendamento inicial',
+    description:
+      'Preencha as informações abaixo para agilizar seu primeiro atendimento. Suas respostas são confidenciais e serão vistas apenas por sua psicóloga.',
+    createsPatient: true,
+    fields: [
+      // Identificação do paciente
+      { key: 'sec_id', label: 'Identificação do paciente', type: 'textarea', help: 'Dados básicos de quem será atendido.' },
+      { key: 'p_nome', label: 'Nome completo do paciente', type: 'text', required: true },
+      { key: 'p_data_nascimento', label: 'Data de nascimento', type: 'date', required: true },
+      { key: 'p_cpf', label: 'CPF', type: 'text', help: 'Somente números ou com pontuação.' },
+      { key: 'p_rg', label: 'RG', type: 'text' },
+      { key: 'p_sexo', label: 'Sexo / Gênero', type: 'text' },
+      { key: 'p_telefone', label: 'Telefone / WhatsApp', type: 'text', required: true },
+      { key: 'p_email', label: 'E-mail', type: 'text' },
+
+      // Endereço
+      { key: 'sec_end', label: 'Endereço', type: 'textarea' },
+      { key: 'p_cep', label: 'CEP', type: 'text' },
+      { key: 'p_rua', label: 'Rua / logradouro', type: 'text' },
+      { key: 'p_numero', label: 'Número', type: 'text' },
+      { key: 'p_complemento', label: 'Complemento', type: 'text' },
+      { key: 'p_bairro', label: 'Bairro', type: 'text' },
+      { key: 'p_cidade', label: 'Cidade', type: 'text', required: true },
+      { key: 'p_uf', label: 'UF', type: 'text' },
+
+      // Responsáveis (se menor de 18)
+      { key: 'sec_resp', label: 'Responsáveis', type: 'textarea', help: 'Preencha se o paciente for menor de 18 anos.' },
+      { key: 'r1_nome', label: 'Responsável 1 — Nome completo', type: 'text' },
+      { key: 'r1_parentesco', label: 'Responsável 1 — Parentesco', type: 'choice', options: ['Mãe', 'Pai', 'Avó/Avô', 'Tio/Tia', 'Tutor legal', 'Outro'] },
+      { key: 'r1_cpf', label: 'Responsável 1 — CPF', type: 'text' },
+      { key: 'r1_telefone', label: 'Responsável 1 — Telefone', type: 'text' },
+      { key: 'r1_profissao', label: 'Responsável 1 — Profissão', type: 'text' },
+      { key: 'r2_nome', label: 'Responsável 2 — Nome completo', type: 'text' },
+      { key: 'r2_parentesco', label: 'Responsável 2 — Parentesco', type: 'choice', options: ['Mãe', 'Pai', 'Avó/Avô', 'Tio/Tia', 'Tutor legal', 'Outro'] },
+      { key: 'r2_cpf', label: 'Responsável 2 — CPF', type: 'text' },
+      { key: 'r2_telefone', label: 'Responsável 2 — Telefone', type: 'text' },
+      { key: 'r2_profissao', label: 'Responsável 2 — Profissão', type: 'text' },
+
+      // Encaminhamento
+      { key: 'sec_enc', label: 'Encaminhamento', type: 'textarea' },
+      { key: 'foi_encaminhado', label: 'Foi encaminhado por alguém?', type: 'choice', options: ['Sim', 'Não'] },
+      { key: 'encaminhado_por_tipo', label: 'Por quem?', type: 'choice', options: ['Escola', 'Pediatra', 'Neurologista', 'Psiquiatra', 'Clínico geral', 'Outro profissional', 'Familiar/amigo'] },
+      { key: 'encaminhado_por_nome', label: 'Nome / instituição de quem encaminhou', type: 'text' },
+
+      // Histórico clínico rápido
+      { key: 'sec_hist', label: 'Histórico clínico rápido', type: 'textarea' },
+      { key: 'toma_medicacao', label: 'Toma alguma medicação atualmente?', type: 'choice', options: ['Sim', 'Não'] },
+      { key: 'medicacoes_lista', label: 'Quais medicações e doses?', type: 'textarea' },
+      { key: 'faz_acompanhamento', label: 'Já faz ou já fez algum acompanhamento?', type: 'checklist', options: ['Psicologia', 'Psiquiatria', 'Neurologia', 'Fonoaudiologia', 'Terapia Ocupacional', 'Fisioterapia', 'Nutrição', 'Nenhum'] },
+      { key: 'acompanhamento_detalhes', label: 'Detalhes do acompanhamento (com quem, quando, resultado)', type: 'textarea' },
+
+      // Queixa principal
+      { key: 'queixa_principal', label: 'Qual a queixa principal / motivo da avaliação?', type: 'textarea', required: true, help: 'Descreva com suas próprias palavras.' },
+
+      // Checklist de dificuldades observadas
+      { key: 'sec_check', label: 'Checklist de dificuldades observadas', type: 'textarea', help: 'Marque os itens que se aplicam ao dia a dia do paciente. É apenas um panorama inicial — sinta-se livre para deixar em branco o que não se aplica.' },
+      { key: 'dif_atencao', label: 'Atenção', type: 'checklist', options: [
+        'Esquece o que foi pedido no meio do caminho',
+        'Perde objetos com frequência',
+        'Não termina tarefas iniciadas',
+        'Se distrai com qualquer estímulo',
+        'Precisa de várias repetições para entender uma instrução',
+      ] },
+      { key: 'dif_comportamento', label: 'Comportamento', type: 'checklist', options: [
+        'Explosões de raiva desproporcionais',
+        'Dificuldade em aceitar mudanças de rotina',
+        'Comportamento opositor ou desafiador',
+        'Impulsividade / age antes de pensar',
+        'Ansiedade intensa em situações novas',
+      ] },
+      { key: 'dif_aprendizagem', label: 'Aprendizagem', type: 'checklist', options: [
+        'Troca letras ao ler ou escrever',
+        'Dificuldade em cópia do quadro',
+        'Matemática básica muito custosa',
+        'Leitura lenta ou com muitos erros',
+        'Dificuldade em interpretar enunciados',
+      ] },
+      { key: 'dif_social', label: 'Social e comunicação', type: 'checklist', options: [
+        'Evita contato visual',
+        'Dificuldade em fazer amigos',
+        'Não entende brincadeiras ou ironia',
+        'Fala muito sobre um único interesse',
+        'Isola-se ou prefere ficar sozinho(a)',
+      ] },
+      { key: 'dif_sensorial', label: 'Sensorial', type: 'checklist', options: [
+        'Incomodado(a) por sons altos ou texturas',
+        'Seletividade alimentar extrema',
+        'Não tolera etiquetas, meias apertadas, tecidos',
+        'Busca movimento intenso (girar, pular sem parar)',
+      ] },
+      { key: 'dif_sono', label: 'Sono e rotina', type: 'checklist', options: [
+        'Dificuldade para adormecer',
+        'Acorda várias vezes durante a noite',
+        'Pesadelos frequentes',
+        'Sonolência excessiva durante o dia',
+        'Rotina irregular / difícil de manter',
+      ] },
+      { key: 'observacoes', label: 'Observações adicionais que você considera importantes', type: 'textarea' },
+    ],
   },
 ]
 
