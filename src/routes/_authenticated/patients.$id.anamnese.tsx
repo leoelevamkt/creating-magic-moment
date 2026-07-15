@@ -235,7 +235,7 @@ function TranscriptionPanel({
     recorderRef.current = null
     setRecording(false)
   }
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onFile(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (!f) return
     e.target.value = ''
