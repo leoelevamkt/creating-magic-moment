@@ -4,6 +4,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Pencil, Play, Plus, ShieldCheck, Trash2, X } from 'lucide-react'
 import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+
+const BR = "dd/MM/yyyy 'às' HH:mm"
+const fmtBR = (iso: string | null | undefined) =>
+  iso ? format(new Date(iso), BR, { locale: ptBR }) : null
 import { toast } from 'sonner'
 import {
   createEvaluation,
