@@ -157,10 +157,10 @@ function PatientDetailPage() {
         </div>
       </header>
 
-      {/* CONTENT GRID 3 / 6 / 3 */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* LEFT — patient facts */}
-        <aside className="flex flex-col gap-6 lg:col-span-3">
+      {/* CONTENT GRID — sidebar + main */}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        {/* LEFT — patient facts + contacts + upcoming + history */}
+        <aside className="flex flex-col gap-6 lg:col-span-4 xl:col-span-3">
           <section className="rounded-2xl border bg-card p-6 shadow-sm">
             <h2 className="font-serif text-lg font-semibold">Dados do paciente</h2>
             <dl className="mt-5 grid gap-5 text-sm">
@@ -195,10 +195,36 @@ function PatientDetailPage() {
               </ul>
             )}
           </section>
+
+          <section className="rounded-2xl border bg-card p-6 shadow-sm">
+            <h2 className="font-serif text-lg font-semibold">Histórico</h2>
+            {history.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">Sem eventos registrados.</p>
+            ) : (
+              <ul className="relative mt-4 flex flex-col gap-5 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-border">
+                {history.slice(0, 8).map((h, i) => (
+                  <li key={i} className="relative pl-6">
+                    <span
+                      className={`absolute left-0 top-1.5 size-3.5 rounded-full border-[3px] border-background ${
+                        i === 0 ? 'bg-primary' : 'bg-muted'
+                      }`}
+                    />
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      {format(new Date(h.at), 'dd/MM/yyyy')}
+                    </p>
+                    <p className="text-sm font-medium">{h.text}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(h.at), 'HH:mm')}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </aside>
 
-        {/* CENTER — tabs */}
-        <main className="flex min-w-0 flex-col gap-6 lg:col-span-6">
+        {/* MAIN — tabs */}
+        <main className="flex min-w-0 flex-col gap-6 lg:col-span-8 xl:col-span-9">
           <Tabs defaultValue="chart" className="w-full">
             <TabsList>
               <TabsTrigger value="chart">Prontuário</TabsTrigger>
@@ -274,35 +300,6 @@ function PatientDetailPage() {
             </TabsContent>
           </Tabs>
         </main>
-
-        {/* RIGHT — timeline / history */}
-        <aside className="flex flex-col gap-6 lg:col-span-3">
-          <section className="rounded-2xl border bg-card p-6 shadow-sm">
-            <h2 className="font-serif text-lg font-semibold">Histórico</h2>
-            {history.length === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">Sem eventos registrados.</p>
-            ) : (
-              <ul className="relative mt-4 flex flex-col gap-5 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-border">
-                {history.map((h, i) => (
-                  <li key={i} className="relative pl-6">
-                    <span
-                      className={`absolute left-0 top-1.5 size-3.5 rounded-full border-[3px] border-background ${
-                        i === 0 ? 'bg-primary' : 'bg-muted'
-                      }`}
-                    />
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      {format(new Date(h.at), 'dd/MM/yyyy')}
-                    </p>
-                    <p className="text-sm font-medium">{h.text}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(h.at), "HH:mm")}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </aside>
       </div>
     </div>
   )
