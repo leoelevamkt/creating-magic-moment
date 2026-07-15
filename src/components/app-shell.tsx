@@ -5,6 +5,7 @@ import {
   Boxes,
   CalendarDays,
   ClipboardList,
+  FileText,
   LayoutDashboard,
   Library,
   ListTodo,
@@ -26,6 +27,7 @@ const adminNav = [
   { to: '/kanban', label: 'Quadro clínico', icon: ClipboardList },
   { to: '/patients', label: 'Pacientes', icon: Users },
   { to: '/tasks', label: 'Tarefas', icon: ListTodo },
+  { to: '/formularios', label: 'Formulários', icon: FileText },
   { to: '/supervision', label: 'Supervisão', icon: MessagesSquare },
   { to: '/materials', label: 'Materiais', icon: Boxes },
   { to: '/catalog', label: 'Catálogo de testes', icon: Library },
@@ -35,6 +37,7 @@ const adminNav = [
 const staffNav = [
   { to: '/kanban', label: 'Correções', icon: ClipboardList },
   { to: '/tasks', label: 'Tarefas', icon: ListTodo },
+  { to: '/formularios', label: 'Formulários', icon: FileText },
   { to: '/supervision', label: 'Supervisão', icon: MessagesSquare },
   { to: '/materials', label: 'Materiais', icon: Boxes },
   { to: '/settings', label: 'Configurações', icon: Settings },

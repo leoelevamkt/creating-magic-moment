@@ -23,26 +23,68 @@ export const Route = createFileRoute('/_authenticated/patients/$id/laudo')({
 })
 
 type LaudoForm = {
-  demand: string
-  procedures: string
-  results: string
-  hypotheses: string
-  conclusion: string
-  recommendations: string
   psychologist: string
   crp: string
+  solicitante: string
+  finalidade: string
+  local_avaliacao: string
+  periodo: string
+  num_encontros: string
+  demand: string
+  procedures: string
+  instrumentos_aplicados: string
+  instrumentos_complementares: string
+  entrevista_terceiros: string
+  analise_anamnese: string
+  analise_intelectiva: string
+  analise_atencao: string
+  analise_memoria: string
+  analise_linguagem: string
+  analise_velocidade: string
+  analise_visuoespacial: string
+  analise_emocional: string
+  analise_personalidade: string
+  analise_habilidades_sociais: string
+  analise_responsividade: string
+  analise_criatividade: string
+  sintese: string
+  hypotheses: string
+  recommendations: string
 }
 
 const empty: LaudoForm = {
-  demand: '',
-  procedures: '',
-  results: '',
-  hypotheses: '',
-  conclusion: '',
+  psychologist: '', crp: '', solicitante: '', finalidade: '', local_avaliacao: '',
+  periodo: '', num_encontros: '',
+  demand: '', procedures: '', instrumentos_aplicados: '', instrumentos_complementares: '',
+  entrevista_terceiros: '', analise_anamnese: '', analise_intelectiva: '', analise_atencao: '',
+  analise_memoria: '', analise_linguagem: '', analise_velocidade: '', analise_visuoespacial: '',
+  analise_emocional: '', analise_personalidade: '', analise_habilidades_sociais: '',
+  analise_responsividade: '', analise_criatividade: '', sintese: '', hypotheses: '',
   recommendations: '',
-  psychologist: '',
-  crp: '',
 }
+
+const sections: Array<[keyof LaudoForm, string, number]> = [
+  ['demand', '2. Descrição da demanda', 4],
+  ['procedures', '3. Procedimentos (visão geral)', 3],
+  ['instrumentos_aplicados', '3.1 Instrumentos psicológicos aplicados (bullets)', 6],
+  ['instrumentos_complementares', '3.2 Instrumentos complementares', 3],
+  ['entrevista_terceiros', '3.3 Entrevistas com terceiros', 3],
+  ['analise_anamnese', '4.1 Análise da anamnese e entrevistas', 6],
+  ['analise_intelectiva', '4.2 Área intelectiva', 5],
+  ['analise_atencao', '4.3 Atenção e funções executivas', 5],
+  ['analise_memoria', '4.4 Memória e aprendizagem', 5],
+  ['analise_linguagem', '4.5 Linguagem', 4],
+  ['analise_velocidade', '4.6 Velocidade de processamento', 4],
+  ['analise_visuoespacial', '4.7 Funções visuoespaciais', 4],
+  ['analise_emocional', '4.8 Funcionamento emocional', 5],
+  ['analise_personalidade', '4.9 Personalidade', 4],
+  ['analise_habilidades_sociais', '4.10 Habilidades sociais', 4],
+  ['analise_responsividade', '4.11 Responsividade social', 5],
+  ['analise_criatividade', '4.12 Criatividade', 3],
+  ['sintese', '5. Síntese integrativa', 6],
+  ['hypotheses', '6. Hipóteses diagnósticas (DSM-5-TR / CID-11)', 5],
+  ['recommendations', '7. Encaminhamentos e recomendações', 5],
+]
 
 function LaudoPage() {
   const { id } = Route.useParams()
@@ -60,28 +102,21 @@ function LaudoPage() {
   const draftM = useMutation({
     mutationFn: () => fetchDraft({ data: { patientId: id } }),
     onSuccess: (d) => {
-      setForm((f) => ({
-        ...f,
-        demand: d.demand ?? f.demand,
-        procedures: d.procedures ?? f.procedures,
-        results: d.results ?? f.results,
-        hypotheses: d.hypotheses ?? f.hypotheses,
-        conclusion: d.conclusion ?? f.conclusion,
-        recommendations: d.recommendations ?? f.recommendations,
-      }))
+      setForm((f) => {
+        const next = { ...f }
+        for (const k of Object.keys(next) as Array<keyof LaudoForm>) {
+          const v = (d as Record<string, unknown>)[k]
+          if (typeof v === 'string' && v.trim()) next[k] = v
+        }
+        return next
+      })
       toast.success('Rascunho gerado pela IA.')
     },
     onError: (e: Error) => toast.error(e.message),
   })
 
   const docxM = useMutation({
-    mutationFn: () =>
-      fetchDocx({
-        data: {
-          patientId: id,
-          ...form,
-        },
-      }),
+    mutationFn: () => fetchDocx({ data: { patientId: id, ...form } }),
     onSuccess: ({ base64, filename }) => {
       const bin = atob(base64)
       const bytes = new Uint8Array(bin.length)
@@ -112,9 +147,9 @@ function LaudoPage() {
         </Link>
         <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="font-serif text-3xl font-semibold">Laudo psicológico</h1>
+            <h1 className="font-serif text-3xl font-semibold">Laudo neuropsicológico</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {patient?.name ?? '—'} · alinhado à Resolução CFP 06/2019
+              {patient?.name ?? '—'} · modelo alinhado à Resolução CFP 06/2019 e DSM-5-TR
             </p>
           </div>
           <div className="flex gap-2">
@@ -139,24 +174,8 @@ function LaudoPage() {
         </ul>
       </section>
 
-      <div className="grid gap-4">
-        {[
-          ['demand', 'Demanda / Queixa', 4],
-          ['procedures', 'Procedimentos', 3],
-          ['results', 'Análise dos resultados', 6],
-          ['hypotheses', 'Hipóteses diagnósticas', 4],
-          ['conclusion', 'Conclusão', 4],
-          ['recommendations', 'Encaminhamentos e orientações', 4],
-        ].map(([key, label, rows]) => (
-          <div key={key as string} className="grid gap-1.5">
-            <Label>{label as string}</Label>
-            <Textarea
-              rows={rows as number}
-              value={form[key as keyof LaudoForm]}
-              onChange={(e) => setForm({ ...form, [key as string]: e.target.value })}
-            />
-          </div>
-        ))}
+      <section className="rounded-2xl border bg-card p-5">
+        <h2 className="mb-3 font-serif text-lg font-semibold">1. Identificação</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="grid gap-1.5">
             <Label>Psicóloga responsável</Label>
@@ -168,13 +187,42 @@ function LaudoPage() {
           </div>
           <div className="grid gap-1.5">
             <Label>CRP</Label>
-            <Input
-              value={form.crp}
-              placeholder="00/00000"
-              onChange={(e) => setForm({ ...form, crp: e.target.value })}
-            />
+            <Input value={form.crp} placeholder="00/00000" onChange={(e) => setForm({ ...form, crp: e.target.value })} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Solicitante</Label>
+            <Input value={form.solicitante} onChange={(e) => setForm({ ...form, solicitante: e.target.value })} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Finalidade</Label>
+            <Input value={form.finalidade} onChange={(e) => setForm({ ...form, finalidade: e.target.value })} />
+          </div>
+          <div className="grid gap-1.5 md:col-span-2">
+            <Label>Local da avaliação</Label>
+            <Input value={form.local_avaliacao} onChange={(e) => setForm({ ...form, local_avaliacao: e.target.value })} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Período da avaliação</Label>
+            <Input value={form.periodo} placeholder="ex: abril a julho de 2026" onChange={(e) => setForm({ ...form, periodo: e.target.value })} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Número de encontros</Label>
+            <Input value={form.num_encontros} placeholder="ex: 10" onChange={(e) => setForm({ ...form, num_encontros: e.target.value })} />
           </div>
         </div>
+      </section>
+
+      <div className="grid gap-4">
+        {sections.map(([key, label, rows]) => (
+          <div key={key} className="grid gap-1.5">
+            <Label>{label}</Label>
+            <Textarea
+              rows={rows}
+              value={form[key]}
+              onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+            />
+          </div>
+        ))}
       </div>
     </div>
   )
