@@ -105,11 +105,11 @@ function buildPatientFromResponses(
 export const Route = createFileRoute('/api/public/forms/$token')({
   server: {
     handlers: {
-      GET: async ({ params }) => {
+      GET: async ({ params, request }) => {
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
         const { data, error } = await (supabaseAdmin as any)
           .from('patient_forms')
-          .select('id, title, description, fields, status, expires_at, created_by')
+          .select('id, title, description, fields, status, expires_at, created_by, first_opened_at, open_count')
           .eq('token', params.token)
           .maybeSingle()
         if (error) return new Response(error.message, { status: 500 })
@@ -121,6 +121,28 @@ export const Route = createFileRoute('/api/public/forms/$token')({
           })
         if (data.expires_at && new Date(data.expires_at).getTime() < Date.now())
           return new Response('Formulário expirado.', { status: 410 })
+
+        // Registra tracking de abertura (best-effort; não bloqueia resposta em caso de erro).
+        try {
+          const nowIso = new Date().toISOString()
+          const referrer = request.headers.get('referer') ?? request.headers.get('referrer')
+          const userAgent = request.headers.get('user-agent')
+          const patch: Record<string, unknown> = {
+            last_opened_at: nowIso,
+            open_count: (data.open_count ?? 0) + 1,
+          }
+          if (!data.first_opened_at) {
+            patch.first_opened_at = nowIso
+            if (referrer) patch.referrer = referrer.slice(0, 500)
+            if (userAgent) patch.user_agent = userAgent.slice(0, 500)
+          }
+          await (supabaseAdmin as any)
+            .from('patient_forms')
+            .update(patch)
+            .eq('id', data.id)
+        } catch {
+          // ignore tracking failures
+        }
 
         let professional: { name: string; email: string | null } | null = null
         if (data.created_by) {
