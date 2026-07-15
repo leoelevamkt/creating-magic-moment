@@ -915,13 +915,15 @@ function NoteDialog({
   isPending,
 }: {
   trigger: React.ReactNode
-  initial?: { title: string; content: string; color: string; checklist: ChecklistItem[] }
-  onSubmit: (v: { title: string; content: string; color: string; checklist: ChecklistItem[] }) => void
+  initial?: NoteFormValues
+  onSubmit: (v: NoteFormValues) => void
   isPending: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<ChecklistItem[]>(initial?.checklist ?? [])
   const [newItem, setNewItem] = useState('')
+  const [dates, setDates] = useState<string[]>(initial?.sessionDates ?? [])
+  const [newDate, setNewDate] = useState('')
 
   function addItem() {
     const label = newItem.trim()
@@ -930,14 +932,25 @@ function NoteDialog({
     setNewItem('')
   }
 
+  function addDate() {
+    if (!newDate) return
+    setDates((prev) => (prev.includes(newDate) ? prev : [...prev, newDate].sort()))
+    setNewDate('')
+  }
+
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    const rawNum = String(fd.get('session_number') ?? '').trim()
+    const parsedNum = rawNum ? Number(rawNum) : null
     onSubmit({
       title: String(fd.get('title') ?? ''),
       content: String(fd.get('content') ?? ''),
       color: String(fd.get('color') ?? 'default'),
       checklist: items,
+      sessionNumber: parsedNum && Number.isFinite(parsedNum) && parsedNum > 0 ? parsedNum : null,
+      sessionDates: dates,
+      plannedTests: String(fd.get('planned_tests') ?? ''),
     })
     setOpen(false)
   }
@@ -946,7 +959,10 @@ function NoteDialog({
       open={open}
       onOpenChange={(v) => {
         setOpen(v)
-        if (v) setItems(initial?.checklist ?? [])
+        if (v) {
+          setItems(initial?.checklist ?? [])
+          setDates(initial?.sessionDates ?? [])
+        }
       }}
     >
       <DialogTrigger render={trigger as React.ReactElement} />
@@ -956,13 +972,67 @@ function NoteDialog({
             {initial ? 'Editar anotação' : 'Nova anotação'}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={submit} className="grid gap-3 pt-2">
+        <form onSubmit={submit} className="grid max-h-[75vh] gap-3 overflow-y-auto pt-2">
           <div className="flex flex-col gap-1.5">
             <Label>Título</Label>
             <Input name="title" defaultValue={initial?.title ?? ''} />
           </div>
+          <div className="grid gap-3 sm:grid-cols-[140px_1fr]">
+            <div className="flex flex-col gap-1.5">
+              <Label>Nº da sessão</Label>
+              <Input
+                name="session_number"
+                type="number"
+                min={1}
+                defaultValue={initial?.sessionNumber ?? ''}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Possíveis datas</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={newDate}
+                  onChange={(e) => setNewDate(e.target.value)}
+                  className="h-9"
+                />
+                <Button type="button" size="sm" variant="outline" onClick={addDate}>
+                  <Plus /> Adicionar
+                </Button>
+              </div>
+              {dates.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {dates.map((d) => (
+                    <span
+                      key={d}
+                      className="flex items-center gap-1 rounded-full border bg-background px-2 py-0.5 text-xs"
+                    >
+                      {format(new Date(d + 'T00:00:00'), 'dd/MM/yyyy')}
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => setDates((prev) => prev.filter((x) => x !== d))}
+                        aria-label="Remover data"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
           <div className="flex flex-col gap-1.5">
-            <Label>Conteúdo</Label>
+            <Label>O que será aplicado</Label>
+            <Textarea
+              name="planned_tests"
+              rows={2}
+              placeholder="Ex.: WAIS-IV, Rey, TDE-II…"
+              defaultValue={initial?.plannedTests ?? ''}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Observações</Label>
             <Textarea name="content" rows={4} defaultValue={initial?.content ?? ''} />
           </div>
           <div className="flex flex-col gap-1.5">
