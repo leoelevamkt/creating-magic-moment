@@ -440,6 +440,57 @@ function KanbanPage() {
           )
         })}
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">Editar tarefa</DialogTitle>
+          </DialogHeader>
+          {editing ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                const fd = new FormData(e.currentTarget)
+                const scheduledAt = String(fd.get('scheduledAt') ?? '') || null
+                const durRaw = String(fd.get('duration') ?? '').trim()
+                const durationMinutes = durRaw === '' ? null : Number(durRaw)
+                updateMut.mutate({ id: editing.id, scheduledAt, durationMinutes })
+              }}
+              className="flex flex-col gap-4 pt-2"
+            >
+              <div className="flex flex-col gap-2">
+                <Label>Data e horário</Label>
+                <Input
+                  type="datetime-local"
+                  name="scheduledAt"
+                  defaultValue={
+                    editing.scheduled_at
+                      ? format(new Date(editing.scheduled_at), "yyyy-MM-dd'T'HH:mm")
+                      : ''
+                  }
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Duração (minutos)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  name="duration"
+                  defaultValue={editing.duration_minutes ?? ''}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="ghost" onClick={() => setEditing(null)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={updateMut.isPending}>
+                  {updateMut.isPending ? 'Salvando…' : 'Salvar'}
+                </Button>
+              </div>
+            </form>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
