@@ -12,8 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
+import { Route as AuthenticatedSupervisionRouteImport } from './routes/_authenticated/supervision'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedPatientsRouteImport } from './routes/_authenticated/patients'
+import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
 import { Route as AuthenticatedKanbanRouteImport } from './routes/_authenticated/kanban'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
@@ -34,6 +37,17 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSupervisionRoute =
+  AuthenticatedSupervisionRouteImport.update({
+    id: '/supervision',
+    path: '/supervision',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -42,6 +56,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
 const AuthenticatedPatientsRoute = AuthenticatedPatientsRouteImport.update({
   id: '/patients',
   path: '/patients',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMaterialsRoute = AuthenticatedMaterialsRouteImport.update({
+  id: '/materials',
+  path: '/materials',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedKanbanRoute = AuthenticatedKanbanRouteImport.update({
@@ -77,8 +96,11 @@ export interface FileRoutesByFullPath {
   '/catalog': typeof AuthenticatedCatalogRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/kanban': typeof AuthenticatedKanbanRoute
+  '/materials': typeof AuthenticatedMaterialsRoute
   '/patients': typeof AuthenticatedPatientsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
+  '/supervision': typeof AuthenticatedSupervisionRoute
+  '/tasks': typeof AuthenticatedTasksRoute
   '/patients/$id': typeof AuthenticatedPatientsIdRoute
 }
 export interface FileRoutesByTo {
@@ -88,8 +110,11 @@ export interface FileRoutesByTo {
   '/catalog': typeof AuthenticatedCatalogRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/kanban': typeof AuthenticatedKanbanRoute
+  '/materials': typeof AuthenticatedMaterialsRoute
   '/patients': typeof AuthenticatedPatientsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
+  '/supervision': typeof AuthenticatedSupervisionRoute
+  '/tasks': typeof AuthenticatedTasksRoute
   '/patients/$id': typeof AuthenticatedPatientsIdRoute
 }
 export interface FileRoutesById {
@@ -101,8 +126,11 @@ export interface FileRoutesById {
   '/_authenticated/catalog': typeof AuthenticatedCatalogRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/kanban': typeof AuthenticatedKanbanRoute
+  '/_authenticated/materials': typeof AuthenticatedMaterialsRoute
   '/_authenticated/patients': typeof AuthenticatedPatientsRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/supervision': typeof AuthenticatedSupervisionRoute
+  '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/patients/$id': typeof AuthenticatedPatientsIdRoute
 }
 export interface FileRouteTypes {
@@ -114,8 +142,11 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/dashboard'
     | '/kanban'
+    | '/materials'
     | '/patients'
     | '/settings'
+    | '/supervision'
+    | '/tasks'
     | '/patients/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -125,8 +156,11 @@ export interface FileRouteTypes {
     | '/catalog'
     | '/dashboard'
     | '/kanban'
+    | '/materials'
     | '/patients'
     | '/settings'
+    | '/supervision'
+    | '/tasks'
     | '/patients/$id'
   id:
     | '__root__'
@@ -137,8 +171,11 @@ export interface FileRouteTypes {
     | '/_authenticated/catalog'
     | '/_authenticated/dashboard'
     | '/_authenticated/kanban'
+    | '/_authenticated/materials'
     | '/_authenticated/patients'
     | '/_authenticated/settings'
+    | '/_authenticated/supervision'
+    | '/_authenticated/tasks'
     | '/_authenticated/patients/$id'
   fileRoutesById: FileRoutesById
 }
@@ -171,6 +208,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/tasks': {
+      id: '/_authenticated/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AuthenticatedTasksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/supervision': {
+      id: '/_authenticated/supervision'
+      path: '/supervision'
+      fullPath: '/supervision'
+      preLoaderRoute: typeof AuthenticatedSupervisionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -183,6 +234,13 @@ declare module '@tanstack/react-router' {
       path: '/patients'
       fullPath: '/patients'
       preLoaderRoute: typeof AuthenticatedPatientsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/materials': {
+      id: '/_authenticated/materials'
+      path: '/materials'
+      fullPath: '/materials'
+      preLoaderRoute: typeof AuthenticatedMaterialsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/kanban': {
@@ -241,8 +299,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCatalogRoute: typeof AuthenticatedCatalogRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedKanbanRoute: typeof AuthenticatedKanbanRoute
+  AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRoute
   AuthenticatedPatientsRoute: typeof AuthenticatedPatientsRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSupervisionRoute: typeof AuthenticatedSupervisionRoute
+  AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -250,8 +311,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCatalogRoute: AuthenticatedCatalogRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedKanbanRoute: AuthenticatedKanbanRoute,
+  AuthenticatedMaterialsRoute: AuthenticatedMaterialsRoute,
   AuthenticatedPatientsRoute: AuthenticatedPatientsRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSupervisionRoute: AuthenticatedSupervisionRoute,
+  AuthenticatedTasksRoute: AuthenticatedTasksRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
