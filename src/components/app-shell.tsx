@@ -35,6 +35,7 @@ const staffNav = [
   { to: '/tasks', label: 'Tarefas', icon: ListTodo },
   { to: '/supervision', label: 'Supervisão', icon: MessagesSquare },
   { to: '/materials', label: 'Materiais', icon: Boxes },
+  { to: '/settings', label: 'Configurações', icon: Settings },
 ] as const
 
 
