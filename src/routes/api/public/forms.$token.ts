@@ -203,6 +203,3 @@ export const Route = createFileRoute('/api/public/forms/$token')({
     },
   },
 })
-
-// referência para satisfazer o tree-shaker sobre o export
-export const _preCadastroId = PRE_CADASTRO_TEMPLATE_ID
