@@ -46,6 +46,33 @@ export const createPatient = createServerFn({ method: 'POST' })
     return { id: row!.id }
   })
 
+const BulkInput = z.object({
+  patients: z.array(CreateInput).min(1).max(500),
+})
+export const bulkCreatePatients = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => BulkInput.parse(input))
+  .handler(async ({ context, data }) => {
+    const rows = data.patients.map((p) => ({
+      created_by: context.userId,
+      name: p.name,
+      birth_date: p.birthDate,
+      cpf: p.cpf,
+      schooling: p.schooling,
+      city: p.city,
+      hypotheses: p.hypotheses || null,
+      notes: p.notes || null,
+      status: 'active' as const,
+    }))
+    const { error, data: inserted } = await context.supabase
+      .from('patients')
+      .insert(rows)
+      .select('id')
+    if (error) throw new Error(error.message)
+    return { inserted: inserted?.length ?? 0 }
+  })
+
+
 export const patientStats = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
