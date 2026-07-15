@@ -200,3 +200,256 @@ function Area({ label, name }: { label: string; name: string }) {
     </div>
   )
 }
+
+// ============ Import from spreadsheet ============
+type ImportRow = {
+  name: string
+  birthDate: string
+  cpf: string
+  schooling: string
+  city: string
+  hypotheses: string
+  notes: string
+  _error?: string
+}
+
+const HEADER_MAP: Record<string, keyof ImportRow> = {
+  nome: 'name',
+  'nome completo': 'name',
+  paciente: 'name',
+  name: 'name',
+  nascimento: 'birthDate',
+  'data de nascimento': 'birthDate',
+  'data nascimento': 'birthDate',
+  birthdate: 'birthDate',
+  'birth date': 'birthDate',
+  cpf: 'cpf',
+  escolaridade: 'schooling',
+  schooling: 'schooling',
+  cidade: 'city',
+  city: 'city',
+  hipoteses: 'hypotheses',
+  'hipóteses': 'hypotheses',
+  'hipóteses diagnósticas': 'hypotheses',
+  hypotheses: 'hypotheses',
+  observacoes: 'notes',
+  'observações': 'notes',
+  'observações clínicas': 'notes',
+  notes: 'notes',
+}
+
+function normalizeHeader(h: string): keyof ImportRow | null {
+  const k = String(h ?? '').trim().toLowerCase()
+  return HEADER_MAP[k] ?? null
+}
+
+function normalizeDate(v: unknown): string {
+  if (v == null || v === '') return ''
+  // Excel serial
+  if (typeof v === 'number') {
+    const d = XLSX.SSF.parse_date_code(v)
+    if (d) return `${d.y.toString().padStart(4, '0')}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')}`
+  }
+  const s = String(v).trim()
+  // dd/mm/yyyy
+  const br = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})$/)
+  if (br) {
+    const [, dd, mm, yyyy] = br
+    const y = yyyy.length === 2 ? `20${yyyy}` : yyyy
+    return `${y}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
+  }
+  // yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+  const d = new Date(s)
+  if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10)
+  return ''
+}
+
+function ImportPatientsDialog({ onDone }: { onDone: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [rows, setRows] = useState<ImportRow[]>([])
+  const [fileName, setFileName] = useState('')
+  const bulk = useServerFn(bulkCreatePatients)
+  const mut = useMutation({
+    mutationFn: (payload: ImportRow[]) =>
+      bulk({
+        data: {
+          patients: payload.map((r) => ({
+            name: r.name,
+            birthDate: r.birthDate,
+            cpf: r.cpf,
+            schooling: r.schooling,
+            city: r.city,
+            hypotheses: r.hypotheses || null,
+            notes: r.notes || null,
+          })),
+        },
+      }),
+    onSuccess: (res) => {
+      toast.success(`${res.inserted} paciente(s) importado(s).`)
+      setOpen(false)
+      setRows([])
+      setFileName('')
+      onDone()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  async function handleFile(file: File) {
+    setFileName(file.name)
+    const buf = await file.arrayBuffer()
+    const wb = XLSX.read(buf, { type: 'array' })
+    const sheet = wb.Sheets[wb.SheetNames[0]]
+    const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' })
+    if (raw.length === 0) {
+      toast.error('Planilha vazia.')
+      return
+    }
+    const headers = Object.keys(raw[0])
+    const map = new Map<string, keyof ImportRow>()
+    for (const h of headers) {
+      const k = normalizeHeader(h)
+      if (k) map.set(h, k)
+    }
+    const parsed: ImportRow[] = raw.map((r) => {
+      const out: ImportRow = { name: '', birthDate: '', cpf: '', schooling: '', city: '', hypotheses: '', notes: '' }
+      for (const [h, key] of map) {
+        const v = r[h]
+        if (key === 'birthDate') out[key] = normalizeDate(v)
+        else out[key] = String(v ?? '').trim()
+      }
+      const missing: string[] = []
+      if (!out.name || out.name.length < 2) missing.push('nome')
+      if (!out.birthDate) missing.push('nascimento')
+      if (!out.cpf) missing.push('cpf')
+      if (!out.schooling) missing.push('escolaridade')
+      if (!out.city) missing.push('cidade')
+      if (missing.length) out._error = `Faltando: ${missing.join(', ')}`
+      return out
+    })
+    setRows(parsed)
+  }
+
+  function downloadTemplate() {
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['nome', 'nascimento', 'cpf', 'escolaridade', 'cidade', 'hipoteses', 'observacoes'],
+      ['João da Silva', '15/03/1990', '000.000.000-00', 'Ensino médio', 'Curitiba', '', ''],
+    ])
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'pacientes')
+    XLSX.writeFile(wb, 'modelo-pacientes.xlsx')
+  }
+
+  const valid = rows.filter((r) => !r._error)
+  const invalid = rows.length - valid.length
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v)
+        if (!v) {
+          setRows([])
+          setFileName('')
+        }
+      }}
+    >
+      <DialogTrigger render={<Button variant="outline" />}>
+        <Upload />
+        Importar planilha
+      </DialogTrigger>
+      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl">Importar pacientes</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-4 pt-2">
+          <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+            <p className="font-medium">Colunas aceitas (por cabeçalho):</p>
+            <p className="mt-1 text-muted-foreground">
+              nome · nascimento (dd/mm/aaaa ou aaaa-mm-dd) · cpf · escolaridade · cidade · hipoteses · observacoes
+            </p>
+            <div className="mt-2">
+              <Button type="button" size="sm" variant="ghost" onClick={downloadTemplate}>
+                <Download /> Baixar modelo .xlsx
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="patients-file">Arquivo Excel ou CSV</Label>
+            <Input
+              id="patients-file"
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) handleFile(f)
+              }}
+            />
+            {fileName ? <p className="text-xs text-muted-foreground">{fileName}</p> : null}
+          </div>
+
+          {rows.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <p>
+                  <span className="font-semibold">{rows.length}</span> linha(s) ·{' '}
+                  <span className="text-emerald-600">{valid.length} válida(s)</span>
+                  {invalid > 0 ? <span className="text-destructive"> · {invalid} com erro</span> : null}
+                </p>
+              </div>
+              <div className="max-h-80 overflow-auto rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Nascimento</TableHead>
+                      <TableHead>CPF</TableHead>
+                      <TableHead>Cidade</TableHead>
+                      <TableHead>Escolaridade</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.slice(0, 100).map((r, i) => (
+                      <TableRow key={i} className={r._error ? 'bg-destructive/5' : ''}>
+                        <TableCell className="font-medium">{r.name || '—'}</TableCell>
+                        <TableCell>{r.birthDate || '—'}</TableCell>
+                        <TableCell>{r.cpf || '—'}</TableCell>
+                        <TableCell>{r.city || '—'}</TableCell>
+                        <TableCell>{r.schooling || '—'}</TableCell>
+                        <TableCell>
+                          {r._error ? (
+                            <span className="text-xs text-destructive">{r._error}</span>
+                          ) : (
+                            <Badge variant="secondary">OK</Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {rows.length > 100 ? (
+                  <p className="border-t p-2 text-center text-xs text-muted-foreground">
+                    Exibindo as 100 primeiras linhas. Todas as {rows.length} serão importadas.
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              disabled={valid.length === 0 || mut.isPending}
+              onClick={() => mut.mutate(valid)}
+            >
+              {mut.isPending ? 'Importando…' : `Importar ${valid.length} paciente(s)`}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
