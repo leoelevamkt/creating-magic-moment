@@ -383,7 +383,7 @@ export const generateLaudoDocx = createServerFn({ method: 'POST' })
       }),
     ]
 
-    const analysisChildren: Paragraph[] = [
+    const analysisChildren: Array<InstanceType<typeof Paragraph>> = [
       h2('4.1. Análise da anamnese e entrevistas'),
       ...paragraphsOf(data.analise_anamnese),
       h2('4.2. Área intelectiva'),
@@ -410,7 +410,7 @@ export const generateLaudoDocx = createServerFn({ method: 'POST' })
       ...paragraphsOf(data.analise_criatividade),
     ]
 
-    const chartBlock: Paragraph[] = chartBuf
+    const chartBlock: Array<InstanceType<typeof Paragraph>> = chartBuf
       ? [
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -439,7 +439,7 @@ export const generateLaudoDocx = createServerFn({ method: 'POST' })
         ]
       : []
 
-    const signatureBlock: Paragraph[] = [
+    const signatureBlock: Array<InstanceType<typeof Paragraph>> = [
       new Paragraph({ spacing: { before: 640 }, children: [new TextRun({ text: '' })] }),
       ...(signatureBuf
         ? [
