@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Pencil, Play, Plus, ShieldCheck, Trash2, X } from 'lucide-react'
@@ -404,6 +404,9 @@ function KanbanPage() {
                             </div>
                           ) : null}
                         </dl>
+                        {col.id === 'correcting' && t.started_at && !t.completed_at ? (
+                          <LiveTimer startedAt={t.started_at} />
+                        ) : null}
                         {t.status === 'approved' && t.approved_at ? (
                           <p className="rounded-md bg-primary/10 px-2 py-1 text-center text-xs text-primary">
                             Aprovado em {fmtBR(t.approved_at)}
@@ -611,6 +614,27 @@ function TestPicker({
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+function LiveTimer({ startedAt }: { startedAt: string }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const start = new Date(startedAt).getTime()
+  const elapsed = Math.max(0, Math.floor((now - start) / 1000))
+  const h = Math.floor(elapsed / 3600)
+  const m = Math.floor((elapsed % 3600) / 60)
+  const s = elapsed % 60
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const label = h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
+  return (
+    <div className="flex items-center justify-between rounded-md bg-primary/10 px-2 py-1 text-xs">
+      <span className="font-medium text-primary">Em correção</span>
+      <span className="font-mono tabular-nums text-primary">{label}</span>
     </div>
   )
 }

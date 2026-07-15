@@ -328,6 +328,7 @@ export type Database = {
       }
       patient_documents: {
         Row: {
+          category: string
           created_at: string
           description: string | null
           id: string
@@ -340,6 +341,7 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
+          category?: string
           created_at?: string
           description?: string | null
           id?: string
@@ -352,6 +354,7 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
+          category?: string
           created_at?: string
           description?: string | null
           id?: string
