@@ -1,8 +1,8 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Mic, Plus, Square, Video, X } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, ListChecks, MapPin, Mic, Plus, Square, UserPlus, Video, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { transcribeAudio, saveSessionTranscript } from '@/lib/transcribe.functions'
 import { SegmentedRecorder, blobToBase64, chunkAudioFile } from '@/lib/audio-chunker'
@@ -23,6 +23,8 @@ import {
   updateSessionStatus,
 } from '@/lib/sessions.functions'
 import { createMeetForSession, getGoogleConnectionStatus } from '@/lib/googleCalendar.functions'
+import { listAgendaBlocks } from '@/lib/agenda-blocks.functions'
+import { suggestWaitlistForSlot } from '@/lib/waitlist.functions'
 import { listPatients } from '@/lib/patients.functions'
 import { listCatalog } from '@/lib/profile.functions'
 import { Button } from '@/components/ui/button'
@@ -37,6 +39,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
+import { AgendaBlocksDialog } from '@/components/agenda/AgendaBlocksDialog'
+
 
 export const Route = createFileRoute('/_authenticated/agenda')({
   beforeLoad: ({ context }) => {
