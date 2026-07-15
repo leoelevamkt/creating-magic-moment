@@ -158,8 +158,11 @@ function PatientsPage() {
                 <Field label="CPF" name="cpf" placeholder="000.000.000-00" />
                 <Field label="Escolaridade" name="schooling" placeholder="Ex.: Ensino médio" />
                 <Field label="Cidade" name="city" />
+                <Field label="Telefone" name="phone" placeholder="(11) 90000-0000" />
+                <Area label="Medicações em uso" name="medications" />
                 <Area label="Hipóteses diagnósticas" name="hypotheses" />
                 <Area label="Observações clínicas" name="notes" />
+                <ProfessionalsField value={professionals} onChange={setProfessionals} />
                 <GuardiansEmergencyFields value={contact} onChange={setContact} />
                 <div className="flex justify-end sm:col-span-2">
                   <Button type="submit" disabled={mutation.isPending}>
