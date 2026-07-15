@@ -5,6 +5,8 @@ import { useServerFn } from '@tanstack/react-start'
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Mic, Plus, Square, Video, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { transcribeAudio, saveSessionTranscript } from '@/lib/transcribe.functions'
+import { SegmentedRecorder, blobToBase64, chunkAudioFile } from '@/lib/audio-chunker'
+import type { ChangeEvent } from 'react'
 import {
   addDays,
   endOfWeek,
