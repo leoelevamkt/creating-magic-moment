@@ -22,11 +22,9 @@ export const listMaterials = createServerFn({ method: 'GET' })
     return data ?? []
   })
 
-async function requireAdmin(context: { userId: string; supabase: { rpc: (fn: 'has_role', args: { _user_id: string; _role: 'admin' | 'staff' }) => Promise<{ data: boolean | null; error: { message: string } | null }> } }) {
-  const { data, error } = await context.supabase.rpc('has_role', {
-    _user_id: context.userId,
-    _role: 'admin',
-  })
+async function assertAdmin(supabase: unknown, userId: string) {
+  const client = supabase as { rpc: (fn: 'has_role', args: { _user_id: string; _role: 'admin' | 'staff' }) => PromiseLike<{ data: boolean | null; error: { message: string } | null }> }
+  const { data, error } = await client.rpc('has_role', { _user_id: userId, _role: 'admin' })
   if (error) throw new Error(error.message)
   if (!data) throw new Error('Apenas administradores podem editar materiais.')
 }
