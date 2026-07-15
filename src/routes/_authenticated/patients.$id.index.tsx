@@ -161,6 +161,8 @@ function PatientDetailPage() {
         </aside>
 
         <main className="flex flex-col gap-6">
+          <NotesBoard patientId={id} />
+
           <OverallSynthesisCard patientId={id} synthesis={patient.overall_synthesis ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
 
           <section className="rounded-2xl border bg-card p-5">
@@ -204,8 +206,8 @@ function PatientDetailPage() {
             )}
           </section>
 
-          <NotesBoard patientId={id} />
           <EvaluationPlan patientId={id} />
+
         </main>
       </div>
     </div>
