@@ -4,7 +4,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { CalendarPlus, Pencil, Pin, PinOff, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { CalendarPlus, MoreHorizontal, Pencil, Pin, PinOff, Plus, Sparkles, Trash2 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   listPatientNotes,
   createPatientNote,
