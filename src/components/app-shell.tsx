@@ -52,7 +52,7 @@ function Sidebar({ role }: { role: string }) {
         </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-4">
-        {nav.map((item) => {
+        {(role === 'admin' ? adminNav : staffNav).map((item) => {
           const Icon = item.icon
           const active = pathname === item.to || pathname.startsWith(item.to + '/')
           return (
