@@ -133,7 +133,12 @@ export const updateTask = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => UpdateTask.parse(i))
   .handler(async ({ context, data }) => {
-    const patch: Record<string, unknown> = {}
+    const patch: {
+      scheduled_at?: string | null
+      duration_minutes?: number | null
+      correction_notes?: string | null
+      admin_notes?: string | null
+    } = {}
     if (data.scheduledAt !== undefined)
       patch.scheduled_at = data.scheduledAt ? new Date(data.scheduledAt).toISOString() : null
     if (data.durationMinutes !== undefined) patch.duration_minutes = data.durationMinutes
