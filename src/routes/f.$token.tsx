@@ -123,6 +123,16 @@ function FieldRenderer({
   value: unknown
   onChange: (v: unknown) => void
 }) {
+  // Cabeçalhos de seção: campo textarea sem valor cujo `key` começa com `sec_`.
+  if (field.key.startsWith('sec_')) {
+    return (
+      <div className="mt-2 border-t pt-4">
+        <h2 className="font-serif text-lg font-semibold">{field.label}</h2>
+        {field.help && <p className="mt-1 text-sm text-muted-foreground">{field.help}</p>}
+      </div>
+    )
+  }
+
   const label = (
     <Label>
       {field.label}
@@ -134,6 +144,7 @@ function FieldRenderer({
       return (
         <div className="grid gap-1.5">
           {label}
+          {field.help && <p className="text-xs text-muted-foreground">{field.help}</p>}
           <Textarea rows={4} value={(value as string) ?? ''} onChange={(e) => onChange(e.target.value)} />
         </div>
       )
@@ -147,6 +158,17 @@ function FieldRenderer({
             max={field.max}
             value={(value as number | string | undefined) ?? ''}
             onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))}
+          />
+        </div>
+      )
+    case 'date':
+      return (
+        <div className="grid gap-1.5">
+          {label}
+          <Input
+            type="date"
+            value={(value as string) ?? ''}
+            onChange={(e) => onChange(e.target.value)}
           />
         </div>
       )
@@ -171,6 +193,38 @@ function FieldRenderer({
           </div>
         </div>
       )
+    case 'checklist': {
+      const arr = Array.isArray(value) ? (value as string[]) : []
+      const toggle = (opt: string) => {
+        onChange(arr.includes(opt) ? arr.filter((v) => v !== opt) : [...arr, opt])
+      }
+      return (
+        <div className="grid gap-1.5">
+          {label}
+          {field.help && <p className="text-xs text-muted-foreground">{field.help}</p>}
+          <div className="grid gap-2">
+            {(field.options ?? []).map((opt) => {
+              const active = arr.includes(opt)
+              return (
+                <button
+                  type="button"
+                  key={opt}
+                  onClick={() => toggle(opt)}
+                  className={`flex items-start gap-2 rounded-lg border p-2.5 text-left text-sm ${active ? 'border-primary bg-primary/10' : 'hover:bg-muted'}`}
+                >
+                  <span
+                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${active ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40'}`}
+                  >
+                    {active && <span className="text-[10px] leading-none">✓</span>}
+                  </span>
+                  <span>{opt}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )
+    }
     case 'scale': {
       const min = field.min ?? 0
       const max = field.max ?? 4
@@ -200,6 +254,7 @@ function FieldRenderer({
       return (
         <div className="grid gap-1.5">
           {label}
+          {field.help && <p className="text-xs text-muted-foreground">{field.help}</p>}
           <Input value={(value as string) ?? ''} onChange={(e) => onChange(e.target.value)} />
         </div>
       )
