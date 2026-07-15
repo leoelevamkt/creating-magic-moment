@@ -46,7 +46,7 @@ export const upsertTest = createServerFn({ method: 'POST' })
     }
     const { data: row, error } = await context.supabase
       .from('test_catalog')
-      .insert({ ...payload, created_by: context.userId })
+      .insert(payload)
       .select('id')
       .single()
     if (error) throw new Error(error.message)
