@@ -118,6 +118,13 @@ function PatientDetailPage() {
             </dl>
           </section>
 
+          <ContactsCard
+            hasGuardians={!!patient.has_guardians}
+            guardians={patient.guardians as unknown as Array<{ name: string; phone: string; relation: string }> | null}
+            emergency={patient.emergency_contact as unknown as { name: string; phone: string; relation: string } | null}
+          />
+
+
           <section className="rounded-2xl border bg-card p-5">
             <h2 className="font-serif text-xl font-semibold">Próximas sessões</h2>
             {upcoming.length === 0 ? (
