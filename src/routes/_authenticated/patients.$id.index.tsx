@@ -955,19 +955,19 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Nascimento</Label>
-            <Input type="date" name="birthDate" defaultValue={patient.birth_date} required />
+            <Input type="date" name="birthDate" defaultValue={patient.birth_date ?? ''} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>CPF</Label>
-            <Input name="cpf" defaultValue={patient.cpf} required />
+            <Input name="cpf" defaultValue={patient.cpf ?? ''} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Escolaridade</Label>
-            <Input name="schooling" defaultValue={patient.schooling} required />
+            <Input name="schooling" defaultValue={patient.schooling ?? ''} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Cidade</Label>
-            <Input name="city" defaultValue={patient.city} required />
+            <Input name="city" defaultValue={patient.city ?? ''} />
           </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>Hipóteses diagnósticas</Label>
