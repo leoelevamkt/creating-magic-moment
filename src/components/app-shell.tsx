@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { useQueryClient } from '@tanstack/react-query'
 import { TimeClock } from '@/components/time-clock'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 const adminNav = [
   { to: '/dashboard', label: 'Visão geral', icon: LayoutDashboard },
@@ -139,6 +140,7 @@ export function AppShell({
           </div>
           <div className="flex items-center gap-3">
             {role !== 'admin' && <TimeClock />}
+            <ThemeToggle />
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium text-foreground">{userName}</p>
               <p className="text-xs text-muted-foreground">
