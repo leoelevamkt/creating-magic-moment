@@ -31,7 +31,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: 'author', content: 'NeuroFlux' },
       { name: 'robots', content: 'index, follow' },
-      { name: 'theme-color', content: '#214d48' },
+      { name: 'theme-color', content: '#b3907a' },
       { property: 'og:site_name', content: 'NeuroFlux' },
       { property: 'og:title', content: 'NeuroFlux — Gestão neuropsicológica' },
       {
