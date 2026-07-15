@@ -4,31 +4,31 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { RATE_LIMITS, enforceRateLimit } from '@/lib/rate-limit.server'
 
 const Input = z.object({
-  // base64-encoded audio blob (no data: prefix), max ~20MB after decoding
-  audioBase64: z.string().min(10).max(30 * 1024 * 1024),
+  // base64 de UM chunk de áudio (máx ~24MB — abaixo do cap de 25MiB do gateway).
+  audioBase64: z.string().min(10).max(32 * 1024 * 1024),
   mimeType: z.string().max(120).default('audio/webm'),
   language: z.string().max(10).default('pt'),
-  // duration in seconds (approximate, from MediaRecorder); used for rate limit accounting
-  durationSeconds: z.number().int().min(0).max(60 * 60).optional(),
+  // duração deste chunk (segundos). Cap por chunk = 15 min; sessões longas devem ser divididas no client.
+  durationSeconds: z.number().int().min(0).max(15 * 60).optional(),
 })
 
 /**
- * Transcreve áudio via Lovable AI Gateway.
- * O front envia o blob gravado (MediaRecorder) em base64.
+ * Transcreve UM chunk de áudio via Lovable AI Gateway.
+ * Para gravações longas (até 2h), o front envia vários chunks (~4-10 min cada) em sequência.
  */
 export const transcribeAudio = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => Input.parse(i))
   .handler(async ({ context, data }) => {
-    const seconds = Math.max(1, Math.min(data.durationSeconds ?? 60, 3600))
+    const seconds = Math.max(1, Math.min(data.durationSeconds ?? 60, 900))
     await enforceRateLimit(RATE_LIMITS.aiTranscribe, `user:${context.userId}`, seconds)
 
     const key = process.env.LOVABLE_API_KEY
     if (!key) throw new Error('LOVABLE_API_KEY ausente.')
 
     const bin = Buffer.from(data.audioBase64, 'base64')
-    if (bin.byteLength > 20 * 1024 * 1024) {
-      throw new Error('Áudio muito grande (máx. 20 MB). Grave trechos menores.')
+    if (bin.byteLength > 24 * 1024 * 1024) {
+      throw new Error('Chunk de áudio muito grande (máx. 24 MB). Divida em trechos menores.')
     }
     const baseMime = data.mimeType.split(';')[0].trim() || 'audio/webm'
     const ext = baseMime.includes('mp4') ? 'mp4'
