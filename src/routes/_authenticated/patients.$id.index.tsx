@@ -910,8 +910,9 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
     guardians: initialGuardians.length > 0 ? initialGuardians : (patient.has_guardians ? [{ ...EMPTY_GUARDIAN }] : []),
     emergencyContact: initialEmergency ?? { ...EMPTY_EMERGENCY },
   })
-  const initialProfessionals = Array.isArray((patient as { professionals?: unknown }).professionals)
-    ? ((patient as { professionals?: Professional[] }).professionals ?? [])
+  const rawProfessionals = (patient as unknown as { professionals?: unknown }).professionals
+  const initialProfessionals: Professional[] = Array.isArray(rawProfessionals)
+    ? (rawProfessionals as Professional[])
     : []
   const [professionals, setProfessionals] = useState<Professional[]>(initialProfessionals)
   const mut = useMutation({
