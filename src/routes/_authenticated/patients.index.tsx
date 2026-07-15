@@ -91,32 +91,41 @@ function PatientsPage() {
             Prontuários ativos
           </h1>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button />}>
-            <Plus />
-            Novo paciente
-          </DialogTrigger>
-          <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="font-serif text-2xl">Cadastrar paciente</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={onSubmit} className="grid gap-5 py-2 sm:grid-cols-2">
-              <Field label="Nome completo" name="name" />
-              <Field label="Data de nascimento" name="birthDate" type="date" />
-              <Field label="CPF" name="cpf" placeholder="000.000.000-00" />
-              <Field label="Escolaridade" name="schooling" placeholder="Ex.: Ensino médio" />
-              <Field label="Cidade" name="city" />
-              <div />
-              <Area label="Hipóteses diagnósticas" name="hypotheses" />
-              <Area label="Observações clínicas" name="notes" />
-              <div className="flex justify-end sm:col-span-2">
-                <Button type="submit" disabled={mutation.isPending}>
-                  {mutation.isPending ? 'Salvando…' : 'Salvar paciente'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <div className="flex flex-wrap gap-2">
+          <ImportPatientsDialog
+            onDone={() => {
+              qc.invalidateQueries({ queryKey: ['patients'] })
+              router.invalidate()
+            }}
+          />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger render={<Button />}>
+              <Plus />
+              Novo paciente
+            </DialogTrigger>
+            <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="font-serif text-2xl">Cadastrar paciente</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={onSubmit} className="grid gap-5 py-2 sm:grid-cols-2">
+                <Field label="Nome completo" name="name" />
+                <Field label="Data de nascimento" name="birthDate" type="date" />
+                <Field label="CPF" name="cpf" placeholder="000.000.000-00" />
+                <Field label="Escolaridade" name="schooling" placeholder="Ex.: Ensino médio" />
+                <Field label="Cidade" name="city" />
+                <div />
+                <Area label="Hipóteses diagnósticas" name="hypotheses" />
+                <Area label="Observações clínicas" name="notes" />
+                <div className="flex justify-end sm:col-span-2">
+                  <Button type="submit" disabled={mutation.isPending}>
+                    {mutation.isPending ? 'Salvando…' : 'Salvar paciente'}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
       </header>
 
       <div className="rounded-2xl border bg-card">
