@@ -13,6 +13,11 @@ import {
   toPatientContactPayload,
   type GuardiansEmergencyValue,
 } from '@/components/patients/GuardiansEmergencyFields'
+import {
+  ProfessionalsField,
+  normalizeProfessionals,
+  type Professional,
+} from '@/components/patients/ProfessionalsField'
 
 import { Button } from '@/components/ui/button'
 import {
