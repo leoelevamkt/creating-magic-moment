@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import {
+  BarChart3,
   BrainCircuit,
   Boxes,
   CalendarDays,
@@ -28,6 +29,7 @@ const adminNav = [
   { to: '/supervision', label: 'Supervisão', icon: MessagesSquare },
   { to: '/materials', label: 'Materiais', icon: Boxes },
   { to: '/catalog', label: 'Catálogo de testes', icon: Library },
+  { to: '/reports', label: 'Relatórios', icon: BarChart3 },
 ] as const
 
 const staffNav = [
