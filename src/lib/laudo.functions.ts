@@ -363,7 +363,7 @@ export const generateLaudoDocx = createServerFn({ method: 'POST' })
     const footerParagraphs = [
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        border: { top: { style: 'single', size: 6, color: BRAND_PINK, space: 4 } },
+        border: { top: { style: BorderStyle.SINGLE, size: 6, color: BRAND_PINK, space: 4 } },
         spacing: { before: 60, after: 40 },
         children: [new TextRun({ text: FOOTER_ADDRESS, size: 16, font: 'Calibri', color: '555555' })],
       }),
