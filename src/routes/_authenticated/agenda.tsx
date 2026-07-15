@@ -1,8 +1,8 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Mic, Plus, Square, Video, X } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, ListChecks, MapPin, Mic, Plus, Square, UserPlus, Video, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { transcribeAudio, saveSessionTranscript } from '@/lib/transcribe.functions'
 import { SegmentedRecorder, blobToBase64, chunkAudioFile } from '@/lib/audio-chunker'
@@ -23,6 +23,8 @@ import {
   updateSessionStatus,
 } from '@/lib/sessions.functions'
 import { createMeetForSession, getGoogleConnectionStatus } from '@/lib/googleCalendar.functions'
+import { listAgendaBlocks } from '@/lib/agenda-blocks.functions'
+import { suggestWaitlistForSlot } from '@/lib/waitlist.functions'
 import { listPatients } from '@/lib/patients.functions'
 import { listCatalog } from '@/lib/profile.functions'
 import { Button } from '@/components/ui/button'
@@ -37,6 +39,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
+import { AgendaBlocksDialog } from '@/components/agenda/AgendaBlocksDialog'
+
 
 export const Route = createFileRoute('/_authenticated/agenda')({
   beforeLoad: ({ context }) => {
@@ -69,12 +73,64 @@ function AgendaPage() {
   const patients = useQuery({ queryKey: ['patients'], queryFn: () => useServerFnSafe(listPatients)() })
   const catalog = useQuery({ queryKey: ['catalog'], queryFn: () => useServerFnSafe(listCatalog)() })
   const gStatus = useQuery({ queryKey: ['google-status'], queryFn: () => googleStatus() })
+  const blocks = useQuery({
+    queryKey: ['agenda-blocks'],
+    queryFn: () => useServerFnSafe(listAgendaBlocks)(),
+  })
+
+  const suggestFn = useServerFn(suggestWaitlistForSlot)
+  const [suggest, setSuggest] = useState<
+    | null
+    | {
+        sessionDate: string
+        startTime: string | null
+        endTime: string | null
+        modality: 'presencial' | 'online'
+        entries: Array<{
+          id: string
+          patient_id: string | null
+          patient_name: string | null
+          contact_phone: string | null
+          contact_email: string | null
+          modality: string
+          priority: number
+          patients: { name: string } | null
+        }>
+      }
+  >(null)
 
   const removeMut = useMutation({
-    mutationFn: (id: string) => remove({ data: { id } }),
-    onSuccess: () => {
+    mutationFn: async (s: {
+      id: string
+      sessionDate: string
+      startTime: string | null
+      endTime: string | null
+      modality: 'presencial' | 'online'
+    }) => {
+      await remove({ data: { id: s.id } })
+      const entries = await suggestFn({
+        data: {
+          sessionDate: s.sessionDate,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          modality: s.modality,
+          limit: 5,
+        },
+      })
+      return { ...s, entries }
+    },
+    onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['sessions'] })
       toast.success('Sessão removida.')
+      if (r.entries.length > 0) {
+        setSuggest({
+          sessionDate: r.sessionDate,
+          startTime: r.startTime,
+          endTime: r.endTime,
+          modality: r.modality,
+          entries: r.entries as typeof suggest extends null ? never : NonNullable<typeof suggest>['entries'],
+        })
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -82,6 +138,7 @@ function AgendaPage() {
     mutationFn: (v: { id: string; status: 'done' }) => setStatus({ data: v }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
   })
+
   const meetMut = useMutation({
     mutationFn: (sessionId: string) => meetFn({ data: { sessionId } }),
     onSuccess: (r) => {
@@ -167,7 +224,15 @@ function AgendaPage() {
             Organize os atendimentos da semana e os testes que podem ser aplicados em cada sessão.
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <AgendaBlocksDialog />
+          <Link to="/lista-espera">
+            <Button variant="outline">
+              <ListChecks /> Lista de espera
+            </Button>
+          </Link>
         <Dialog open={open} onOpenChange={setOpen}>
+
           <DialogTrigger render={<Button />}>
             <CalendarDays /> Nova sessão
           </DialogTrigger>
@@ -259,7 +324,9 @@ function AgendaPage() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </header>
+
 
       <div className="flex items-center justify-between rounded-2xl border bg-card px-4 py-3">
         <div className="flex items-center gap-2">
@@ -282,6 +349,10 @@ function AgendaPage() {
           const key = format(day, 'yyyy-MM-dd')
           const dayEvents = grouped.get(key) ?? []
           const isToday = isSameDay(day, new Date())
+          const wd = day.getDay()
+          const dayBlocks = (blocks.data ?? []).filter((b) =>
+            b.recurrence === 'weekly' ? b.weekday === wd : b.block_date === key,
+          )
           return (
             <div
               key={key}
@@ -300,6 +371,23 @@ function AgendaPage() {
                   </span>
                 ) : null}
               </div>
+              {dayBlocks.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  {dayBlocks.map((b) => (
+                    <div
+                      key={b.id}
+                      className="rounded-md border border-dashed border-muted-foreground/30 bg-muted/60 px-2 py-1 text-[11px] text-muted-foreground"
+                      title={b.notes ?? undefined}
+                    >
+                      <span className="font-medium">{b.title}</span>{' '}
+                      <span>
+                        · {b.start_time?.slice(0, 5)}–{b.end_time?.slice(0, 5)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
               {dayEvents.length === 0 ? (
                 <p className="my-auto text-center text-xs text-muted-foreground">Sem sessões</p>
               ) : (
@@ -313,7 +401,16 @@ function AgendaPage() {
                         {(s.patients as { name: string } | null)?.name ?? '—'}
                       </p>
                       <button
-                        onClick={() => removeMut.mutate(s.id)}
+                        onClick={() =>
+                          removeMut.mutate({
+                            id: s.id,
+                            sessionDate: s.session_date,
+                            startTime: s.start_time ?? null,
+                            endTime: s.end_time ?? null,
+                            modality: (s.modality === 'online' ? 'online' : 'presencial') as 'presencial' | 'online',
+                          })
+                        }
+
                         className="text-muted-foreground hover:text-destructive"
                         aria-label="Remover"
                       >
@@ -378,9 +475,67 @@ function AgendaPage() {
           )
         })}
       </div>
+
+      <Dialog open={suggest !== null} onOpenChange={(v) => { if (!v) setSuggest(null) }}>
+        <DialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">Encaixe da lista de espera</DialogTitle>
+          </DialogHeader>
+          {suggest ? (
+            <div className="flex flex-col gap-3 pt-2 text-sm">
+              <p className="text-muted-foreground">
+                Horário liberado: {suggest.sessionDate}
+                {suggest.startTime ? ` · ${suggest.startTime}` : ''}
+                {suggest.endTime ? `–${suggest.endTime}` : ''} · {suggest.modality}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Candidatos sugeridos, ordenados por prioridade e compatibilidade:
+              </p>
+              <ul className="flex flex-col gap-2">
+                {suggest.entries.map((e) => {
+                  const name = e.patients?.name ?? e.patient_name ?? '—'
+                  return (
+                    <li
+                      key={e.id}
+                      className="flex items-start justify-between gap-3 rounded-lg border p-3"
+                    >
+                      <div>
+                        <p className="font-medium">{name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Prioridade {e.priority} · {e.modality}
+                          {e.contact_phone ? ` · ${e.contact_phone}` : ''}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const q = new URLSearchParams({
+                            date: suggest.sessionDate,
+                            ...(suggest.startTime ? { start: suggest.startTime } : {}),
+                            ...(suggest.endTime ? { end: suggest.endTime } : {}),
+                            waitlist: e.id,
+                          })
+                          toast.info(`Selecione o paciente "${name}" no formulário.`)
+                          setSuggest(null)
+                          setOpen(true)
+                          void q // reserved for future prefill
+                        }}
+                      >
+                        <UserPlus size={14} /> Encaixar
+                      </Button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
+
 
 function TestPicker({ tests }: { tests: Array<{ id: string; acronym: string | null; category: string; estimated_minutes: number | null }> }) {
   const byCat = useMemo(() => {

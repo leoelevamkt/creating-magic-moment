@@ -18,6 +18,7 @@ import { Route as AuthenticatedSupervisionRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
+import { Route as AuthenticatedListaEsperaRouteImport } from './routes/_authenticated/lista-espera'
 import { Route as AuthenticatedKanbanRouteImport } from './routes/_authenticated/kanban'
 import { Route as AuthenticatedFormulariosRouteImport } from './routes/_authenticated/formularios'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
@@ -76,6 +77,12 @@ const AuthenticatedMaterialsRoute = AuthenticatedMaterialsRouteImport.update({
   path: '/materials',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedListaEsperaRoute =
+  AuthenticatedListaEsperaRouteImport.update({
+    id: '/lista-espera',
+    path: '/lista-espera',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedKanbanRoute = AuthenticatedKanbanRouteImport.update({
   id: '/kanban',
   path: '/kanban',
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/formularios': typeof AuthenticatedFormulariosRoute
   '/kanban': typeof AuthenticatedKanbanRoute
+  '/lista-espera': typeof AuthenticatedListaEsperaRoute
   '/materials': typeof AuthenticatedMaterialsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -174,6 +182,7 @@ export interface FileRoutesByTo {
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/formularios': typeof AuthenticatedFormulariosRoute
   '/kanban': typeof AuthenticatedKanbanRoute
+  '/lista-espera': typeof AuthenticatedListaEsperaRoute
   '/materials': typeof AuthenticatedMaterialsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -198,6 +207,7 @@ export interface FileRoutesById {
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
   '/_authenticated/formularios': typeof AuthenticatedFormulariosRoute
   '/_authenticated/kanban': typeof AuthenticatedKanbanRoute
+  '/_authenticated/lista-espera': typeof AuthenticatedListaEsperaRoute
   '/_authenticated/materials': typeof AuthenticatedMaterialsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -222,6 +232,7 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/formularios'
     | '/kanban'
+    | '/lista-espera'
     | '/materials'
     | '/reports'
     | '/settings'
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/formularios'
     | '/kanban'
+    | '/lista-espera'
     | '/materials'
     | '/reports'
     | '/settings'
@@ -267,6 +279,7 @@ export interface FileRouteTypes {
     | '/_authenticated/financeiro'
     | '/_authenticated/formularios'
     | '/_authenticated/kanban'
+    | '/_authenticated/lista-espera'
     | '/_authenticated/materials'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
@@ -352,6 +365,13 @@ declare module '@tanstack/react-router' {
       path: '/materials'
       fullPath: '/materials'
       preLoaderRoute: typeof AuthenticatedMaterialsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/lista-espera': {
+      id: '/_authenticated/lista-espera'
+      path: '/lista-espera'
+      fullPath: '/lista-espera'
+      preLoaderRoute: typeof AuthenticatedListaEsperaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/kanban': {
@@ -448,6 +468,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
   AuthenticatedFormulariosRoute: typeof AuthenticatedFormulariosRoute
   AuthenticatedKanbanRoute: typeof AuthenticatedKanbanRoute
+  AuthenticatedListaEsperaRoute: typeof AuthenticatedListaEsperaRoute
   AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -467,6 +488,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
   AuthenticatedFormulariosRoute: AuthenticatedFormulariosRoute,
   AuthenticatedKanbanRoute: AuthenticatedKanbanRoute,
+  AuthenticatedListaEsperaRoute: AuthenticatedListaEsperaRoute,
   AuthenticatedMaterialsRoute: AuthenticatedMaterialsRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,

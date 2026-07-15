@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      agenda_blocks: {
+        Row: {
+          block_date: string | null
+          created_at: string
+          end_time: string
+          id: string
+          kind: string
+          notes: string | null
+          owner_id: string
+          recurrence: string
+          start_time: string
+          title: string
+          updated_at: string
+          weekday: number | null
+        }
+        Insert: {
+          block_date?: string | null
+          created_at?: string
+          end_time: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          owner_id: string
+          recurrence?: string
+          start_time: string
+          title: string
+          updated_at?: string
+          weekday?: number | null
+        }
+        Update: {
+          block_date?: string | null
+          created_at?: string
+          end_time?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          owner_id?: string
+          recurrence?: string
+          start_time?: string
+          title?: string
+          updated_at?: string
+          weekday?: number | null
+        }
+        Relationships: []
+      }
       anamneses: {
         Row: {
           created_at: string
@@ -1015,6 +1060,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      waitlist: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          modality: string | null
+          notes: string | null
+          patient_id: string | null
+          patient_name: string | null
+          preferred_end_time: string | null
+          preferred_start_time: string | null
+          preferred_weekdays: number[] | null
+          priority: number
+          session_type: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          modality?: string | null
+          notes?: string | null
+          patient_id?: string | null
+          patient_name?: string | null
+          preferred_end_time?: string | null
+          preferred_start_time?: string | null
+          preferred_weekdays?: number[] | null
+          priority?: number
+          session_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          modality?: string | null
+          notes?: string | null
+          patient_id?: string | null
+          patient_name?: string | null
+          preferred_end_time?: string | null
+          preferred_start_time?: string | null
+          preferred_weekdays?: number[] | null
+          priority?: number
+          session_type?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       work_sessions: {
         Row: {
