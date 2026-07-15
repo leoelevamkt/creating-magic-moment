@@ -89,6 +89,8 @@ function PatientDetailPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" render={<Link to="/patients/$id/anamnese" params={{ id }} />}>Anamnese</Button>
+          <Button variant="outline" render={<Link to="/patients/$id/triagem" params={{ id }} />}>Triagem</Button>
           <NewSessionDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
           <NewEvaluationDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
         </div>
