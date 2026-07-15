@@ -20,6 +20,7 @@ import {
   type Professional,
 } from '@/components/patients/ProfessionalsField'
 import { CpfInput } from '@/components/patients/CpfInput'
+import { ExportCsvButton } from '@/components/common/ExportCsvButton'
 
 import { Button } from '@/components/ui/button'
 import {
