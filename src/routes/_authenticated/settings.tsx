@@ -173,21 +173,15 @@ function SettingsPage() {
                     <Badge variant={m.role === 'admin' ? 'default' : 'secondary'}>
                       {m.role === 'admin' ? 'Admin' : 'Funcionária'}
                     </Badge>
-                    {isAdmin && m.id !== me.data?.id ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          roleMut.mutate({
-                            userId: m.id,
-                            role: m.role === 'admin' ? 'staff' : 'admin',
-                          })
-                        }
-                      >
-                        {m.role === 'admin' ? 'Tornar funcionária' : 'Tornar admin'}
-                      </Button>
+                    {isAdmin ? (
+                      <EditStaffDialog
+                        member={m}
+                        isSelf={m.id === me.data?.id}
+                        onDone={() => qc.invalidateQueries({ queryKey: ['team'] })}
+                      />
                     ) : null}
                   </div>
+
                 </div>
               ))
             )}
