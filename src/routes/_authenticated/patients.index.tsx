@@ -129,6 +129,7 @@ function PatientsPage() {
                 <div />
                 <Area label="Hipóteses diagnósticas" name="hypotheses" />
                 <Area label="Observações clínicas" name="notes" />
+                <GuardiansEmergencyFields value={contact} onChange={setContact} />
                 <div className="flex justify-end sm:col-span-2">
                   <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending ? 'Salvando…' : 'Salvar paciente'}
