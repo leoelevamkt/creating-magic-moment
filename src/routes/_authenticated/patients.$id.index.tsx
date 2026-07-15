@@ -25,7 +25,7 @@ import {
 import { getPatientDetail, updateTaskResult, generateEvaluationSynthesis, updatePatient, generatePatientOverallSynthesis, setPatientStatus, deletePatient } from '@/lib/patients.functions'
 import { DocumentsTab } from '@/components/patients/DocumentsTab'
 import { FinanceTab } from '@/components/patients/FinanceTab'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
 import { useRouter } from '@tanstack/react-router'
 import { createSession } from '@/lib/sessions.functions'
 import { createEvaluation } from '@/lib/evaluations.functions'
@@ -82,6 +82,7 @@ function PatientDetailPage() {
   const { id } = Route.useParams()
   const qc = useQueryClient()
   const fetchDetail = useServerFn(getPatientDetail)
+  const [view, setView] = useState<'chart' | 'documents' | 'finance'>('chart')
   const detailQ = useQuery({
     queryKey: ['patient-detail', id],
     queryFn: () => fetchDetail({ data: { id } }),
@@ -135,7 +136,11 @@ function PatientDetailPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-xl border bg-card/60 p-1 shadow-sm">
+          <div className="flex flex-wrap items-center gap-1 rounded-xl border bg-card/60 p-1 shadow-sm">
+            <NavPill active={view === 'chart'} onClick={() => setView('chart')}>Prontuário</NavPill>
+            <NavPill active={view === 'documents'} onClick={() => setView('documents')}>Documentos</NavPill>
+            <NavPill active={view === 'finance'} onClick={() => setView('finance')}>Financeiro</NavPill>
+            <span className="mx-1 hidden h-5 w-px bg-border sm:block" />
             <Button variant="ghost" size="sm" className="rounded-lg" render={<Link to="/patients/$id/anamnese" params={{ id }} />}>
               Anamnese
             </Button>
@@ -157,151 +162,157 @@ function PatientDetailPage() {
         </div>
       </header>
 
-      {/* CONTENT GRID — sidebar + main */}
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-        {/* LEFT — patient facts + contacts + upcoming + history */}
-        <aside className="flex flex-col gap-6 lg:col-span-4 xl:col-span-3">
-          <section className="rounded-2xl border bg-card p-6 shadow-sm">
-            <h2 className="font-serif text-lg font-semibold">Dados do paciente</h2>
-            <dl className="mt-5 grid gap-5 text-sm">
-              <Info label="CPF" value={patient.cpf} />
-              <Info label="Escolaridade" value={patient.schooling} />
-              <Info label="Cidade" value={patient.city} />
-              <Info label="Hipóteses diagnósticas" value={patient.hypotheses ?? '—'} />
-              <Info label="Observações" value={patient.notes ?? 'Sem observações'} />
-            </dl>
-          </section>
+      {view === 'documents' ? (
+        <DocumentsTab patientId={id} />
+      ) : view === 'finance' ? (
+        <FinanceTab patientId={id} />
+      ) : (
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+          {/* LEFT — patient facts */}
+          <aside className="flex flex-col gap-6 lg:col-span-3">
+            <section className="rounded-2xl border bg-card p-6 shadow-sm">
+              <h2 className="font-serif text-lg font-semibold">Dados do paciente</h2>
+              <dl className="mt-5 grid gap-5 text-sm">
+                <Info label="CPF" value={patient.cpf} />
+                <Info label="Escolaridade" value={patient.schooling} />
+                <Info label="Cidade" value={patient.city} />
+                <Info label="Hipóteses diagnósticas" value={patient.hypotheses ?? '—'} />
+                <Info label="Observações" value={patient.notes ?? 'Sem observações'} />
+              </dl>
+            </section>
 
-          <ContactsCard
-            hasGuardians={!!patient.has_guardians}
-            guardians={patient.guardians as unknown as Array<{ name: string; phone: string; relation: string }> | null}
-            emergency={patient.emergency_contact as unknown as { name: string; phone: string; relation: string } | null}
-          />
+            <ContactsCard
+              hasGuardians={!!patient.has_guardians}
+              guardians={patient.guardians as unknown as Array<{ name: string; phone: string; relation: string }> | null}
+              emergency={patient.emergency_contact as unknown as { name: string; phone: string; relation: string } | null}
+            />
 
-          <section className="rounded-2xl border bg-card p-6 shadow-sm">
-            <h2 className="font-serif text-lg font-semibold">Próximas sessões</h2>
-            {upcoming.length === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">Nenhuma sessão agendada.</p>
-            ) : (
-              <ul className="mt-3 flex flex-col gap-3 text-sm">
-                {upcoming.map((s) => (
-                  <li key={s.id} className="rounded-lg border p-3">
-                    <p className="font-medium">{s.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {s.session_date} {s.start_time ? `· ${s.start_time}` : ''} · {s.modality}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+            <section className="rounded-2xl border bg-card p-6 shadow-sm">
+              <h2 className="font-serif text-lg font-semibold">Próximas sessões</h2>
+              {upcoming.length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">Nenhuma sessão agendada.</p>
+              ) : (
+                <ul className="mt-3 flex flex-col gap-3 text-sm">
+                  {upcoming.map((s) => (
+                    <li key={s.id} className="rounded-lg border p-3">
+                      <p className="font-medium">{s.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {s.session_date} {s.start_time ? `· ${s.start_time}` : ''} · {s.modality}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </aside>
 
-          <section className="rounded-2xl border bg-card p-6 shadow-sm">
-            <h2 className="font-serif text-lg font-semibold">Histórico</h2>
-            {history.length === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">Sem eventos registrados.</p>
-            ) : (
-              <ul className="relative mt-4 flex flex-col gap-5 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-border">
-                {history.slice(0, 8).map((h, i) => (
-                  <li key={i} className="relative pl-6">
-                    <span
-                      className={`absolute left-0 top-1.5 size-3.5 rounded-full border-[3px] border-background ${
-                        i === 0 ? 'bg-primary' : 'bg-muted'
-                      }`}
-                    />
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      {format(new Date(h.at), 'dd/MM/yyyy')}
-                    </p>
-                    <p className="text-sm font-medium">{h.text}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(h.at), 'HH:mm')}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </aside>
+          {/* CENTER — main content */}
+          <main className="flex min-w-0 flex-col gap-6 lg:col-span-6">
+            <NotesBoard patientId={id} />
 
-        {/* MAIN — tabs */}
-        <main className="flex min-w-0 flex-col gap-6 lg:col-span-8 xl:col-span-9">
-          <Tabs defaultValue="chart" className="w-full">
-            <TabsList>
-              <TabsTrigger value="chart">Prontuário</TabsTrigger>
-              <TabsTrigger value="documents">Documentos</TabsTrigger>
-              <TabsTrigger value="finance">Financeiro</TabsTrigger>
-            </TabsList>
-            <TabsContent value="chart" className="mt-4 flex flex-col gap-6">
-              <NotesBoard patientId={id} />
+            <OverallSynthesisCard
+              patientId={id}
+              synthesis={patient.overall_synthesis ?? null}
+              onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })}
+            />
 
-              <OverallSynthesisCard
-                patientId={id}
-                synthesis={patient.overall_synthesis ?? null}
-                onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })}
-              />
-
-              <section className="rounded-2xl border bg-card p-6 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <h2 className="font-serif text-xl font-semibold">Testes e correções</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Tudo o que foi aplicado, corrigido e aprovado.
-                    </p>
-                  </div>
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-                    {tasks.length}
-                  </span>
-                </div>
-                {tasks.length === 0 ? (
-                  <p className="mt-6 text-sm text-muted-foreground">
-                    Nenhum teste ainda. Use “Nova avaliação” para planejar.
+            <section className="rounded-2xl border bg-card p-6 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="font-serif text-xl font-semibold">Testes e correções</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Tudo o que foi aplicado, corrigido e aprovado.
                   </p>
-                ) : (
-                  <div className="mt-4 flex flex-col divide-y">
-                    {tasks.map((t) => (
-                      <TaskRow
-                        key={t.id}
-                        task={t}
-                        onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })}
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              <section className="rounded-2xl border bg-card p-6 shadow-sm">
-                <h2 className="font-serif text-xl font-semibold">Síntese integradora</h2>
-                <p className="text-sm text-muted-foreground">
-                  A IA integra os resultados por domínios cognitivos. Sempre revise.
+                </div>
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                  {tasks.length}
+                </span>
+              </div>
+              {tasks.length === 0 ? (
+                <p className="mt-6 text-sm text-muted-foreground">
+                  Nenhum teste ainda. Use “Nova avaliação” para planejar.
                 </p>
-                {evaluations.length === 0 ? (
-                  <p className="mt-4 text-sm text-muted-foreground">Nenhuma avaliação planejada ainda.</p>
-                ) : (
-                  <div className="mt-4 flex flex-col gap-3">
-                    {evaluations.map((ev) => (
-                      <SynthesisCard
-                        key={ev.id}
-                        evaluation={ev}
-                        taskCount={tasks.filter((t) => t.evaluation_id === ev.id && (t.synthesis || t.raw_score || t.standard_score)).length}
-                        onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })}
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
+              ) : (
+                <div className="mt-4 flex flex-col divide-y">
+                  {tasks.map((t) => (
+                    <TaskRow
+                      key={t.id}
+                      task={t}
+                      onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
 
-              <EvaluationPlan patientId={id} />
-            </TabsContent>
-            <TabsContent value="documents" className="mt-4">
-              <DocumentsTab patientId={id} />
-            </TabsContent>
-            <TabsContent value="finance" className="mt-4">
-              <FinanceTab patientId={id} />
-            </TabsContent>
-          </Tabs>
-        </main>
-      </div>
+            <section className="rounded-2xl border bg-card p-6 shadow-sm">
+              <h2 className="font-serif text-xl font-semibold">Síntese integradora</h2>
+              <p className="text-sm text-muted-foreground">
+                A IA integra os resultados por domínios cognitivos. Sempre revise.
+              </p>
+              {evaluations.length === 0 ? (
+                <p className="mt-4 text-sm text-muted-foreground">Nenhuma avaliação planejada ainda.</p>
+              ) : (
+                <div className="mt-4 flex flex-col gap-3">
+                  {evaluations.map((ev) => (
+                    <SynthesisCard
+                      key={ev.id}
+                      evaluation={ev}
+                      taskCount={tasks.filter((t) => t.evaluation_id === ev.id && (t.synthesis || t.raw_score || t.standard_score)).length}
+                      onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <EvaluationPlan patientId={id} />
+          </main>
+
+          {/* RIGHT — history */}
+          <aside className="flex flex-col gap-6 lg:col-span-3">
+            <section className="rounded-2xl border bg-card p-6 shadow-sm">
+              <h2 className="font-serif text-lg font-semibold">Histórico</h2>
+              {history.length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">Sem eventos registrados.</p>
+              ) : (
+                <ul className="relative mt-4 flex flex-col gap-5 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-border">
+                  {history.map((h, i) => (
+                    <li key={i} className="relative pl-6">
+                      <span
+                        className={`absolute left-0 top-1.5 size-3.5 rounded-full border-[3px] border-background ${
+                          i === 0 ? 'bg-primary' : 'bg-muted'
+                        }`}
+                      />
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        {format(new Date(h.at), 'dd/MM/yyyy')}
+                      </p>
+                      <p className="text-sm font-medium">{h.text}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(h.at), 'HH:mm')}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </aside>
+        </div>
+      )}
     </div>
+  )
+}
+
+function NavPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <Button
+      variant={active ? 'default' : 'ghost'}
+      size="sm"
+      className="rounded-lg"
+      onClick={onClick}
+    >
+      {children}
+    </Button>
   )
 }
 
