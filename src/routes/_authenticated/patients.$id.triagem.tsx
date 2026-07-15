@@ -46,6 +46,7 @@ function TriagemPage() {
   const list = useServerFn(listScreenings)
   const del = useServerFn(deleteScreening)
   const analyze = useServerFn(analyzeScreeningWithAI)
+  const analyzeSocial = useServerFn(analyzeSocialScreeningWithAI)
 
   const q = useQuery({ queryKey: ['screenings', id], queryFn: () => list({ data: { patientId: id } }) })
   const rows = ((q.data ?? []) as unknown as ScreeningRow[])
@@ -56,7 +57,8 @@ function TriagemPage() {
     onError: (e: Error) => toast.error(e.message),
   })
   const analyzeMut = useMutation({
-    mutationFn: (screeningId: string) => analyze({ data: { id: screeningId } }),
+    mutationFn: ({ id: sid, social }: { id: string; social: boolean }) =>
+      social ? analyzeSocial({ data: { id: sid } }) : analyze({ data: { id: sid } }),
     onSuccess: () => { toast.success('Análise gerada.'); qc.invalidateQueries({ queryKey: ['screenings', id] }) },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -70,11 +72,15 @@ function TriagemPage() {
           </Link>
           <h1 className="mt-1 font-serif text-3xl font-semibold">Triagem clínica</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Checklists resumidos do DSM-5-TR por domínio. Registre critérios observados e gere uma análise por IA.
+            Checklists resumidos do DSM-5-TR por domínio e triagem social para elegibilidade de gratuidade/subsídio.
           </p>
         </div>
-        <NewScreeningDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['screenings', id] })} />
+        <div className="flex flex-wrap gap-2">
+          <NewSocialScreeningDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['screenings', id] })} />
+          <NewScreeningDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['screenings', id] })} />
+        </div>
       </header>
+
 
       {rows.length === 0 ? (
         <div className="rounded-2xl border bg-card p-8 text-center text-sm text-muted-foreground">
