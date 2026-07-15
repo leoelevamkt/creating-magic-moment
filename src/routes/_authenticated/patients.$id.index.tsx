@@ -50,6 +50,11 @@ import {
   toPatientContactPayload,
   type GuardiansEmergencyValue,
 } from '@/components/patients/GuardiansEmergencyFields'
+import {
+  ProfessionalsField,
+  normalizeProfessionals,
+  type Professional,
+} from '@/components/patients/ProfessionalsField'
 
 export const Route = createFileRoute('/_authenticated/patients/$id/')({
   head: () => ({ meta: [{ title: 'Prontuário — NeuroFlux' }] }),
@@ -69,6 +74,17 @@ function ageFromDate(d: string) {
   const m = now.getMonth() - b.getMonth()
   if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--
   return age
+}
+
+const SEX_LABELS: Record<string, string> = {
+  feminino: 'Feminino',
+  masculino: 'Masculino',
+  outro: 'Outro',
+  nao_informado: 'Não informado',
+}
+function sexLabel(v: string | null | undefined): string {
+  if (!v) return ''
+  return SEX_LABELS[v] ?? ''
 }
 
 const statusLabels: Record<string, string> = {
@@ -131,6 +147,7 @@ function PatientDetailPage() {
           </div>
           <p className="text-sm text-muted-foreground">
             {patient.birth_date ? `${ageFromDate(patient.birth_date)} anos · ` : ''}
+            {sexLabel((patient as { sex?: string | null }).sex) ? `${sexLabel((patient as { sex?: string | null }).sex)} · ` : ''}
             {patient.schooling ? `${patient.schooling} · ` : ''}
             {patient.city ? `${patient.city} · ` : ''}
             {patient.birth_date ? (<><span className="font-medium">Nasc:</span> {patient.birth_date}</>) : null}
@@ -182,6 +199,32 @@ function PatientDetailPage() {
                 <Info label="Observações" value={patient.notes ?? 'Sem observações'} />
               </dl>
             </section>
+
+            <section className="rounded-2xl border bg-card p-6 shadow-sm">
+              <h2 className="font-serif text-lg font-semibold">Dados do paciente</h2>
+              <dl className="mt-5 grid gap-5 text-sm">
+                {patient.birth_date ? (
+                  <Info label="Idade" value={`${ageFromDate(patient.birth_date)} anos`} />
+                ) : null}
+                <Info label="Sexo" value={sexLabel((patient as { sex?: string | null }).sex) || '—'} />
+                <Info label="Telefone" value={(patient as { phone?: string | null }).phone ?? '—'} />
+                <Info label="CPF" value={patient.cpf ?? '—'} />
+                <Info label="Escolaridade" value={patient.schooling ?? '—'} />
+                <Info label="Cidade" value={patient.city ?? '—'} />
+                <Info label="Medicações" value={(patient as { medications?: string | null }).medications ?? '—'} />
+                <Info label="Hipóteses diagnósticas" value={patient.hypotheses ?? '—'} />
+                <Info label="Observações" value={patient.notes ?? 'Sem observações'} />
+              </dl>
+            </section>
+
+            <ProfessionalsCard
+              list={(() => {
+                const raw = (patient as unknown as { professionals?: unknown }).professionals
+                return Array.isArray(raw)
+                  ? (raw as Array<{ name: string; role?: string | null; contact?: string | null }>)
+                  : []
+              })()}
+            />
 
             <ContactsCard
               hasGuardians={!!patient.has_guardians}
@@ -852,6 +895,31 @@ type PatientData = NonNullable<Awaited<ReturnType<typeof getPatientDetail>>['pat
 type GuardianRec = { name: string; phone: string; relation: string }
 type EmergencyRec = { name: string; phone: string; relation: string }
 
+function ProfessionalsCard({
+  list,
+}: {
+  list: Array<{ name: string; role?: string | null; contact?: string | null }>
+}) {
+  return (
+    <section className="rounded-2xl border bg-card p-6 shadow-sm">
+      <h2 className="font-serif text-lg font-semibold">Profissionais que acompanham</h2>
+      {list.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">Nenhum profissional cadastrado.</p>
+      ) : (
+        <ul className="mt-4 flex flex-col gap-3 text-sm">
+          {list.map((p, i) => (
+            <li key={i} className="rounded-lg border bg-muted/30 p-3">
+              <p className="font-medium text-foreground">{p.name}</p>
+              {p.role ? <p className="text-xs text-muted-foreground">{p.role}</p> : null}
+              {p.contact ? <p className="text-xs text-muted-foreground">{p.contact}</p> : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
 function ContactsCard({
   hasGuardians,
   guardians,
@@ -905,9 +973,18 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
     guardians: initialGuardians.length > 0 ? initialGuardians : (patient.has_guardians ? [{ ...EMPTY_GUARDIAN }] : []),
     emergencyContact: initialEmergency ?? { ...EMPTY_EMERGENCY },
   })
+  const rawProfessionals = (patient as unknown as { professionals?: unknown }).professionals
+  const initialProfessionals: Professional[] = Array.isArray(rawProfessionals)
+    ? (rawProfessionals as Professional[])
+    : []
+  const [professionals, setProfessionals] = useState<Professional[]>(initialProfessionals)
   const mut = useMutation({
     mutationFn: (v: {
-      name: string; birthDate: string; cpf: string; schooling: string; city: string;
+      name: string;
+      sex: 'feminino' | 'masculino' | 'outro' | 'nao_informado' | null;
+      birthDate: string; cpf: string; schooling: string; city: string;
+      phone: string; medications: string;
+      professionals: Professional[];
       hypotheses: string; notes: string;
       hasGuardians: boolean;
       guardians: GuardianRec[];
@@ -928,12 +1005,17 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
       toast.error('Preencha ao menos um responsável ou desmarque "Possui responsável(eis)".')
       return
     }
+    const sexRaw = String(fd.get('sex') ?? '')
     mut.mutate({
       name: String(fd.get('name') ?? ''),
+      sex: (sexRaw ? sexRaw : null) as 'feminino' | 'masculino' | 'outro' | 'nao_informado' | null,
       birthDate: String(fd.get('birthDate') ?? ''),
       cpf: String(fd.get('cpf') ?? ''),
       schooling: String(fd.get('schooling') ?? ''),
       city: String(fd.get('city') ?? ''),
+      phone: String(fd.get('phone') ?? ''),
+      medications: String(fd.get('medications') ?? ''),
+      professionals: normalizeProfessionals(professionals),
       hypotheses: String(fd.get('hypotheses') ?? ''),
       notes: String(fd.get('notes') ?? ''),
       ...contactPayload,
@@ -969,6 +1051,36 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
             <Label>Cidade</Label>
             <Input name="city" defaultValue={patient.city ?? ''} />
           </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Sexo</Label>
+            <select
+              name="sex"
+              defaultValue={(patient as { sex?: string | null }).sex ?? ''}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">Não informado</option>
+              <option value="feminino">Feminino</option>
+              <option value="masculino">Masculino</option>
+              <option value="outro">Outro</option>
+              <option value="nao_informado">Prefere não informar</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Telefone</Label>
+            <Input
+              name="phone"
+              defaultValue={(patient as { phone?: string | null }).phone ?? ''}
+              placeholder="(11) 90000-0000"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label>Medicações em uso</Label>
+            <Textarea
+              name="medications"
+              rows={2}
+              defaultValue={(patient as { medications?: string | null }).medications ?? ''}
+            />
+          </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>Hipóteses diagnósticas</Label>
             <Textarea name="hypotheses" rows={3} defaultValue={patient.hypotheses ?? ''} placeholder="Ex.: TDAH combinado; investigar comorbidade ansiosa." />
@@ -977,6 +1089,7 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
             <Label>Observações clínicas</Label>
             <Textarea name="notes" rows={3} defaultValue={patient.notes ?? ''} />
           </div>
+          <ProfessionalsField value={professionals} onChange={setProfessionals} />
           <GuardiansEmergencyFields value={contact} onChange={setContact} />
           <div className="flex justify-end sm:col-span-2">
             <Button type="submit" disabled={mut.isPending}>

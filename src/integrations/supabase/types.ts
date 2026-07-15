@@ -497,9 +497,12 @@ export type Database = {
           has_guardians: boolean
           hypotheses: string | null
           id: string
+          medications: string | null
           name: string
           notes: string | null
           overall_synthesis: string | null
+          phone: string | null
+          professionals: Json
           schooling: string | null
           sex: string | null
           status: string
@@ -516,9 +519,12 @@ export type Database = {
           has_guardians?: boolean
           hypotheses?: string | null
           id?: string
+          medications?: string | null
           name: string
           notes?: string | null
           overall_synthesis?: string | null
+          phone?: string | null
+          professionals?: Json
           schooling?: string | null
           sex?: string | null
           status?: string
@@ -535,9 +541,12 @@ export type Database = {
           has_guardians?: boolean
           hypotheses?: string | null
           id?: string
+          medications?: string | null
           name?: string
           notes?: string | null
           overall_synthesis?: string | null
+          phone?: string | null
+          professionals?: Json
           schooling?: string | null
           sex?: string | null
           status?: string

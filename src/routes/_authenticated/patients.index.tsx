@@ -13,6 +13,11 @@ import {
   toPatientContactPayload,
   type GuardiansEmergencyValue,
 } from '@/components/patients/GuardiansEmergencyFields'
+import {
+  ProfessionalsField,
+  normalizeProfessionals,
+  type Professional,
+} from '@/components/patients/ProfessionalsField'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -49,6 +54,7 @@ function PatientsPage() {
   const [contact, setContact] = useState<GuardiansEmergencyValue>({
     hasGuardians: false, guardians: [], emergencyContact: { ...EMPTY_EMERGENCY },
   })
+  const [professionals, setProfessionals] = useState<Professional[]>([])
 
   const { data, isLoading } = useQuery({
     queryKey: ['patients'],
@@ -59,6 +65,8 @@ function PatientsPage() {
     name: string;
     sex: 'feminino' | 'masculino' | 'outro' | 'nao_informado' | null;
     birthDate: string; cpf: string; schooling: string; city: string;
+    phone: string; medications: string;
+    professionals: Professional[];
     hypotheses: string; notes: string;
     hasGuardians: boolean;
     guardians: { name: string; phone: string; relation: string }[];
@@ -70,6 +78,7 @@ function PatientsPage() {
       toast.success('Paciente cadastrado.')
       setOpen(false)
       setContact({ hasGuardians: false, guardians: [], emergencyContact: { ...EMPTY_EMERGENCY } })
+      setProfessionals([])
       qc.invalidateQueries({ queryKey: ['patients'] })
       router.invalidate()
     },
@@ -92,6 +101,9 @@ function PatientsPage() {
       cpf: String(fd.get('cpf') ?? ''),
       schooling: String(fd.get('schooling') ?? ''),
       city: String(fd.get('city') ?? ''),
+      phone: String(fd.get('phone') ?? ''),
+      medications: String(fd.get('medications') ?? ''),
+      professionals: normalizeProfessionals(professionals),
       hypotheses: String(fd.get('hypotheses') ?? ''),
       notes: String(fd.get('notes') ?? ''),
       ...contactPayload,
@@ -146,8 +158,11 @@ function PatientsPage() {
                 <Field label="CPF" name="cpf" placeholder="000.000.000-00" />
                 <Field label="Escolaridade" name="schooling" placeholder="Ex.: Ensino médio" />
                 <Field label="Cidade" name="city" />
+                <Field label="Telefone" name="phone" placeholder="(11) 90000-0000" />
+                <Area label="Medicações em uso" name="medications" />
                 <Area label="Hipóteses diagnósticas" name="hypotheses" />
                 <Area label="Observações clínicas" name="notes" />
+                <ProfessionalsField value={professionals} onChange={setProfessionals} />
                 <GuardiansEmergencyFields value={contact} onChange={setContact} />
                 <div className="flex justify-end sm:col-span-2">
                   <Button type="submit" disabled={mutation.isPending}>
