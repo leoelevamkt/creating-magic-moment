@@ -233,7 +233,61 @@ function KanbanPage() {
               </div>
               <div className="flex flex-col gap-2">
                 <Label>Testes a aplicar</Label>
-                <TestPicker tests={catalog.data ?? []} />
+                <Input
+                  placeholder="Pesquisar por nome, sigla ou categoria…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <TestPicker
+                  tests={filteredCatalog}
+                  selected={selectedTests}
+                  onToggle={toggleTest}
+                />
+                {selectedTests.size > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {selectedTests.size} teste(s) selecionado(s).
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3">
+                <Label>Adicionar teste fora do catálogo</Label>
+                <div className="grid gap-2 sm:grid-cols-[1fr_140px_auto]">
+                  <Input
+                    placeholder="Nome do teste"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Sigla (opcional)"
+                    value={customAcronym}
+                    onChange={(e) => setCustomAcronym(e.target.value)}
+                  />
+                  <Button type="button" variant="outline" onClick={addCustom}>
+                    <Plus /> Adicionar
+                  </Button>
+                </div>
+                {customTests.length > 0 ? (
+                  <ul className="flex flex-wrap gap-2 pt-1">
+                    {customTests.map((t, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs"
+                      >
+                        <span className="font-medium">{t.acronym || t.name}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCustomTests((prev) => prev.filter((_, j) => j !== i))
+                          }
+                          className="text-muted-foreground hover:text-foreground"
+                          aria-label="Remover"
+                        >
+                          <X size={12} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
               <div className="flex justify-end">
                 <Button type="submit" disabled={createMut.isPending}>
