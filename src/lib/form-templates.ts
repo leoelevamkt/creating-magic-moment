@@ -1,7 +1,7 @@
 export type FormField = {
   key: string
   label: string
-  type: 'text' | 'textarea' | 'number' | 'choice' | 'scale'
+  type: 'text' | 'textarea' | 'number' | 'choice' | 'scale' | 'date' | 'checklist'
   options?: string[]
   min?: number
   max?: number
@@ -14,7 +14,12 @@ export type FormTemplate = {
   title: string
   description: string
   fields: FormField[]
+  /** Quando true, o formulário pode ser criado sem paciente vinculado; o paciente é gerado no envio a partir das respostas. */
+  createsPatient?: boolean
 }
+
+/** ID especial: template de pré-cadastro cria o paciente ao ser respondido. */
+export const PRE_CADASTRO_TEMPLATE_ID = 'pre-cadastro-agendamento'
 
 export const formTemplates: FormTemplate[] = [
   {
