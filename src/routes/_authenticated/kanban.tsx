@@ -51,6 +51,7 @@ function KanbanPage() {
   const [dragId, setDragId] = useState<string | null>(null)
   const [overCol, setOverCol] = useState<TaskStatus | null>(null)
   const [search, setSearch] = useState('')
+  const [onlyStale, setOnlyStale] = useState(false)
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set())
   const [customTests, setCustomTests] = useState<Array<{ name: string; acronym: string }>>([])
   const [customName, setCustomName] = useState('')
