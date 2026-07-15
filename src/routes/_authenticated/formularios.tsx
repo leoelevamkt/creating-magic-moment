@@ -114,7 +114,7 @@ function FormulariosPage() {
             <div className="grid gap-4">
               <div className="grid gap-1.5">
                 <Label>Paciente</Label>
-                <Select value={patientId} onValueChange={setPatientId}>
+                <Select value={patientId} onValueChange={(v) => setPatientId(v ?? '')}>
                   <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
                   <SelectContent>
                     {(patientsQ.data ?? []).map((p) => (
@@ -125,7 +125,7 @@ function FormulariosPage() {
               </div>
               <div className="grid gap-1.5">
                 <Label>Template</Label>
-                <Select value={templateId} onValueChange={setTemplateId}>
+                <Select value={templateId} onValueChange={(v) => setTemplateId(v ?? templateId)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {formTemplates.map((t) => (

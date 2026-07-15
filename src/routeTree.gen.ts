@@ -12,17 +12,20 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FTokenRouteImport } from './routes/f.$token'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedSupervisionRouteImport } from './routes/_authenticated/supervision'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
 import { Route as AuthenticatedKanbanRouteImport } from './routes/_authenticated/kanban'
+import { Route as AuthenticatedFormulariosRouteImport } from './routes/_authenticated/formularios'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
 import { Route as AuthenticatedPatientsIndexRouteImport } from './routes/_authenticated/patients.index'
 import { Route as AuthenticatedPatientsIdIndexRouteImport } from './routes/_authenticated/patients.$id.index'
+import { Route as ApiPublicFormsTokenRouteImport } from './routes/api/public/forms.$token'
 import { Route as AuthenticatedPatientsIdTriagemRouteImport } from './routes/_authenticated/patients.$id.triagem'
 import { Route as AuthenticatedPatientsIdLaudoRouteImport } from './routes/_authenticated/patients.$id.laudo'
 import { Route as AuthenticatedPatientsIdAnamneseRouteImport } from './routes/_authenticated/patients.$id.anamnese'
@@ -39,6 +42,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FTokenRoute = FTokenRouteImport.update({
+  id: '/f/$token',
+  path: '/f/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
@@ -72,6 +80,12 @@ const AuthenticatedKanbanRoute = AuthenticatedKanbanRouteImport.update({
   path: '/kanban',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFormulariosRoute =
+  AuthenticatedFormulariosRouteImport.update({
+    id: '/formularios',
+    path: '/formularios',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -99,6 +113,11 @@ const AuthenticatedPatientsIdIndexRoute =
     path: '/patients/$id/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicFormsTokenRoute = ApiPublicFormsTokenRouteImport.update({
+  id: '/api/public/forms/$token',
+  path: '/api/public/forms/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedPatientsIdTriagemRoute =
   AuthenticatedPatientsIdTriagemRouteImport.update({
     id: '/patients/$id/triagem',
@@ -124,16 +143,19 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof AuthenticatedAgendaRoute
   '/catalog': typeof AuthenticatedCatalogRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/formularios': typeof AuthenticatedFormulariosRoute
   '/kanban': typeof AuthenticatedKanbanRoute
   '/materials': typeof AuthenticatedMaterialsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/supervision': typeof AuthenticatedSupervisionRoute
   '/tasks': typeof AuthenticatedTasksRoute
+  '/f/$token': typeof FTokenRoute
   '/patients/': typeof AuthenticatedPatientsIndexRoute
   '/patients/$id/anamnese': typeof AuthenticatedPatientsIdAnamneseRoute
   '/patients/$id/laudo': typeof AuthenticatedPatientsIdLaudoRoute
   '/patients/$id/triagem': typeof AuthenticatedPatientsIdTriagemRoute
+  '/api/public/forms/$token': typeof ApiPublicFormsTokenRoute
   '/patients/$id/': typeof AuthenticatedPatientsIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -142,16 +164,19 @@ export interface FileRoutesByTo {
   '/agenda': typeof AuthenticatedAgendaRoute
   '/catalog': typeof AuthenticatedCatalogRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/formularios': typeof AuthenticatedFormulariosRoute
   '/kanban': typeof AuthenticatedKanbanRoute
   '/materials': typeof AuthenticatedMaterialsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/supervision': typeof AuthenticatedSupervisionRoute
   '/tasks': typeof AuthenticatedTasksRoute
+  '/f/$token': typeof FTokenRoute
   '/patients': typeof AuthenticatedPatientsIndexRoute
   '/patients/$id/anamnese': typeof AuthenticatedPatientsIdAnamneseRoute
   '/patients/$id/laudo': typeof AuthenticatedPatientsIdLaudoRoute
   '/patients/$id/triagem': typeof AuthenticatedPatientsIdTriagemRoute
+  '/api/public/forms/$token': typeof ApiPublicFormsTokenRoute
   '/patients/$id': typeof AuthenticatedPatientsIdIndexRoute
 }
 export interface FileRoutesById {
@@ -162,16 +187,19 @@ export interface FileRoutesById {
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
   '/_authenticated/catalog': typeof AuthenticatedCatalogRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/formularios': typeof AuthenticatedFormulariosRoute
   '/_authenticated/kanban': typeof AuthenticatedKanbanRoute
   '/_authenticated/materials': typeof AuthenticatedMaterialsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/supervision': typeof AuthenticatedSupervisionRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
+  '/f/$token': typeof FTokenRoute
   '/_authenticated/patients/': typeof AuthenticatedPatientsIndexRoute
   '/_authenticated/patients/$id/anamnese': typeof AuthenticatedPatientsIdAnamneseRoute
   '/_authenticated/patients/$id/laudo': typeof AuthenticatedPatientsIdLaudoRoute
   '/_authenticated/patients/$id/triagem': typeof AuthenticatedPatientsIdTriagemRoute
+  '/api/public/forms/$token': typeof ApiPublicFormsTokenRoute
   '/_authenticated/patients/$id/': typeof AuthenticatedPatientsIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -182,16 +210,19 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/catalog'
     | '/dashboard'
+    | '/formularios'
     | '/kanban'
     | '/materials'
     | '/reports'
     | '/settings'
     | '/supervision'
     | '/tasks'
+    | '/f/$token'
     | '/patients/'
     | '/patients/$id/anamnese'
     | '/patients/$id/laudo'
     | '/patients/$id/triagem'
+    | '/api/public/forms/$token'
     | '/patients/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -200,16 +231,19 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/catalog'
     | '/dashboard'
+    | '/formularios'
     | '/kanban'
     | '/materials'
     | '/reports'
     | '/settings'
     | '/supervision'
     | '/tasks'
+    | '/f/$token'
     | '/patients'
     | '/patients/$id/anamnese'
     | '/patients/$id/laudo'
     | '/patients/$id/triagem'
+    | '/api/public/forms/$token'
     | '/patients/$id'
   id:
     | '__root__'
@@ -219,16 +253,19 @@ export interface FileRouteTypes {
     | '/_authenticated/agenda'
     | '/_authenticated/catalog'
     | '/_authenticated/dashboard'
+    | '/_authenticated/formularios'
     | '/_authenticated/kanban'
     | '/_authenticated/materials'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/_authenticated/supervision'
     | '/_authenticated/tasks'
+    | '/f/$token'
     | '/_authenticated/patients/'
     | '/_authenticated/patients/$id/anamnese'
     | '/_authenticated/patients/$id/laudo'
     | '/_authenticated/patients/$id/triagem'
+    | '/api/public/forms/$token'
     | '/_authenticated/patients/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -236,6 +273,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  FTokenRoute: typeof FTokenRoute
+  ApiPublicFormsTokenRoute: typeof ApiPublicFormsTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -259,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/f/$token': {
+      id: '/f/$token'
+      path: '/f/$token'
+      fullPath: '/f/$token'
+      preLoaderRoute: typeof FTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/tasks': {
@@ -303,6 +349,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedKanbanRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/formularios': {
+      id: '/_authenticated/formularios'
+      path: '/formularios'
+      fullPath: '/formularios'
+      preLoaderRoute: typeof AuthenticatedFormulariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -338,6 +391,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPatientsIdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/forms/$token': {
+      id: '/api/public/forms/$token'
+      path: '/api/public/forms/$token'
+      fullPath: '/api/public/forms/$token'
+      preLoaderRoute: typeof ApiPublicFormsTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/patients/$id/triagem': {
       id: '/_authenticated/patients/$id/triagem'
       path: '/patients/$id/triagem'
@@ -366,6 +426,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
   AuthenticatedCatalogRoute: typeof AuthenticatedCatalogRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFormulariosRoute: typeof AuthenticatedFormulariosRoute
   AuthenticatedKanbanRoute: typeof AuthenticatedKanbanRoute
   AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
@@ -383,6 +444,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
   AuthenticatedCatalogRoute: AuthenticatedCatalogRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFormulariosRoute: AuthenticatedFormulariosRoute,
   AuthenticatedKanbanRoute: AuthenticatedKanbanRoute,
   AuthenticatedMaterialsRoute: AuthenticatedMaterialsRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
@@ -403,6 +465,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  FTokenRoute: FTokenRoute,
+  ApiPublicFormsTokenRoute: ApiPublicFormsTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
