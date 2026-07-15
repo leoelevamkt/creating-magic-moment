@@ -36,7 +36,7 @@ export const checkLoginRateLimit = createServerFn({ method: 'POST' })
         reason: 'email' as const,
       }
     }
-    return { allowed: true, retryAfter: 0, reason: null as const }
+    return { allowed: true, retryAfter: 0, reason: null as null }
   })
 
 /** Reset counter for an email after a successful sign-in. */
