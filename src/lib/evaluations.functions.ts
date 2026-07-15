@@ -121,6 +121,43 @@ export const updateTaskStatus = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
+const UpdateTask = z.object({
+  id: z.string().uuid(),
+  scheduledAt: z.string().optional().nullable(),
+  durationMinutes: z.number().int().nonnegative().optional().nullable(),
+  correctionNotes: z.string().optional().nullable(),
+  adminNotes: z.string().optional().nullable(),
+})
+
+export const updateTask = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => UpdateTask.parse(i))
+  .handler(async ({ context, data }) => {
+    const patch: {
+      scheduled_at?: string | null
+      duration_minutes?: number | null
+      correction_notes?: string | null
+      admin_notes?: string | null
+    } = {}
+    if (data.scheduledAt !== undefined)
+      patch.scheduled_at = data.scheduledAt ? new Date(data.scheduledAt).toISOString() : null
+    if (data.durationMinutes !== undefined) patch.duration_minutes = data.durationMinutes
+    if (data.correctionNotes !== undefined) patch.correction_notes = data.correctionNotes
+    if (data.adminNotes !== undefined) patch.admin_notes = data.adminNotes
+    const { error } = await context.supabase.from('test_tasks').update(patch).eq('id', data.id)
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
+export const deleteTask = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: { id: string }) => i)
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase.from('test_tasks').delete().eq('id', data.id)
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
 export const dashboardData = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

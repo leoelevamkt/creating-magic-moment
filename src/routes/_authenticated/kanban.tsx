@@ -2,12 +2,14 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Play, Plus, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Pencil, Play, Plus, ShieldCheck, Trash2, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import {
   createEvaluation,
+  deleteTask,
   listTasks,
+  updateTask,
   updateTaskStatus,
   type TaskStatus,
 } from '@/lib/evaluations.functions'
@@ -41,10 +43,22 @@ function KanbanPage() {
   const [open, setOpen] = useState(false)
   const [dragId, setDragId] = useState<string | null>(null)
   const [overCol, setOverCol] = useState<TaskStatus | null>(null)
+  const [search, setSearch] = useState('')
+  const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set())
+  const [customTests, setCustomTests] = useState<Array<{ name: string; acronym: string }>>([])
+  const [customName, setCustomName] = useState('')
+  const [customAcronym, setCustomAcronym] = useState('')
+  const [editing, setEditing] = useState<null | {
+    id: string
+    scheduled_at: string | null
+    duration_minutes: number | null
+  }>(null)
   const qc = useQueryClient()
   const tasksFn = useServerFn(listTasks)
   const setStatus = useServerFn(updateTaskStatus)
   const create = useServerFn(createEvaluation)
+  const patchTask = useServerFn(updateTask)
+  const removeTask = useServerFn(deleteTask)
   const patientsFn = useServerFn(listPatients)
   const catalogFn = useServerFn(listCatalog)
 
@@ -59,11 +73,51 @@ function KanbanPage() {
     return map
   }, [tasks.data])
 
+  const filteredCatalog = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const all = catalog.data ?? []
+    if (!q) return all
+    return all.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        (t.acronym ?? '').toLowerCase().includes(q) ||
+        t.category.toLowerCase().includes(q),
+    )
+  }, [catalog.data, search])
+
   const statusMut = useMutation({
     mutationFn: (v: { id: string; status: TaskStatus }) => setStatus({ data: v }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
     onError: (e: Error) => toast.error(e.message),
   })
+
+  const updateMut = useMutation({
+    mutationFn: (v: { id: string; scheduledAt: string | null; durationMinutes: number | null }) =>
+      patchTask({ data: v }),
+    onSuccess: () => {
+      toast.success('Tarefa atualizada.')
+      setEditing(null)
+      qc.invalidateQueries({ queryKey: ['tasks'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => removeTask({ data: { id } }),
+    onSuccess: () => {
+      toast.success('Tarefa excluída.')
+      qc.invalidateQueries({ queryKey: ['tasks'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  function resetForm() {
+    setSearch('')
+    setSelectedTests(new Set())
+    setCustomTests([])
+    setCustomName('')
+    setCustomAcronym('')
+  }
 
   const createMut = useMutation({
     mutationFn: (v: {
@@ -72,21 +126,43 @@ function KanbanPage() {
       modality: 'presencial' | 'online'
       scheduledAt: string | null
       testIds: string[]
+      customTests: Array<{ name: string; acronym: string }>
     }) => create({ data: v }),
     onSuccess: () => {
       toast.success('Avaliação planejada.')
       setOpen(false)
+      resetForm()
       qc.invalidateQueries({ queryKey: ['tasks'] })
     },
     onError: (e: Error) => toast.error(e.message),
   })
 
+  function toggleTest(id: string) {
+    setSelectedTests((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function addCustom() {
+    const name = customName.trim()
+    if (name.length < 2) {
+      toast.error('Informe o nome do teste personalizado.')
+      return
+    }
+    setCustomTests((prev) => [...prev, { name, acronym: customAcronym.trim() }])
+    setCustomName('')
+    setCustomAcronym('')
+  }
+
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
-    const testIds = fd.getAll('testId').map(String)
-    if (testIds.length === 0) {
-      toast.error('Selecione ao menos um teste.')
+    const testIds = Array.from(selectedTests)
+    if (testIds.length === 0 && customTests.length === 0) {
+      toast.error('Selecione ou adicione ao menos um teste.')
       return
     }
     createMut.mutate({
@@ -95,6 +171,7 @@ function KanbanPage() {
       modality: (String(fd.get('modality') ?? 'presencial') as 'presencial' | 'online'),
       scheduledAt: String(fd.get('scheduledAt') ?? '') || null,
       testIds,
+      customTests,
     })
   }
 
@@ -156,7 +233,61 @@ function KanbanPage() {
               </div>
               <div className="flex flex-col gap-2">
                 <Label>Testes a aplicar</Label>
-                <TestPicker tests={catalog.data ?? []} />
+                <Input
+                  placeholder="Pesquisar por nome, sigla ou categoria…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <TestPicker
+                  tests={filteredCatalog}
+                  selected={selectedTests}
+                  onToggle={toggleTest}
+                />
+                {selectedTests.size > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {selectedTests.size} teste(s) selecionado(s).
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3">
+                <Label>Adicionar teste fora do catálogo</Label>
+                <div className="grid gap-2 sm:grid-cols-[1fr_140px_auto]">
+                  <Input
+                    placeholder="Nome do teste"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Sigla (opcional)"
+                    value={customAcronym}
+                    onChange={(e) => setCustomAcronym(e.target.value)}
+                  />
+                  <Button type="button" variant="outline" onClick={addCustom}>
+                    <Plus /> Adicionar
+                  </Button>
+                </div>
+                {customTests.length > 0 ? (
+                  <ul className="flex flex-wrap gap-2 pt-1">
+                    {customTests.map((t, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs"
+                      >
+                        <span className="font-medium">{t.acronym || t.name}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCustomTests((prev) => prev.filter((_, j) => j !== i))
+                          }
+                          className="text-muted-foreground hover:text-foreground"
+                          aria-label="Remover"
+                        >
+                          <X size={12} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
               <div className="flex justify-end">
                 <Button type="submit" disabled={createMut.isPending}>
@@ -250,7 +381,7 @@ function KanbanPage() {
                             Aprovado em {format(new Date(t.approved_at), 'dd/MM/yyyy')}
                           </p>
                         ) : null}
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           {col.prev ? (
                             <Button
                               size="sm"
@@ -262,6 +393,31 @@ function KanbanPage() {
                               <ArrowLeft /> Voltar
                             </Button>
                           ) : null}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              setEditing({
+                                id: t.id,
+                                scheduled_at: t.scheduled_at,
+                                duration_minutes: t.duration_minutes,
+                              })
+                            }
+                            title="Editar tarefa"
+                          >
+                            <Pencil />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              if (confirm('Excluir esta tarefa?')) deleteMut.mutate(t.id)
+                            }}
+                            disabled={deleteMut.isPending}
+                            title="Excluir tarefa"
+                          >
+                            <Trash2 />
+                          </Button>
                           {col.next ? (
                             <Button
                               size="sm"
@@ -284,11 +440,70 @@ function KanbanPage() {
           )
         })}
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">Editar tarefa</DialogTitle>
+          </DialogHeader>
+          {editing ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                const fd = new FormData(e.currentTarget)
+                const scheduledAt = String(fd.get('scheduledAt') ?? '') || null
+                const durRaw = String(fd.get('duration') ?? '').trim()
+                const durationMinutes = durRaw === '' ? null : Number(durRaw)
+                updateMut.mutate({ id: editing.id, scheduledAt, durationMinutes })
+              }}
+              className="flex flex-col gap-4 pt-2"
+            >
+              <div className="flex flex-col gap-2">
+                <Label>Data e horário</Label>
+                <Input
+                  type="datetime-local"
+                  name="scheduledAt"
+                  defaultValue={
+                    editing.scheduled_at
+                      ? format(new Date(editing.scheduled_at), "yyyy-MM-dd'T'HH:mm")
+                      : ''
+                  }
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Duração (minutos)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  name="duration"
+                  defaultValue={editing.duration_minutes ?? ''}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="ghost" onClick={() => setEditing(null)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={updateMut.isPending}>
+                  {updateMut.isPending ? 'Salvando…' : 'Salvar'}
+                </Button>
+              </div>
+            </form>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
-function TestPicker({ tests }: { tests: Array<{ id: string; acronym: string | null; name: string; category: string; estimated_minutes: number | null }> }) {
+function TestPicker({
+  tests,
+  selected,
+  onToggle,
+}: {
+  tests: Array<{ id: string; acronym: string | null; name: string; category: string; estimated_minutes: number | null }>
+  selected: Set<string>
+  onToggle: (id: string) => void
+}) {
   const byCat = useMemo(() => {
     const m = new Map<string, typeof tests>()
     for (const t of tests) {
@@ -298,6 +513,13 @@ function TestPicker({ tests }: { tests: Array<{ id: string; acronym: string | nu
     }
     return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]))
   }, [tests])
+  if (byCat.length === 0) {
+    return (
+      <div className="rounded-lg border p-4 text-center text-xs text-muted-foreground">
+        Nenhum teste encontrado.
+      </div>
+    )
+  }
   return (
     <div className="max-h-72 overflow-y-auto rounded-lg border p-3">
       {byCat.map(([cat, items]) => (
@@ -308,7 +530,11 @@ function TestPicker({ tests }: { tests: Array<{ id: string; acronym: string | nu
           <div className="grid gap-2 sm:grid-cols-2">
             {items.map((t) => (
               <label key={t.id} className="flex items-start gap-2 text-sm">
-                <Checkbox name="testId" value={t.id} className="mt-0.5" />
+                <Checkbox
+                  checked={selected.has(t.id)}
+                  onCheckedChange={() => onToggle(t.id)}
+                  className="mt-0.5"
+                />
                 <span>
                   <span className="font-medium">{t.acronym ?? t.name}</span>
                   <span className="block text-xs text-muted-foreground">
