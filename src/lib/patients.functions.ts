@@ -67,7 +67,7 @@ export const getPatientDetail = createServerFn({ method: 'GET' })
   .handler(async ({ context, data }) => {
     const { data: patient, error } = await context.supabase
       .from('patients')
-      .select('id, name, birth_date, cpf, schooling, city, hypotheses, notes, status, created_at')
+      .select('id, name, birth_date, cpf, schooling, city, hypotheses, notes, overall_synthesis, status, created_at')
       .eq('id', data.id)
       .maybeSingle()
     if (error) throw new Error(error.message)
@@ -236,6 +236,106 @@ ${withResults
       .from('evaluations')
       .update({ synthesis: content })
       .eq('id', data.evaluationId)
+    if (upErr) throw new Error(upErr.message)
+    return { synthesis: content }
+  })
+
+const UpdatePatientInput = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(2),
+  birthDate: z.string().min(4),
+  cpf: z.string().min(1),
+  schooling: z.string().min(1),
+  city: z.string().min(1),
+  hypotheses: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  status: z.enum(['active', 'archived', 'discharged']).optional(),
+})
+
+export const updatePatient = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => UpdatePatientInput.parse(i))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from('patients')
+      .update({
+        name: data.name,
+        birth_date: data.birthDate,
+        cpf: data.cpf,
+        schooling: data.schooling,
+        city: data.city,
+        hypotheses: data.hypotheses || null,
+        notes: data.notes || null,
+        ...(data.status ? { status: data.status } : {}),
+      })
+      .eq('id', data.id)
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
+export const generatePatientOverallSynthesis = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: { id: string }) => i)
+  .handler(async ({ context, data }) => {
+    const { data: patient, error } = await context.supabase
+      .from('patients')
+      .select('id, name, birth_date, schooling, city, hypotheses, notes')
+      .eq('id', data.id)
+      .maybeSingle()
+    if (error || !patient) throw new Error(error?.message ?? 'Paciente não encontrado.')
+
+    const [anamRes, screenRes, evalRes, tasksRes] = await Promise.all([
+      context.supabase.from('anamneses').select('*').eq('patient_id', data.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      context.supabase.from('screenings').select('*').eq('patient_id', data.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      context.supabase.from('evaluations').select('title, synthesis, status').eq('patient_id', data.id),
+      context.supabase.from('test_tasks').select('raw_score, standard_score, classification, synthesis, test_catalog(acronym, name, category)').eq('patient_id', data.id),
+    ])
+
+    const anam = anamRes.data as Record<string, unknown> | null
+    const screen = screenRes.data as Record<string, unknown> | null
+    const evaluations = (evalRes.data ?? []) as Array<{ title: string; synthesis: string | null; status: string }>
+    const tasks = (tasksRes.data ?? []).filter((t) => t.synthesis || t.raw_score || t.standard_score || t.classification)
+
+    const prompt = `Você é neuropsicóloga clínica sênior. Elabore uma SÍNTESE INTEGRADORA DO CASO em português, tom técnico e humano, 4 a 8 parágrafos, organizada por: (1) identificação e queixa, (2) história relevante, (3) achados da triagem, (4) achados dos testes por domínio cognitivo, (5) integração e hipóteses, (6) encaminhamentos/recomendações. Não invente dados. Não feche diagnóstico. Sinalize lacunas.
+
+PACIENTE: ${patient.name} — nascimento ${patient.birth_date}, escolaridade ${patient.schooling}, cidade ${patient.city}.
+HIPÓTESES DIAGNÓSTICAS: ${patient.hypotheses ?? 'não informadas'}.
+OBSERVAÇÕES CLÍNICAS: ${patient.notes ?? '—'}.
+
+ANAMNESE: ${anam ? JSON.stringify(anam) : 'não registrada'}.
+
+TRIAGEM: ${screen ? JSON.stringify(screen) : 'não registrada'}.
+
+AVALIAÇÕES:
+${evaluations.length === 0 ? '- nenhuma' : evaluations.map((e) => `- ${e.title} (${e.status}): ${e.synthesis ?? 'sem síntese'}`).join('\n')}
+
+TESTES APLICADOS:
+${tasks.length === 0 ? '- nenhum resultado' : tasks.map((t) => {
+  const c = t.test_catalog as { acronym: string | null; name: string; category: string } | null
+  return `- ${c?.acronym ?? c?.name} (${c?.category ?? '—'}): bruto=${t.raw_score ?? '—'}, padronizado=${t.standard_score ?? '—'}, classificação=${t.classification ?? '—'}. ${t.synthesis ?? ''}`.trim()
+}).join('\n')}`
+
+    const key = process.env.LOVABLE_API_KEY
+    if (!key) throw new Error('LOVABLE_API_KEY ausente.')
+    const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'Lovable-API-Key': key },
+      body: JSON.stringify({
+        model: 'google/gemini-3-flash-preview',
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+    if (res.status === 429) throw new Error('Limite de uso do serviço de IA. Tente novamente em instantes.')
+    if (res.status === 402) throw new Error('Créditos de IA esgotados. Adicione créditos ao workspace.')
+    if (!res.ok) throw new Error(`Falha na IA: ${res.status}`)
+    const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> }
+    const content = json.choices?.[0]?.message?.content?.trim()
+    if (!content) throw new Error('Resposta vazia da IA.')
+
+    const { error: upErr } = await context.supabase
+      .from('patients')
+      .update({ overall_synthesis: content })
+      .eq('id', data.id)
     if (upErr) throw new Error(upErr.message)
     return { synthesis: content }
   })

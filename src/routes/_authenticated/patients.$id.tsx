@@ -4,8 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { CalendarPlus, Plus, Sparkles } from 'lucide-react'
-import { getPatientDetail, updateTaskResult, generateEvaluationSynthesis } from '@/lib/patients.functions'
+import { CalendarPlus, Pencil, Plus, Sparkles } from 'lucide-react'
+import { getPatientDetail, updateTaskResult, generateEvaluationSynthesis, updatePatient, generatePatientOverallSynthesis } from '@/lib/patients.functions'
 import { createSession } from '@/lib/sessions.functions'
 import { createEvaluation } from '@/lib/evaluations.functions'
 import { listCatalog } from '@/lib/profile.functions'
@@ -89,6 +89,7 @@ function PatientDetailPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <EditPatientDialog patient={patient} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
           <Button variant="outline" render={<Link to="/patients/$id/anamnese" params={{ id }} />}>Anamnese</Button>
           <Button variant="outline" render={<Link to="/patients/$id/triagem" params={{ id }} />}>Triagem</Button>
           <Button variant="outline" render={<Link to="/patients/$id/laudo" params={{ id }} />}>Laudo</Button>
@@ -150,6 +151,8 @@ function PatientDetailPage() {
         </aside>
 
         <main className="flex flex-col gap-6">
+          <OverallSynthesisCard patientId={id} synthesis={patient.overall_synthesis ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
+
           <section className="rounded-2xl border bg-card p-5">
             <div className="flex items-center justify-between">
               <div>
@@ -550,5 +553,123 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
         </form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+type PatientData = NonNullable<Awaited<ReturnType<typeof getPatientDetail>>['patient']>
+
+function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved: () => void }) {
+  const [open, setOpen] = useState(false)
+  const save = useServerFn(updatePatient)
+  const mut = useMutation({
+    mutationFn: (v: {
+      name: string
+      birthDate: string
+      cpf: string
+      schooling: string
+      city: string
+      hypotheses: string
+      notes: string
+    }) => save({ data: { id: patient.id, ...v } }),
+    onSuccess: () => {
+      toast.success('Paciente atualizado.')
+      setOpen(false)
+      onSaved()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    mut.mutate({
+      name: String(fd.get('name') ?? ''),
+      birthDate: String(fd.get('birthDate') ?? ''),
+      cpf: String(fd.get('cpf') ?? ''),
+      schooling: String(fd.get('schooling') ?? ''),
+      city: String(fd.get('city') ?? ''),
+      hypotheses: String(fd.get('hypotheses') ?? ''),
+      notes: String(fd.get('notes') ?? ''),
+    })
+  }
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="outline" />}>
+        <Pencil /> Editar
+      </DialogTrigger>
+      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl">Editar paciente</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="grid gap-4 pt-2 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label>Nome</Label>
+            <Input name="name" defaultValue={patient.name} required />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Nascimento</Label>
+            <Input type="date" name="birthDate" defaultValue={patient.birth_date} required />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>CPF</Label>
+            <Input name="cpf" defaultValue={patient.cpf} required />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Escolaridade</Label>
+            <Input name="schooling" defaultValue={patient.schooling} required />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Cidade</Label>
+            <Input name="city" defaultValue={patient.city} required />
+          </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label>Hipóteses diagnósticas</Label>
+            <Textarea name="hypotheses" rows={3} defaultValue={patient.hypotheses ?? ''} placeholder="Ex.: TDAH combinado; investigar comorbidade ansiosa." />
+          </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label>Observações clínicas</Label>
+            <Textarea name="notes" rows={3} defaultValue={patient.notes ?? ''} />
+          </div>
+          <div className="flex justify-end sm:col-span-2">
+            <Button type="submit" disabled={mut.isPending}>
+              {mut.isPending ? 'Salvando…' : 'Salvar alterações'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function OverallSynthesisCard({ patientId, synthesis, onSaved }: { patientId: string; synthesis: string | null; onSaved: () => void }) {
+  const gen = useServerFn(generatePatientOverallSynthesis)
+  const mut = useMutation({
+    mutationFn: () => gen({ data: { id: patientId } }),
+    onSuccess: () => {
+      toast.success('Síntese do caso gerada.')
+      onSaved()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+  return (
+    <section className="rounded-2xl border bg-card p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-serif text-2xl font-semibold">Síntese do caso (IA)</h2>
+          <p className="text-sm text-muted-foreground">
+            Integra anamnese, triagem, avaliações e testes registrados. Revise antes de usar clinicamente.
+          </p>
+        </div>
+        <Button size="sm" onClick={() => mut.mutate()} disabled={mut.isPending}>
+          <Sparkles /> {mut.isPending ? 'Gerando…' : synthesis ? 'Regerar' : 'Gerar síntese'}
+        </Button>
+      </div>
+      {synthesis ? (
+        <p className="mt-4 whitespace-pre-wrap rounded-lg bg-muted/40 p-4 text-sm leading-relaxed">{synthesis}</p>
+      ) : (
+        <p className="mt-4 text-sm text-muted-foreground">
+          Nenhuma síntese gerada ainda. Preencha ao menos a anamnese, triagem ou alguns testes e clique em “Gerar síntese”.
+        </p>
+      )}
+    </section>
   )
 }
