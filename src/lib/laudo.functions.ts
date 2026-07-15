@@ -1,6 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
+import { getRequest } from '@tanstack/react-start/server'
+import watermarkAsset from '@/assets/laudo/watermark.png.asset.json'
+import signatureAsset from '@/assets/laudo/signature.png.asset.json'
 
 const LaudoInput = z.object({
   patientId: z.string().uuid(),
@@ -36,6 +39,16 @@ const LaudoInput = z.object({
 })
 
 export type LaudoData = z.infer<typeof LaudoInput>
+
+// Endereço / contato exibidos no rodapé (mesmo modelo do laudo enviado)
+const FOOTER_ADDRESS =
+  "Av. Assis Brasil, n° 2827, sala 1502 A, Bairro Passo D'Areia, Porto Alegre/RS | Telefone: (51) 98309.6917 | psigabrielamayerle@gmail.com"
+const FOOTER_DISCLAIMER =
+  '"Estes resultados são de conteúdo sigiloso e devem ser utilizados somente por profissionais envolvidos no manejo psicológico, psiquiátrico e clínico deste paciente. Caso o uso deste material venha a ser feito, é de inteira responsabilidade do requerente".'
+
+// Cor do tema (rosa suave da marca)
+const BRAND_PINK = 'C9899A'
+const BRAND_PINK_DARK = 'A96676'
 
 export const getLaudoContext = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
@@ -95,31 +108,7 @@ ${JSON.stringify(ctx.screenings, null, 2)}
 RESULTADOS DE TESTES APROVADOS:
 ${JSON.stringify(ctx.tasks, null, 2)}
 
-Devolva JSON estrito no formato:
-{
-  "demand": "Descrição da demanda em 1-2 parágrafos (queixa, motivo do encaminhamento, objetivos).",
-  "procedures": "Descrição geral dos procedimentos, período de avaliação, número de encontros.",
-  "instrumentos_aplicados": "Lista formatada em bullets (- **NOME (SIGLA)** (Autor, ano). Objetivo: ...) dos testes psicológicos aplicados.",
-  "instrumentos_complementares": "Instrumentos complementares aplicados (bullets), se houver.",
-  "entrevista_terceiros": "Descrição de entrevistas/escalas com terceiros (pais, cônjuge, escola), se aplicável.",
-  "analise_anamnese": "3-6 parágrafos analisando a história pessoal, familiar, escolar, ocupacional, emocional e funcionamento cotidiano do paciente.",
-  "analise_intelectiva": "Análise do funcionamento intelectual e cognitivo com base nos resultados (WAIS/WISC/Raven, etc), em parágrafos.",
-  "analise_atencao": "Análise das funções atencionais e executivas (BPA, FDT, TEACO, Torre de Londres, etc).",
-  "analise_memoria": "Análise da memória e aprendizagem (RAVLT, dígitos, etc).",
-  "analise_linguagem": "Análise do funcionamento da linguagem (vocabulário, compreensão, fluência).",
-  "analise_velocidade": "Análise da velocidade de processamento.",
-  "analise_visuoespacial": "Análise das funções visuoespaciais e visuoconstrutivas.",
-  "analise_emocional": "Análise do funcionamento emocional (BDI, BAI, sintomas depressivos/ansiosos).",
-  "analise_personalidade": "Análise da personalidade (BFP, Pfister, etc).",
-  "analise_habilidades_sociais": "Análise do repertório de habilidades sociais (IHS-2).",
-  "analise_responsividade": "Análise da responsividade social e traços do espectro autista (SRS-2, CAT-Q, EQ).",
-  "analise_criatividade": "Análise da criatividade, se avaliada (TCF-AA).",
-  "sintese": "Síntese integrativa dos achados em 3-5 parágrafos, articulando anamnese + testes + observações clínicas.",
-  "hypotheses": "Hipóteses diagnósticas fundamentadas no DSM-5-TR/CID-11, no formato: 'os achados sustentam o diagnóstico de ***Transtorno X - código DSM-5-TR: XXX; CID-11: XXX***'. Cite comorbidades quando pertinente. Não afirme diagnóstico definitivo sem base.",
-  "recommendations": "Encaminhamentos e orientações em bullets ou parágrafos: psicoterapia, avaliação psiquiátrica, apoio escolar/profissional, treinos específicos, orientações familiares."
-}
-
-Cada seção deve ter conteúdo real baseado nos dados. Se um domínio não foi avaliado, escreva "Não foi avaliado no presente processo." em vez de deixar vazio.`
+Devolva JSON estrito com os campos: demand, procedures, instrumentos_aplicados, instrumentos_complementares, entrevista_terceiros, analise_anamnese, analise_intelectiva, analise_atencao, analise_memoria, analise_linguagem, analise_velocidade, analise_visuoespacial, analise_emocional, analise_personalidade, analise_habilidades_sociais, analise_responsividade, analise_criatividade, sintese, hypotheses, recommendations. Cada seção com conteúdo real. Se um domínio não foi avaliado, escreva "Não foi avaliado no presente processo.".`
 
     const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -143,6 +132,107 @@ Cada seção deve ter conteúdo real baseado nos dados. Se um domínio não foi 
     }
   })
 
+// Fetches a binary asset from same origin (works on Cloudflare Workers).
+async function fetchAssetBuffer(pathOrUrl: string): Promise<Uint8Array | null> {
+  try {
+    let url = pathOrUrl
+    if (url.startsWith('/')) {
+      const req = getRequest()
+      const origin = new URL(req.url).origin
+      url = `${origin}${pathOrUrl}`
+    }
+    const r = await fetch(url)
+    if (!r.ok) return null
+    return new Uint8Array(await r.arrayBuffer())
+  } catch {
+    return null
+  }
+}
+
+// Generate PNG chart via QuickChart (Chart.js) — real data from approved tests.
+async function generateScoresChart(
+  tasks: Array<{
+    standard_score: string | null
+    test_catalog: { acronym: string | null; name: string | null } | null
+  }>,
+): Promise<Uint8Array | null> {
+  const rows = tasks
+    .map((t) => {
+      const raw = (t.standard_score ?? '').replace(',', '.')
+      const num = Number(raw)
+      const acr = t.test_catalog?.acronym ?? t.test_catalog?.name ?? ''
+      return Number.isFinite(num) && acr ? { label: acr, value: num } : null
+    })
+    .filter((x): x is { label: string; value: number } => !!x)
+  if (rows.length === 0) return null
+
+  const config = {
+    type: 'bar',
+    data: {
+      labels: rows.map((r) => r.label),
+      datasets: [
+        {
+          label: 'Escore padronizado',
+          data: rows.map((r) => r.value),
+          backgroundColor: `#${BRAND_PINK}`,
+          borderColor: `#${BRAND_PINK_DARK}`,
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      plugins: {
+        title: {
+          display: true,
+          text: 'Perfil de desempenho — escores padronizados',
+          font: { size: 16, family: 'Calibri' },
+          color: '#333',
+        },
+        legend: { display: false },
+        annotation: {
+          annotations: {
+            band: {
+              type: 'box',
+              yMin: 90,
+              yMax: 110,
+              backgroundColor: 'rgba(201, 137, 154, 0.10)',
+              borderWidth: 0,
+            },
+          },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          suggestedMax: 140,
+          title: { display: true, text: 'Escore padronizado', color: '#555' },
+          grid: { color: '#EEE' },
+        },
+        x: { ticks: { autoSkip: false, maxRotation: 60, minRotation: 45 } },
+      },
+    },
+  }
+
+  try {
+    const r = await fetch('https://quickchart.io/chart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chart: config,
+        width: 900,
+        height: 500,
+        devicePixelRatio: 2,
+        backgroundColor: 'white',
+        format: 'png',
+      }),
+    })
+    if (!r.ok) return null
+    return new Uint8Array(await r.arrayBuffer())
+  } catch {
+    return null
+  }
+}
+
 export const generateLaudoDocx = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => LaudoInput.parse(i))
@@ -155,7 +245,17 @@ export const generateLaudoDocx = createServerFn({ method: 'POST' })
       HeadingLevel,
       AlignmentType,
       PageOrientation,
-    } = await import('docx')
+      Header,
+      Footer,
+      Footer: _F, // eslint-disable-line @typescript-eslint/no-unused-vars
+      ImageRun,
+      PageNumber,
+      HorizontalPositionRelativeFrom,
+      HorizontalPositionAlign,
+      VerticalPositionRelativeFrom,
+      VerticalPositionAlign,
+      TextWrappingType,
+    } = (await import('docx')) as typeof import('docx')
 
     const ctx = await getLaudoContext({ data: { patientId: data.patientId } })
     const patient = ctx.patient!
@@ -169,36 +269,57 @@ export const generateLaudoDocx = createServerFn({ method: 'POST' })
       return `${age} anos`
     }
 
+    // Carregar em paralelo: marca d'água, assinatura, gráfico
+    const [watermarkBuf, signatureBuf, chartBuf] = await Promise.all([
+      fetchAssetBuffer(watermarkAsset.url),
+      fetchAssetBuffer(signatureAsset.url),
+      generateScoresChart(ctx.tasks),
+    ])
+
     const h1 = (text: string) =>
       new Paragraph({
         heading: HeadingLevel.HEADING_1,
         spacing: { before: 320, after: 160 },
-        children: [new TextRun({ text, bold: true, size: 28 })],
+        children: [new TextRun({ text, bold: true, size: 26, color: BRAND_PINK_DARK, font: 'Calibri' })],
       })
 
     const h2 = (text: string) =>
       new Paragraph({
         heading: HeadingLevel.HEADING_2,
         spacing: { before: 240, after: 120 },
-        children: [new TextRun({ text, bold: true, size: 24 })],
+        children: [new TextRun({ text, bold: true, size: 24, color: BRAND_PINK_DARK, font: 'Calibri' })],
       })
 
     const p = (text: string, opts?: { bold?: boolean }) =>
       new Paragraph({
-        spacing: { after: 120 },
+        spacing: { after: 120, line: 300 },
         alignment: AlignmentType.JUSTIFIED,
-        children: [new TextRun({ text: text || '—', size: 22, bold: opts?.bold })],
+        children: [new TextRun({ text: text || '—', size: 22, bold: opts?.bold, font: 'Calibri' })],
       })
 
     const paragraphsOf = (text?: string | null) =>
-      (text || '—').split(/\n+/).filter(Boolean).map((line) => p(line))
+      (text || '—')
+        .split(/\n+/)
+        .filter(Boolean)
+        .map((line) => {
+          // detect bullet lines
+          const bullet = line.match(/^\s*[-•*]\s+(.*)$/)
+          if (bullet) {
+            return new Paragraph({
+              spacing: { after: 80, line: 280 },
+              bullet: { level: 0 },
+              children: [new TextRun({ text: bullet[1], size: 22, font: 'Calibri' })],
+            })
+          }
+          return p(line)
+        })
 
     const kv = (label: string, value: string) =>
       new Paragraph({
         spacing: { after: 80 },
         children: [
-          new TextRun({ text: `${label}: `, bold: true, size: 22 }),
-          new TextRun({ text: value || '—', size: 22 }),
+          new TextRun({ text: `${label}: `, bold: true, size: 22, font: 'Calibri' }),
+          new TextRun({ text: value || '—', size: 22, font: 'Calibri' }),
         ],
       })
 
@@ -214,19 +335,167 @@ export const generateLaudoDocx = createServerFn({ method: 'POST' })
             .join('\n')
         : 'Nenhum instrumento aplicado registrado.')
 
+    // Marca d'água (imagem flutuante atrás do texto, centralizada na página)
+    const watermarkParagraph = watermarkBuf
+      ? new Paragraph({
+          children: [
+            new ImageRun({
+              type: 'png',
+              data: watermarkBuf,
+              transformation: { width: 420, height: 594 },
+              floating: {
+                horizontalPosition: {
+                  relative: HorizontalPositionRelativeFrom.PAGE,
+                  align: HorizontalPositionAlign.CENTER,
+                },
+                verticalPosition: {
+                  relative: VerticalPositionRelativeFrom.PAGE,
+                  align: VerticalPositionAlign.CENTER,
+                },
+                behindDocument: true,
+                wrap: { type: TextWrappingType.NONE },
+              },
+            }),
+          ],
+        })
+      : new Paragraph({ children: [] })
+
+    const footerParagraphs = [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        border: { top: { style: 'single', size: 6, color: BRAND_PINK, space: 4 } },
+        spacing: { before: 60, after: 40 },
+        children: [new TextRun({ text: FOOTER_ADDRESS, size: 16, font: 'Calibri', color: '555555' })],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 40 },
+        children: [new TextRun({ text: FOOTER_DISCLAIMER, italics: true, size: 16, font: 'Calibri', color: '666666' })],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        children: [
+          new TextRun({ text: 'Página ', size: 16, font: 'Calibri', color: '555555' }),
+          new TextRun({ children: [PageNumber.CURRENT], size: 16, font: 'Calibri', color: '555555' }),
+          new TextRun({ text: ' de ', size: 16, font: 'Calibri', color: '555555' }),
+          new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, font: 'Calibri', color: '555555' }),
+        ],
+      }),
+    ]
+
+    const analysisChildren: Paragraph[] = [
+      h2('4.1. Análise da anamnese e entrevistas'),
+      ...paragraphsOf(data.analise_anamnese),
+      h2('4.2. Área intelectiva'),
+      ...paragraphsOf(data.analise_intelectiva),
+      h2('4.3. Atenção e funções executivas'),
+      ...paragraphsOf(data.analise_atencao),
+      h2('4.4. Memória e aprendizagem'),
+      ...paragraphsOf(data.analise_memoria),
+      h2('4.5. Linguagem'),
+      ...paragraphsOf(data.analise_linguagem),
+      h2('4.6. Velocidade de processamento'),
+      ...paragraphsOf(data.analise_velocidade),
+      h2('4.7. Funções visuoespaciais e visuoconstrutivas'),
+      ...paragraphsOf(data.analise_visuoespacial),
+      h2('4.8. Funcionamento emocional'),
+      ...paragraphsOf(data.analise_emocional),
+      h2('4.9. Personalidade'),
+      ...paragraphsOf(data.analise_personalidade),
+      h2('4.10. Habilidades sociais'),
+      ...paragraphsOf(data.analise_habilidades_sociais),
+      h2('4.11. Responsividade social'),
+      ...paragraphsOf(data.analise_responsividade),
+      h2('4.12. Criatividade'),
+      ...paragraphsOf(data.analise_criatividade),
+    ]
+
+    const chartBlock: Paragraph[] = chartBuf
+      ? [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 240, after: 120 },
+            children: [
+              new ImageRun({
+                type: 'png',
+                data: chartBuf,
+                transformation: { width: 560, height: 311 },
+              }),
+            ],
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 240 },
+            children: [
+              new TextRun({
+                text: 'Gráfico 1 — Perfil de desempenho nos testes aprovados (escore padronizado).',
+                italics: true,
+                size: 18,
+                font: 'Calibri',
+                color: '555555',
+              }),
+            ],
+          }),
+        ]
+      : []
+
+    const signatureBlock: Paragraph[] = [
+      new Paragraph({ spacing: { before: 640 }, children: [new TextRun({ text: '' })] }),
+      ...(signatureBuf
+        ? [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new ImageRun({
+                  type: 'png',
+                  data: signatureBuf,
+                  transformation: { width: 260, height: 180 },
+                }),
+              ],
+            }),
+          ]
+        : [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [new TextRun({ text: '_______________________________________', font: 'Calibri' })],
+            }),
+          ]),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+          new TextRun({
+            text: data.psychologist || ctx.psychologistName || 'Psicóloga responsável',
+            bold: true,
+            font: 'Calibri',
+            size: 22,
+          }),
+        ],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: `CRP ${data.crp || '—'}`, font: 'Calibri', size: 22 })],
+      }),
+    ]
+
     const doc = new Document({
       creator: 'NeuroFlux',
       title: `Laudo — ${patient.name}`,
       styles: {
-        default: { document: { run: { font: 'Arial', size: 22 } } },
+        default: { document: { run: { font: 'Calibri', size: 22 } } },
       },
       sections: [
         {
           properties: {
             page: {
               size: { width: 12240, height: 15840, orientation: PageOrientation.PORTRAIT },
-              margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+              margin: { top: 1440, right: 1440, bottom: 1800, left: 1440 },
             },
+          },
+          headers: {
+            default: new Header({ children: [watermarkParagraph] }),
+          },
+          footers: {
+            default: new Footer({ children: footerParagraphs }),
           },
           children: [
             new Paragraph({
@@ -237,17 +506,28 @@ export const generateLaudoDocx = createServerFn({ method: 'POST' })
                 new TextRun({
                   text: 'LAUDO PSICOLÓGICO DE AVALIAÇÃO NEUROPSICOLÓGICA',
                   bold: true,
-                  size: 32,
+                  size: 30,
+                  font: 'Calibri',
+                  color: BRAND_PINK_DARK,
                 }),
               ],
             }),
 
             h1('1. IDENTIFICAÇÃO'),
-            kv('Psicóloga responsável', `${data.psychologist || ctx.psychologistName || '—'} (CRP ${data.crp || '—'})`),
+            kv(
+              'Psicóloga responsável',
+              `${data.psychologist || ctx.psychologistName || '—'} (CRP ${data.crp || '—'})`,
+            ),
             kv('Solicitante', data.solicitante || '—'),
-            kv('Finalidade', data.finalidade || 'Investigação de transtornos do neurodesenvolvimento e funções cognitivas'),
+            kv(
+              'Finalidade',
+              data.finalidade || 'Investigação de transtornos do neurodesenvolvimento e funções cognitivas',
+            ),
             kv('Local da avaliação', data.local_avaliacao || '—'),
-            new Paragraph({ spacing: { before: 120, after: 80 }, children: [new TextRun({ text: 'Dados de identificação:', bold: true, size: 22 })] }),
+            new Paragraph({
+              spacing: { before: 120, after: 80 },
+              children: [new TextRun({ text: 'Dados de identificação:', bold: true, size: 22, font: 'Calibri' })],
+            }),
             kv('Nome', patient.name ?? '—'),
             kv('CPF', patient.cpf ?? '—'),
             kv('Data de nascimento', patient.birth_date ?? '—'),
@@ -271,30 +551,8 @@ export const generateLaudoDocx = createServerFn({ method: 'POST' })
             ...paragraphsOf(data.entrevista_terceiros),
 
             h1('4. ANÁLISE'),
-            h2('4.1. Análise da anamnese e entrevistas'),
-            ...paragraphsOf(data.analise_anamnese),
-            h2('4.2. Área intelectiva'),
-            ...paragraphsOf(data.analise_intelectiva),
-            h2('4.3. Atenção e funções executivas'),
-            ...paragraphsOf(data.analise_atencao),
-            h2('4.4. Memória e aprendizagem'),
-            ...paragraphsOf(data.analise_memoria),
-            h2('4.5. Linguagem'),
-            ...paragraphsOf(data.analise_linguagem),
-            h2('4.6. Velocidade de processamento'),
-            ...paragraphsOf(data.analise_velocidade),
-            h2('4.7. Funções visuoespaciais e visuoconstrutivas'),
-            ...paragraphsOf(data.analise_visuoespacial),
-            h2('4.8. Funcionamento emocional'),
-            ...paragraphsOf(data.analise_emocional),
-            h2('4.9. Personalidade'),
-            ...paragraphsOf(data.analise_personalidade),
-            h2('4.10. Habilidades sociais'),
-            ...paragraphsOf(data.analise_habilidades_sociais),
-            h2('4.11. Responsividade social'),
-            ...paragraphsOf(data.analise_responsividade),
-            h2('4.12. Criatividade'),
-            ...paragraphsOf(data.analise_criatividade),
+            ...analysisChildren,
+            ...chartBlock,
 
             h1('5. SÍNTESE INTEGRATIVA'),
             ...paragraphsOf(data.sintese),
@@ -305,24 +563,7 @@ export const generateLaudoDocx = createServerFn({ method: 'POST' })
             h1('7. ENCAMINHAMENTOS E RECOMENDAÇÕES'),
             ...paragraphsOf(data.recommendations),
 
-            new Paragraph({ spacing: { before: 640 }, children: [new TextRun({ text: '' })] }),
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: '_______________________________________' })],
-            }),
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new TextRun({
-                  text: `${data.psychologist || ctx.psychologistName || 'Psicóloga responsável'}`,
-                  bold: true,
-                }),
-              ],
-            }),
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: `CRP ${data.crp || '—'}` })],
-            }),
+            ...signatureBlock,
           ],
         },
       ],
