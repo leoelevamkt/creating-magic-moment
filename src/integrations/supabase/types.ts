@@ -429,7 +429,7 @@ export type Database = {
           expires_at: string | null
           fields: Json
           id: string
-          patient_id: string
+          patient_id: string | null
           responses: Json | null
           status: string
           submitted_at: string | null
@@ -444,7 +444,7 @@ export type Database = {
           expires_at?: string | null
           fields?: Json
           id?: string
-          patient_id: string
+          patient_id?: string | null
           responses?: Json | null
           status?: string
           submitted_at?: string | null
@@ -459,7 +459,7 @@ export type Database = {
           expires_at?: string | null
           fields?: Json
           id?: string
-          patient_id?: string
+          patient_id?: string | null
           responses?: Json | null
           status?: string
           submitted_at?: string | null
