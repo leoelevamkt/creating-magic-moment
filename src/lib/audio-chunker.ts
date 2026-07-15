@@ -157,7 +157,7 @@ async function resampleToRate(input: Float32Array, inRate: number, outRate: numb
   const outLen = Math.ceil(input.length * (outRate / inRate))
   const offline = new OfflineCtor(1, outLen, outRate)
   const srcBuf = offline.createBuffer(1, input.length, inRate)
-  srcBuf.copyToChannel(input, 0)
+  srcBuf.copyToChannel(input.slice(), 0)
   const src = offline.createBufferSource()
   src.buffer = srcBuf
   src.connect(offline.destination)
