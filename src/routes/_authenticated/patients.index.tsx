@@ -18,6 +18,7 @@ import {
   normalizeProfessionals,
   type Professional,
 } from '@/components/patients/ProfessionalsField'
+import { CpfInput } from '@/components/patients/CpfInput'
 
 import { Button } from '@/components/ui/button'
 import {
