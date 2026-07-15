@@ -55,8 +55,10 @@ function KanbanPage() {
   const [customAcronym, setCustomAcronym] = useState('')
   const [editing, setEditing] = useState<null | {
     id: string
-    scheduled_at: string | null
-    duration_minutes: number | null
+    patientId: string
+    title: string
+    modality: 'presencial' | 'online'
+    testId: string
   }>(null)
   const qc = useQueryClient()
   const tasksFn = useServerFn(listTasks)
@@ -97,8 +99,13 @@ function KanbanPage() {
   })
 
   const updateMut = useMutation({
-    mutationFn: (v: { id: string; scheduledAt: string | null; durationMinutes: number | null }) =>
-      patchTask({ data: v }),
+    mutationFn: (v: {
+      id: string
+      patientId: string
+      title: string
+      modality: 'presencial' | 'online'
+      testId: string
+    }) => patchTask({ data: v }),
     onSuccess: () => {
       toast.success('Tarefa atualizada.')
       setEditing(null)
@@ -417,13 +424,16 @@ function KanbanPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() =>
+                            onClick={() => {
+                              const ev = t.evaluations as { title: string; modality: string } | null
                               setEditing({
                                 id: t.id,
-                                scheduled_at: t.scheduled_at,
-                                duration_minutes: t.duration_minutes,
+                                patientId: t.patient_id,
+                                title: ev?.title ?? '',
+                                modality: (ev?.modality ?? 'presencial') as 'presencial' | 'online',
+                                testId: t.test_id,
                               })
-                            }
+                            }}
                             title="Editar tarefa"
                           >
                             <Pencil />
@@ -472,34 +482,67 @@ function KanbanPage() {
               onSubmit={(e) => {
                 e.preventDefault()
                 const fd = new FormData(e.currentTarget)
-                const scheduledAt = String(fd.get('scheduledAt') ?? '') || null
-                const durRaw = String(fd.get('duration') ?? '').trim()
-                const durationMinutes = durRaw === '' ? null : Number(durRaw)
-                updateMut.mutate({ id: editing.id, scheduledAt, durationMinutes })
+                updateMut.mutate({
+                  id: editing.id,
+                  patientId: String(fd.get('patientId') ?? ''),
+                  title: String(fd.get('title') ?? ''),
+                  modality: (String(fd.get('modality') ?? 'presencial') as 'presencial' | 'online'),
+                  testId: String(fd.get('testId') ?? ''),
+                })
               }}
               className="flex flex-col gap-4 pt-2"
             >
               <div className="flex flex-col gap-2">
-                <Label>Data e horário</Label>
-                <Input
-                  type="datetime-local"
-                  name="scheduledAt"
-                  defaultValue={
-                    editing.scheduled_at
-                      ? format(new Date(editing.scheduled_at), "yyyy-MM-dd'T'HH:mm")
-                      : ''
-                  }
-                />
+                <Label>Paciente</Label>
+                <select
+                  name="patientId"
+                  defaultValue={editing.patientId}
+                  required
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                >
+                  {(patients.data ?? []).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
+                <div className="flex flex-col gap-2">
+                  <Label>Nome da avaliação</Label>
+                  <Input name="title" defaultValue={editing.title} required />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label>Modalidade</Label>
+                  <select
+                    name="modality"
+                    defaultValue={editing.modality}
+                    className="h-10 rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="presencial">presencial</option>
+                    <option value="online">online</option>
+                  </select>
+                </div>
               </div>
               <div className="flex flex-col gap-2">
-                <Label>Duração (minutos)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  name="duration"
-                  defaultValue={editing.duration_minutes ?? ''}
-                />
+                <Label>Teste</Label>
+                <select
+                  name="testId"
+                  defaultValue={editing.testId}
+                  required
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                >
+                  {(catalog.data ?? []).map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.acronym ? `${t.acronym} — ${t.name}` : t.name}
+                    </option>
+                  ))}
+                </select>
               </div>
+              <p className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                Datas de início, finalização e duração são preenchidas automaticamente conforme a
+                tarefa avança entre as etapas.
+              </p>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="ghost" onClick={() => setEditing(null)}>
                   Cancelar
