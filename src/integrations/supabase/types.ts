@@ -428,14 +428,19 @@ export type Database = {
           description: string | null
           expires_at: string | null
           fields: Json
+          first_opened_at: string | null
           id: string
+          last_opened_at: string | null
+          open_count: number
           patient_id: string | null
+          referrer: string | null
           responses: Json | null
           status: string
           submitted_at: string | null
           title: string
           token: string
           updated_at: string
+          user_agent: string | null
         }
         Insert: {
           created_at?: string
@@ -443,14 +448,19 @@ export type Database = {
           description?: string | null
           expires_at?: string | null
           fields?: Json
+          first_opened_at?: string | null
           id?: string
+          last_opened_at?: string | null
+          open_count?: number
           patient_id?: string | null
+          referrer?: string | null
           responses?: Json | null
           status?: string
           submitted_at?: string | null
           title: string
           token?: string
           updated_at?: string
+          user_agent?: string | null
         }
         Update: {
           created_at?: string
@@ -458,14 +468,19 @@ export type Database = {
           description?: string | null
           expires_at?: string | null
           fields?: Json
+          first_opened_at?: string | null
           id?: string
+          last_opened_at?: string | null
+          open_count?: number
           patient_id?: string | null
+          referrer?: string | null
           responses?: Json | null
           status?: string
           submitted_at?: string | null
           title?: string
           token?: string
           updated_at?: string
+          user_agent?: string | null
         }
         Relationships: [
           {
