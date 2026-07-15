@@ -31,6 +31,15 @@ export const Route = createFileRoute('/_authenticated/formularios')({
   component: FormulariosPage,
 })
 
+function shortReferrer(ref: string): string {
+  try {
+    const u = new URL(ref)
+    return u.hostname.replace(/^www\./, '')
+  } catch {
+    return ref.slice(0, 40)
+  }
+}
+
 function FormulariosPage() {
   const qc = useQueryClient()
   const list = useServerFn(listForms)
