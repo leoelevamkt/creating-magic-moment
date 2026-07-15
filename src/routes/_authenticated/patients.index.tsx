@@ -189,6 +189,44 @@ function PatientsPage() {
   )
 }
 
+type PatientRow = Awaited<ReturnType<typeof listPatients>>[number]
+
+function PatientsReportCards({ data }: { data: PatientRow[] }) {
+  const total = data.length
+  const active = data.filter((p) => p.status === 'active').length
+  const archived = data.filter((p) => p.status === 'archived').length
+  const discharged = data.filter((p) => p.status === 'discharged').length
+  const minors = data.filter((p) => p.has_guardians).length
+  const withEmergency = data.filter((p) => {
+    const ec = p.emergency_contact as { name?: string } | null
+    return !!ec && !!ec.name
+  }).length
+  const cards = [
+    { label: 'Total', value: total },
+    { label: 'Ativos', value: active },
+    { label: 'Alta', value: discharged },
+    { label: 'Arquivados', value: archived },
+    { label: 'Com responsável', value: minors },
+    { label: 'Contato de emergência', value: withEmergency },
+  ]
+  return (
+    <section className="rounded-2xl border bg-card p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-serif text-lg font-semibold">Relatório de pacientes</h2>
+        <span className="text-xs text-muted-foreground">Visão geral atual</span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {cards.map((c) => (
+          <div key={c.label} className="rounded-xl border bg-background p-3">
+            <p className="text-xs text-muted-foreground">{c.label}</p>
+            <p className="mt-1 font-serif text-2xl font-semibold">{c.value}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function Field({
   label,
   name,
