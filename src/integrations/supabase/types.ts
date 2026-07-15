@@ -376,6 +376,9 @@ export type Database = {
           cpf: string
           created_at: string
           created_by: string
+          emergency_contact: Json | null
+          guardians: Json
+          has_guardians: boolean
           hypotheses: string | null
           id: string
           name: string
@@ -391,6 +394,9 @@ export type Database = {
           cpf: string
           created_at?: string
           created_by: string
+          emergency_contact?: Json | null
+          guardians?: Json
+          has_guardians?: boolean
           hypotheses?: string | null
           id?: string
           name: string
@@ -406,6 +412,9 @@ export type Database = {
           cpf?: string
           created_at?: string
           created_by?: string
+          emergency_contact?: Json | null
+          guardians?: Json
+          has_guardians?: boolean
           hypotheses?: string | null
           id?: string
           name?: string
