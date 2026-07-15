@@ -151,6 +151,8 @@ function PatientDetailPage() {
         </aside>
 
         <main className="flex flex-col gap-6">
+          <OverallSynthesisCard patientId={id} synthesis={patient.overall_synthesis ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
+
           <section className="rounded-2xl border bg-card p-5">
             <div className="flex items-center justify-between">
               <div>
