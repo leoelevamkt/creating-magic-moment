@@ -716,7 +716,7 @@ function NotesBoard({ patientId }: { patientId: string }) {
   })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['patient-notes', patientId] })
   const createMut = useMutation({
-    mutationFn: (v: { title: string; content: string; color: string }) =>
+    mutationFn: (v: { title: string; content: string; color: string; checklist: ChecklistItem[] }) =>
       createFn({ data: { patientId, ...v, pinned: false } }),
     onSuccess: () => {
       toast.success('Anotação criada.')
@@ -733,7 +733,7 @@ function NotesBoard({ patientId }: { patientId: string }) {
         <div>
           <h2 className="font-serif text-2xl font-semibold">Quadro de anotações</h2>
           <p className="text-sm text-muted-foreground">
-            Notas rápidas sobre o paciente. Fixe as mais importantes.
+            Notas rápidas sobre o paciente. Fixe as mais importantes e use o checklist para tarefas.
           </p>
         </div>
         <NoteDialog
@@ -766,7 +766,7 @@ function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
   const upd = useServerFn(updatePatientNote)
   const del = useServerFn(deletePatientNote)
   const updMut = useMutation({
-    mutationFn: (v: Partial<{ title: string; content: string; color: string; pinned: boolean }>) =>
+    mutationFn: (v: Partial<{ title: string; content: string; color: string; pinned: boolean; checklist: ChecklistItem[] }>) =>
       upd({ data: { id: note.id, ...v } }),
     onSuccess: onChanged,
     onError: (e: Error) => toast.error(e.message),
@@ -779,6 +779,14 @@ function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
     },
     onError: (e: Error) => toast.error(e.message),
   })
+
+  const checklist = toChecklist(note.checklist)
+  const doneCount = checklist.filter((c) => c.done).length
+
+  function toggleItem(idx: number) {
+    const next = checklist.map((c, i) => (i === idx ? { ...c, done: !c.done } : c))
+    updMut.mutate({ checklist: next })
+  }
 
   return (
     <div className={`flex flex-col gap-2 rounded-xl border p-3 ${NOTE_COLORS[note.color] ?? NOTE_COLORS.default}`}>
@@ -794,7 +802,7 @@ function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
                 <Pencil className="size-3.5" />
               </Button>
             }
-            initial={{ title: note.title, content: note.content, color: note.color }}
+            initial={{ title: note.title, content: note.content, color: note.color, checklist }}
             onSubmit={(v) => updMut.mutate(v)}
             isPending={updMut.isPending}
           />
@@ -814,6 +822,31 @@ function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
       {note.content ? (
         <p className="whitespace-pre-wrap text-sm text-foreground/90">{note.content}</p>
       ) : null}
+      {checklist.length > 0 ? (
+        <div className="mt-1 flex flex-col gap-1.5 border-t pt-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Checklist · {doneCount}/{checklist.length}
+          </p>
+          <ul className="flex flex-col gap-1">
+            {checklist.map((c, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  id={`note-${note.id}-${i}`}
+                  checked={c.done}
+                  onCheckedChange={() => toggleItem(i)}
+                  className="mt-0.5"
+                />
+                <label
+                  htmlFor={`note-${note.id}-${i}`}
+                  className={`cursor-pointer ${c.done ? 'text-muted-foreground line-through' : ''}`}
+                >
+                  {c.label}
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
         {format(new Date(note.updated_at), "dd/MM/yyyy 'às' HH:mm")}
       </p>
@@ -828,11 +861,21 @@ function NoteDialog({
   isPending,
 }: {
   trigger: React.ReactNode
-  initial?: { title: string; content: string; color: string }
-  onSubmit: (v: { title: string; content: string; color: string }) => void
+  initial?: { title: string; content: string; color: string; checklist: ChecklistItem[] }
+  onSubmit: (v: { title: string; content: string; color: string; checklist: ChecklistItem[] }) => void
   isPending: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [items, setItems] = useState<ChecklistItem[]>(initial?.checklist ?? [])
+  const [newItem, setNewItem] = useState('')
+
+  function addItem() {
+    const label = newItem.trim()
+    if (!label) return
+    setItems((prev) => [...prev, { label, done: false }])
+    setNewItem('')
+  }
+
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
@@ -840,11 +883,18 @@ function NoteDialog({
       title: String(fd.get('title') ?? ''),
       content: String(fd.get('content') ?? ''),
       color: String(fd.get('color') ?? 'default'),
+      checklist: items,
     })
     setOpen(false)
   }
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v)
+        if (v) setItems(initial?.checklist ?? [])
+      }}
+    >
       <DialogTrigger render={trigger as React.ReactElement} />
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
@@ -859,7 +909,57 @@ function NoteDialog({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Conteúdo</Label>
-            <Textarea name="content" rows={5} defaultValue={initial?.content ?? ''} />
+            <Textarea name="content" rows={4} defaultValue={initial?.content ?? ''} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Checklist</Label>
+            {items.length > 0 ? (
+              <ul className="flex flex-col gap-1.5 rounded-md border p-2">
+                {items.map((it, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={it.done}
+                      onCheckedChange={() =>
+                        setItems((prev) => prev.map((x, j) => (j === i ? { ...x, done: !x.done } : x)))
+                      }
+                    />
+                    <Input
+                      value={it.label}
+                      onChange={(e) =>
+                        setItems((prev) => prev.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))
+                      }
+                      className="h-8"
+                    />
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="size-7 text-destructive"
+                      onClick={() => setItems((prev) => prev.filter((_, j) => j !== i))}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <div className="flex gap-2">
+              <Input
+                value={newItem}
+                onChange={(e) => setNewItem(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addItem()
+                  }
+                }}
+                placeholder="Adicionar item ao checklist"
+                className="h-9"
+              />
+              <Button type="button" size="sm" variant="outline" onClick={addItem}>
+                <Plus /> Adicionar
+              </Button>
+            </div>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Cor</Label>
@@ -885,6 +985,7 @@ function NoteDialog({
     </Dialog>
   )
 }
+
 
 // ============ Evaluation Plan ============
 type PlanEntry = Awaited<ReturnType<typeof listPatientPlan>>[number]

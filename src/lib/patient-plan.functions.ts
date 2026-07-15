@@ -3,13 +3,15 @@ import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 
 // ---------------- Notes ----------------
+const NoteChecklistItem = z.object({ label: z.string(), done: z.boolean() })
+
 export const listPatientNotes = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { patientId: string }) => i)
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from('patient_notes')
-      .select('id, title, content, color, pinned, created_at, updated_at, created_by')
+      .select('id, title, content, color, pinned, checklist, created_at, updated_at, created_by')
       .eq('patient_id', data.patientId)
       .order('pinned', { ascending: false })
       .order('updated_at', { ascending: false })
@@ -23,6 +25,7 @@ const NoteInput = z.object({
   content: z.string().default(''),
   color: z.string().default('default'),
   pinned: z.boolean().default(false),
+  checklist: z.array(NoteChecklistItem).default([]),
 })
 export const createPatientNote = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
@@ -35,6 +38,7 @@ export const createPatientNote = createServerFn({ method: 'POST' })
       content: data.content,
       color: data.color,
       pinned: data.pinned,
+      checklist: data.checklist,
     })
     if (error) throw new Error(error.message)
     return { ok: true }
@@ -46,6 +50,7 @@ const NoteUpdate = z.object({
   content: z.string().optional(),
   color: z.string().optional(),
   pinned: z.boolean().optional(),
+  checklist: z.array(NoteChecklistItem).optional(),
 })
 export const updatePatientNote = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
@@ -65,6 +70,7 @@ export const deletePatientNote = createServerFn({ method: 'POST' })
     if (error) throw new Error(error.message)
     return { ok: true }
   })
+
 
 // ---------------- Session plan ----------------
 export const listPatientPlan = createServerFn({ method: 'GET' })

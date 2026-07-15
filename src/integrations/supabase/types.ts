@@ -315,6 +315,7 @@ export type Database = {
       }
       patient_notes: {
         Row: {
+          checklist: Json
           color: string
           content: string
           created_at: string
@@ -326,6 +327,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          checklist?: Json
           color?: string
           content?: string
           created_at?: string
@@ -337,6 +339,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          checklist?: Json
           color?: string
           content?: string
           created_at?: string

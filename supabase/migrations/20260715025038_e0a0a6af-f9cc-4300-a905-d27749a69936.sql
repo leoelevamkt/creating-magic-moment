@@ -1,0 +1,1 @@
+ALTER TABLE public.patient_notes ADD COLUMN IF NOT EXISTS checklist jsonb NOT NULL DEFAULT '[]'::jsonb;
