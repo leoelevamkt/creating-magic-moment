@@ -107,6 +107,7 @@ function PatientDetailPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <PatientStatusActions patientId={id} status={patient.status} onChanged={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
           <EditPatientDialog patient={patient} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
           <Button variant="outline" render={<Link to="/patients/$id/anamnese" params={{ id }} />}>Anamnese</Button>
           <Button variant="outline" render={<Link to="/patients/$id/triagem" params={{ id }} />}>Triagem</Button>
@@ -115,6 +116,12 @@ function PatientDetailPage() {
           <NewEvaluationDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
         </div>
       </header>
+
+      <div className="mb-1 flex items-center gap-2 text-xs">
+        <Badge variant={patient.status === 'active' ? 'default' : patient.status === 'discharged' ? 'secondary' : 'outline'}>
+          {patient.status === 'active' ? 'Ativo' : patient.status === 'archived' ? 'Inativo' : patient.status === 'discharged' ? 'Alta' : patient.status}
+        </Badge>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <aside className="flex flex-col gap-6">
