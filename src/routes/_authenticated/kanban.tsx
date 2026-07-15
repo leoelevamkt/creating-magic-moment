@@ -226,10 +226,30 @@ function KanbanPage() {
             horário e duração registrados.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button />}>
-            <Plus /> Nova tarefa
-          </DialogTrigger>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={onlyStale ? 'default' : 'outline'}
+            onClick={() => setOnlyStale((v) => !v)}
+            title="Mostrar apenas tarefas paradas há mais dias que o limite da coluna"
+          >
+            <AlertTriangle /> Atrasadas
+            {staleCount > 0 ? (
+              <span className="ml-1 rounded-full bg-background/40 px-1.5 text-xs font-semibold">
+                {staleCount}
+              </span>
+            ) : null}
+          </Button>
+          <ExportCsvButton
+            rows={tasks.data ?? []}
+            columns={csvColumns}
+            filename="tarefas-kanban"
+          />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger render={<Button />}>
+              <Plus /> Nova tarefa
+            </DialogTrigger>
           <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle className="font-serif text-2xl">Planejar avaliação</DialogTitle>
