@@ -47,7 +47,7 @@ export const createPatientNote = createServerFn({ method: 'POST' })
       session_number: data.sessionNumber ?? null,
       session_dates: data.sessionDates,
       planned_tests: data.plannedTests || null,
-    })
+    } as never)
     if (error) throw new Error(error.message)
     return { ok: true }
   })
