@@ -1,7 +1,7 @@
 export type FormField = {
   key: string
   label: string
-  type: 'text' | 'textarea' | 'number' | 'choice' | 'scale'
+  type: 'text' | 'textarea' | 'number' | 'choice' | 'scale' | 'section'
   options?: string[]
   min?: number
   max?: number
