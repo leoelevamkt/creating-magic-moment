@@ -12,8 +12,15 @@ import { toast } from 'sonner'
 
 export const Route = createFileRoute('/auth')({
   head: () => ({ meta: [{ title: 'Entrar — NeuroFlux' }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === 'string' && s.next.startsWith('/') ? s.next : undefined,
+  }),
   component: AuthPage,
 })
+
+function safeNext(next: string | undefined): string {
+  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
+}
 
 function AuthPage() {
   const navigate = useNavigate()
