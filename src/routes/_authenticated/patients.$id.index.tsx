@@ -1041,7 +1041,7 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>CPF</Label>
-            <Input name="cpf" defaultValue={patient.cpf ?? ''} />
+            <CpfInput name="cpf" defaultValue={patient.cpf ?? ''} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Escolaridade</Label>
