@@ -243,3 +243,150 @@ function NewScreeningDialog({ patientId, onDone }: { patientId: string; onDone: 
     </Dialog>
   )
 }
+
+function socialMeta(criteria: Criterion[]) {
+  const num = (code: string) => {
+    const c = criteria.find((x) => x.code === code)
+    if (!c || c.value === null || c.value === undefined || c.value === '') return 0
+    const n = Number(c.value)
+    return Number.isFinite(n) ? n : 0
+  }
+  const renda = num('RENDA_MENSAL')
+  const pessoas = Math.max(1, num('PESSOAS_DOMICILIO') || 1)
+  const perCapita = renda / pessoas
+  const perCapitaSM = perCapita / SALARIO_MINIMO_BRL
+  return { renda, pessoas, perCapita, perCapitaSM, faixa: faixaTarifa(perCapitaSM) }
+}
+
+function NewSocialScreeningDialog({ patientId, onDone }: { patientId: string; onDone: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [renda, setRenda] = useState<string>('')
+  const [pessoas, setPessoas] = useState<string>('')
+  const [checks, setChecks] = useState<Record<string, boolean>>({})
+  const [notes, setNotes] = useState('')
+  const save = useServerFn(saveScreening)
+
+  const rendaNum = Number(renda) || 0
+  const pessoasNum = Math.max(1, Number(pessoas) || 1)
+  const perCapita = rendaNum / pessoasNum
+  const perCapitaSM = perCapita / SALARIO_MINIMO_BRL
+  const faixa = faixaTarifa(perCapitaSM)
+
+  const mut = useMutation({
+    mutationFn: () => {
+      const criteria: Array<{ code: string; label: string; present: boolean; value?: string | number | null }> = [
+        { code: 'RENDA_MENSAL', label: 'Renda familiar mensal (R$)', present: true, value: rendaNum },
+        { code: 'PESSOAS_DOMICILIO', label: 'Pessoas no domicílio', present: true, value: pessoasNum },
+      ]
+      for (const sec of SOCIAL_TRIAGEM_SECTIONS) {
+        for (const it of sec.items) {
+          criteria.push({ code: it.code, label: it.label, present: Boolean(checks[it.code]) })
+        }
+      }
+      return save({
+        data: {
+          patientId,
+          instrument: 'social',
+          domain: 'triagem-social',
+          notes: notes || null,
+          criteria,
+        },
+      })
+    },
+    onSuccess: () => {
+      toast.success('Triagem social salva.')
+      setOpen(false)
+      setChecks({}); setRenda(''); setPessoas(''); setNotes('')
+      onDone()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="outline" />}>
+        <HeartHandshake /> Nova triagem social
+      </DialogTrigger>
+      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl">Triagem social e socioeconômica</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-4 pt-2">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label>Renda familiar mensal (R$)</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                inputMode="decimal"
+                value={renda}
+                onChange={(e) => setRenda(e.target.value)}
+                placeholder="Ex.: 2500"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Pessoas no domicílio</Label>
+              <Input
+                type="number"
+                min={1}
+                step="1"
+                inputMode="numeric"
+                value={pessoas}
+                onChange={(e) => setPessoas(e.target.value)}
+                placeholder="Ex.: 4"
+              />
+            </div>
+          </div>
+
+          {rendaNum > 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3 text-sm">
+              <div>
+                <p>
+                  Renda per capita: <strong>R$ {perCapita.toFixed(2)}</strong> ({perCapitaSM.toFixed(2)} SM)
+                </p>
+                <p className="text-xs text-muted-foreground">SM referência: R$ {SALARIO_MINIMO_BRL}</p>
+              </div>
+              <Badge variant={faixa === 'gratuidade' ? 'default' : faixa === 'subsidio' ? 'secondary' : 'outline'}>
+                {FAIXA_LABELS[faixa].badge}
+              </Badge>
+            </div>
+          ) : null}
+
+          {SOCIAL_TRIAGEM_SECTIONS.map((sec) => (
+            <div key={sec.id} className="flex flex-col gap-2 rounded-xl border p-3">
+              <div>
+                <p className="font-medium">{sec.name}</p>
+                {sec.help ? <p className="text-xs text-muted-foreground">{sec.help}</p> : null}
+              </div>
+              {sec.items.map((it) => (
+                <label key={it.code} className="flex items-start gap-3 rounded-md p-2 hover:bg-muted/40">
+                  <Checkbox
+                    checked={Boolean(checks[it.code])}
+                    onCheckedChange={(v) => setChecks((s) => ({ ...s, [it.code]: Boolean(v) }))}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm">
+                    <span className="mr-2 font-mono text-xs text-muted-foreground">{it.code}</span>
+                    {it.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          ))}
+
+          <div className="flex flex-col gap-1.5">
+            <Label>Observações da entrevista social</Label>
+            <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => mut.mutate()} disabled={mut.isPending || !renda || !pessoas}>
+              {mut.isPending ? 'Salvando…' : 'Salvar triagem social'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
