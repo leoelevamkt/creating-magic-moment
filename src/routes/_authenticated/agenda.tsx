@@ -330,6 +330,26 @@ function AgendaPage() {
                     {s.objectives ? (
                       <p className="line-clamp-3 text-muted-foreground">{s.objectives}</p>
                     ) : null}
+                    {s.meet_url ? (
+                      <a
+                        href={s.meet_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-blue-700 hover:bg-blue-100"
+                      >
+                        <Video size={12} /> Entrar no Meet
+                      </a>
+                    ) : gStatus.data?.connected && s.modality === 'online' ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-1"
+                        onClick={() => meetMut.mutate(s.id)}
+                        disabled={meetMut.isPending}
+                      >
+                        <Video size={12} /> Gerar Meet
+                      </Button>
+                    ) : null}
                     {s.status !== 'done' ? (
                       <Button
                         size="sm"
