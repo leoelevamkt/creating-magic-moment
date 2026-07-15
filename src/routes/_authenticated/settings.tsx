@@ -2,10 +2,10 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { CalendarCheck, ShieldCheck, UserCog, UserPlus, Users, Video } from 'lucide-react'
+import { CalendarCheck, Pencil, ShieldCheck, Trash2, UserCog, UserPlus, Users, Video } from 'lucide-react'
 import { toast } from 'sonner'
 import { getMyProfile } from '@/lib/profile.functions'
-import { createStaff, listTeam, setRole } from '@/lib/staff.functions'
+import { createStaff, deleteStaff, listTeam, updateStaff } from '@/lib/staff.functions'
 import {
   disconnectGoogle,
   getGoogleConnectionStatus,
@@ -17,6 +17,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+
 
 export const Route = createFileRoute('/_authenticated/settings')({
   head: () => ({ meta: [{ title: 'Configurações — NeuroFlux' }] }),
@@ -27,7 +35,6 @@ function SettingsPage() {
   const profile = useServerFn(getMyProfile)
   const team = useServerFn(listTeam)
   const create = useServerFn(createStaff)
-  const role = useServerFn(setRole)
   const qc = useQueryClient()
 
   const me = useQuery({ queryKey: ['profile'], queryFn: () => profile() })
@@ -45,14 +52,7 @@ function SettingsPage() {
     onError: (e: Error) => toast.error(e.message),
     onSettled: () => setPending(false),
   })
-  const roleMut = useMutation({
-    mutationFn: (v: { userId: string; role: 'admin' | 'staff' }) => role({ data: v }),
-    onSuccess: () => {
-      toast.success('Papel atualizado.')
-      qc.invalidateQueries({ queryKey: ['team'] })
-    },
-    onError: (e: Error) => toast.error(e.message),
-  })
+
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -173,21 +173,15 @@ function SettingsPage() {
                     <Badge variant={m.role === 'admin' ? 'default' : 'secondary'}>
                       {m.role === 'admin' ? 'Admin' : 'Funcionária'}
                     </Badge>
-                    {isAdmin && m.id !== me.data?.id ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          roleMut.mutate({
-                            userId: m.id,
-                            role: m.role === 'admin' ? 'staff' : 'admin',
-                          })
-                        }
-                      >
-                        {m.role === 'admin' ? 'Tornar funcionária' : 'Tornar admin'}
-                      </Button>
+                    {isAdmin ? (
+                      <EditStaffDialog
+                        member={m}
+                        isSelf={m.id === me.data?.id}
+                        onDone={() => qc.invalidateQueries({ queryKey: ['team'] })}
+                      />
                     ) : null}
                   </div>
+
                 </div>
               ))
             )}
@@ -283,3 +277,130 @@ function GoogleCalendarSection() {
     </section>
   )
 }
+
+function EditStaffDialog({
+  member,
+  isSelf,
+  onDone,
+}: {
+  member: { id: string; name: string; email: string; role: 'admin' | 'staff' }
+  isSelf: boolean
+  onDone: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const update = useServerFn(updateStaff)
+  const del = useServerFn(deleteStaff)
+  const qc = useQueryClient()
+
+  const updateMut = useMutation({
+    mutationFn: (v: { name: string; email: string; password: string; role: 'admin' | 'staff' }) =>
+      update({
+        data: {
+          userId: member.id,
+          name: v.name,
+          email: v.email,
+          password: v.password || undefined,
+          role: v.role,
+        },
+      }),
+    onSuccess: () => {
+      toast.success('Perfil atualizado.')
+      setOpen(false)
+      onDone()
+      if (isSelf) qc.invalidateQueries({ queryKey: ['profile'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const deleteMut = useMutation({
+    mutationFn: () => del({ data: { userId: member.id } }),
+    onSuccess: () => {
+      toast.success('Acesso removido.')
+      setOpen(false)
+      onDone()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    updateMut.mutate({
+      name: String(fd.get('name') ?? '').trim(),
+      email: String(fd.get('email') ?? '').trim(),
+      password: String(fd.get('password') ?? ''),
+      role: (String(fd.get('role') ?? member.role) as 'admin' | 'staff'),
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button size="sm" variant="outline" />}>
+        <Pencil /> Editar
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl">Editar acesso</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="flex flex-col gap-4 pt-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={`edit-name-${member.id}`}>Nome</Label>
+            <Input id={`edit-name-${member.id}`} name="name" defaultValue={member.name} required />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={`edit-email-${member.id}`}>E-mail</Label>
+            <Input id={`edit-email-${member.id}`} name="email" type="email" defaultValue={member.email} required />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={`edit-password-${member.id}`}>Nova senha</Label>
+            <Input
+              id={`edit-password-${member.id}`}
+              name="password"
+              type="text"
+              minLength={8}
+              placeholder="Deixe em branco para manter"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label>Permissão</Label>
+            <select
+              name="role"
+              defaultValue={member.role}
+              disabled={isSelf}
+              className="h-10 rounded-md border bg-background px-3 text-sm disabled:opacity-60"
+            >
+              <option value="staff">Funcionária</option>
+              <option value="admin">Administradora</option>
+            </select>
+            {isSelf ? (
+              <p className="text-xs text-muted-foreground">Você não pode alterar sua própria permissão.</p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+            {isSelf ? (
+              <div />
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive"
+                onClick={() => {
+                  if (confirm(`Remover o acesso de ${member.name}? Esta ação não pode ser desfeita.`)) {
+                    deleteMut.mutate()
+                  }
+                }}
+                disabled={deleteMut.isPending}
+              >
+                <Trash2 /> {deleteMut.isPending ? 'Removendo…' : 'Excluir acesso'}
+              </Button>
+            )}
+            <Button type="submit" disabled={updateMut.isPending}>
+              {updateMut.isPending ? 'Salvando…' : 'Salvar alterações'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
