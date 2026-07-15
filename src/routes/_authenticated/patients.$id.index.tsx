@@ -130,8 +130,10 @@ function PatientDetailPage() {
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            {ageFromDate(patient.birth_date)} anos · {patient.schooling} · {patient.city} ·{' '}
-            <span className="font-medium">Nasc:</span> {patient.birth_date}
+            {patient.birth_date ? `${ageFromDate(patient.birth_date)} anos · ` : ''}
+            {patient.schooling ? `${patient.schooling} · ` : ''}
+            {patient.city ? `${patient.city} · ` : ''}
+            {patient.birth_date ? (<><span className="font-medium">Nasc:</span> {patient.birth_date}</>) : null}
           </p>
         </div>
 
