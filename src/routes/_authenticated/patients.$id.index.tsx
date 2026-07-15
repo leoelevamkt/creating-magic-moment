@@ -587,18 +587,69 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
 
 type PatientData = NonNullable<Awaited<ReturnType<typeof getPatientDetail>>['patient']>
 
+type GuardianRec = { name: string; phone: string; relation: string }
+type EmergencyRec = { name: string; phone: string; relation: string }
+
+function ContactsCard({
+  hasGuardians,
+  guardians,
+  emergency,
+}: {
+  hasGuardians: boolean
+  guardians: GuardianRec[] | null
+  emergency: EmergencyRec | null
+}) {
+  const list = Array.isArray(guardians) ? guardians : []
+  return (
+    <section className="rounded-2xl border bg-card p-5">
+      <h2 className="font-serif text-xl font-semibold">Responsáveis e emergência</h2>
+      <div className="mt-3 text-sm">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">Responsáveis</p>
+        {hasGuardians && list.length > 0 ? (
+          <ul className="mt-2 flex flex-col gap-2">
+            {list.map((g, i) => (
+              <li key={i} className="rounded-lg border bg-background p-2">
+                <p className="font-medium">{g.name} <span className="text-xs text-muted-foreground">· {g.relation}</span></p>
+                <p className="text-xs text-muted-foreground">{g.phone}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-1 text-muted-foreground">Sem responsáveis cadastrados.</p>
+        )}
+      </div>
+      <div className="mt-4 text-sm">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">Contato de emergência</p>
+        {emergency && emergency.name ? (
+          <div className="mt-2 rounded-lg border bg-background p-2">
+            <p className="font-medium">{emergency.name} <span className="text-xs text-muted-foreground">· {emergency.relation}</span></p>
+            <p className="text-xs text-muted-foreground">{emergency.phone}</p>
+          </div>
+        ) : (
+          <p className="mt-1 text-muted-foreground">Não informado.</p>
+        )}
+      </div>
+    </section>
+  )
+}
+
 function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved: () => void }) {
   const [open, setOpen] = useState(false)
   const save = useServerFn(updatePatient)
+  const initialGuardians = Array.isArray(patient.guardians) ? (patient.guardians as unknown as GuardianRec[]) : []
+  const initialEmergency = (patient.emergency_contact as unknown as EmergencyRec | null) ?? null
+  const [contact, setContact] = useState<GuardiansEmergencyValue>({
+    hasGuardians: !!patient.has_guardians,
+    guardians: initialGuardians.length > 0 ? initialGuardians : (patient.has_guardians ? [{ ...EMPTY_GUARDIAN }] : []),
+    emergencyContact: initialEmergency ?? { ...EMPTY_EMERGENCY },
+  })
   const mut = useMutation({
     mutationFn: (v: {
-      name: string
-      birthDate: string
-      cpf: string
-      schooling: string
-      city: string
-      hypotheses: string
-      notes: string
+      name: string; birthDate: string; cpf: string; schooling: string; city: string;
+      hypotheses: string; notes: string;
+      hasGuardians: boolean;
+      guardians: GuardianRec[];
+      emergencyContact: EmergencyRec | null;
     }) => save({ data: { id: patient.id, ...v } }),
     onSuccess: () => {
       toast.success('Paciente atualizado.')
@@ -610,6 +661,11 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    const contactPayload = toPatientContactPayload(contact)
+    if (contact.hasGuardians && contactPayload.guardians.length === 0) {
+      toast.error('Preencha ao menos um responsável ou desmarque "Possui responsável(eis)".')
+      return
+    }
     mut.mutate({
       name: String(fd.get('name') ?? ''),
       birthDate: String(fd.get('birthDate') ?? ''),
@@ -618,6 +674,7 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
       city: String(fd.get('city') ?? ''),
       hypotheses: String(fd.get('hypotheses') ?? ''),
       notes: String(fd.get('notes') ?? ''),
+      ...contactPayload,
     })
   }
   return (
@@ -658,6 +715,7 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
             <Label>Observações clínicas</Label>
             <Textarea name="notes" rows={3} defaultValue={patient.notes ?? ''} />
           </div>
+          <GuardiansEmergencyFields value={contact} onChange={setContact} />
           <div className="flex justify-end sm:col-span-2">
             <Button type="submit" disabled={mut.isPending}>
               {mut.isPending ? 'Salvando…' : 'Salvar alterações'}
@@ -668,6 +726,7 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
     </Dialog>
   )
 }
+
 
 function OverallSynthesisCard({ patientId, synthesis, onSaved }: { patientId: string; synthesis: string | null; onSaved: () => void }) {
   const gen = useServerFn(generatePatientOverallSynthesis)
