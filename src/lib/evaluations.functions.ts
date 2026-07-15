@@ -166,8 +166,6 @@ export const updateTask = createServerFn({ method: 'POST' })
     if (error) throw new Error(error.message)
     return { ok: true }
   })
-    return { ok: true }
-  })
 
 export const deleteTask = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
