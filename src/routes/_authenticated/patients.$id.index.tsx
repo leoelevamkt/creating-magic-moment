@@ -100,41 +100,70 @@ function PatientDetailPage() {
     return <div className="p-8 text-sm">Paciente não encontrado.</div>
   }
 
+  const statusLabel =
+    patient.status === 'active'
+      ? 'Ativo'
+      : patient.status === 'archived'
+      ? 'Inativo'
+      : patient.status === 'discharged'
+      ? 'Alta'
+      : patient.status
+  const statusVariant =
+    patient.status === 'active' ? 'default' : patient.status === 'discharged' ? 'secondary' : 'outline'
+
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <Link to="/patients" className="text-xs text-muted-foreground hover:text-foreground">
-            ← Pacientes
+    <div className="mx-auto flex max-w-[1400px] flex-col gap-8">
+      {/* HEADER */}
+      <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 space-y-2">
+          <Link
+            to="/patients"
+            className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground hover:text-foreground"
+          >
+            ← Pacientes / Prontuário
           </Link>
-          <h1 className="mt-1 font-serif text-3xl font-semibold">{patient.name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {ageFromDate(patient.birth_date)} anos · {patient.schooling} · {patient.city} · Nascimento:{' '}
-            {patient.birth_date}
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="font-serif text-3xl font-semibold leading-tight sm:text-4xl">{patient.name}</h1>
+            <Badge variant={statusVariant} className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
+              {statusLabel}
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {ageFromDate(patient.birth_date)} anos · {patient.schooling} · {patient.city} ·{' '}
+            <span className="font-medium">Nasc:</span> {patient.birth_date}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <PatientStatusActions patientId={id} status={patient.status} onChanged={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 rounded-xl border bg-card/60 p-1 shadow-sm">
+            <Button variant="ghost" size="sm" className="rounded-lg" render={<Link to="/patients/$id/anamnese" params={{ id }} />}>
+              Anamnese
+            </Button>
+            <Button variant="ghost" size="sm" className="rounded-lg" render={<Link to="/patients/$id/triagem" params={{ id }} />}>
+              Triagem
+            </Button>
+            <Button variant="ghost" size="sm" className="rounded-lg" render={<Link to="/patients/$id/laudo" params={{ id }} />}>
+              Laudo
+            </Button>
+          </div>
           <EditPatientDialog patient={patient} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
-          <Button variant="outline" render={<Link to="/patients/$id/anamnese" params={{ id }} />}>Anamnese</Button>
-          <Button variant="outline" render={<Link to="/patients/$id/triagem" params={{ id }} />}>Triagem</Button>
-          <Button variant="outline" render={<Link to="/patients/$id/laudo" params={{ id }} />}>Laudo</Button>
           <NewSessionDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
           <NewEvaluationDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
+          <PatientMoreMenu
+            patientId={id}
+            status={patient.status}
+            onChanged={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })}
+          />
         </div>
       </header>
 
-      <div className="mb-1 flex items-center gap-2 text-xs">
-        <Badge variant={patient.status === 'active' ? 'default' : patient.status === 'discharged' ? 'secondary' : 'outline'}>
-          {patient.status === 'active' ? 'Ativo' : patient.status === 'archived' ? 'Inativo' : patient.status === 'discharged' ? 'Alta' : patient.status}
-        </Badge>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <aside className="flex flex-col gap-6">
-          <section className="rounded-2xl border bg-card p-5">
-            <h2 className="font-serif text-xl font-semibold">Dados do paciente</h2>
-            <dl className="mt-4 grid gap-3 text-sm">
+      {/* CONTENT GRID 3 / 6 / 3 */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* LEFT — patient facts */}
+        <aside className="flex flex-col gap-6 lg:col-span-3">
+          <section className="rounded-2xl border bg-card p-6 shadow-sm">
+            <h2 className="font-serif text-lg font-semibold">Dados do paciente</h2>
+            <dl className="mt-5 grid gap-5 text-sm">
               <Info label="CPF" value={patient.cpf} />
               <Info label="Escolaridade" value={patient.schooling} />
               <Info label="Cidade" value={patient.city} />
@@ -149,13 +178,10 @@ function PatientDetailPage() {
             emergency={patient.emergency_contact as unknown as { name: string; phone: string; relation: string } | null}
           />
 
-
-          <section className="rounded-2xl border bg-card p-5">
-            <h2 className="font-serif text-xl font-semibold">Próximas sessões</h2>
+          <section className="rounded-2xl border bg-card p-6 shadow-sm">
+            <h2 className="font-serif text-lg font-semibold">Próximas sessões</h2>
             {upcoming.length === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">
-                Nenhuma sessão agendada. Use “Nova sessão”.
-              </p>
+              <p className="mt-3 text-sm text-muted-foreground">Nenhuma sessão agendada.</p>
             ) : (
               <ul className="mt-3 flex flex-col gap-3 text-sm">
                 {upcoming.map((s) => (
@@ -169,27 +195,10 @@ function PatientDetailPage() {
               </ul>
             )}
           </section>
-
-          <section className="rounded-2xl border bg-card p-5">
-            <h2 className="font-serif text-xl font-semibold">Histórico</h2>
-            {history.length === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">Sem eventos registrados.</p>
-            ) : (
-              <ul className="mt-3 flex flex-col gap-3 border-l text-sm">
-                {history.map((h, i) => (
-                  <li key={i} className="pl-3">
-                    <p>{h.text}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(h.at), "dd/MM/yyyy 'às' HH:mm")}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
         </aside>
 
-        <main className="flex flex-col gap-6">
+        {/* CENTER — tabs */}
+        <main className="flex min-w-0 flex-col gap-6 lg:col-span-6">
           <Tabs defaultValue="chart" className="w-full">
             <TabsList>
               <TabsTrigger value="chart">Prontuário</TabsTrigger>
@@ -199,17 +208,21 @@ function PatientDetailPage() {
             <TabsContent value="chart" className="mt-4 flex flex-col gap-6">
               <NotesBoard patientId={id} />
 
-              <OverallSynthesisCard patientId={id} synthesis={patient.overall_synthesis ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
+              <OverallSynthesisCard
+                patientId={id}
+                synthesis={patient.overall_synthesis ?? null}
+                onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })}
+              />
 
-              <section className="rounded-2xl border bg-card p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="font-serif text-2xl font-semibold">Testes e correções</h2>
+              <section className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="font-serif text-xl font-semibold">Testes e correções</h2>
                     <p className="text-sm text-muted-foreground">
-                      Tudo o que foi aplicado, corrigido e aprovado para este paciente.
+                      Tudo o que foi aplicado, corrigido e aprovado.
                     </p>
                   </div>
-                  <span className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
                     {tasks.length}
                   </span>
                 </div>
@@ -220,23 +233,32 @@ function PatientDetailPage() {
                 ) : (
                   <div className="mt-4 flex flex-col divide-y">
                     {tasks.map((t) => (
-                      <TaskRow key={t.id} task={t} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
+                      <TaskRow
+                        key={t.id}
+                        task={t}
+                        onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })}
+                      />
                     ))}
                   </div>
                 )}
               </section>
 
-              <section className="rounded-2xl border bg-card p-5">
-                <h2 className="font-serif text-2xl font-semibold">Síntese integradora</h2>
+              <section className="rounded-2xl border bg-card p-6 shadow-sm">
+                <h2 className="font-serif text-xl font-semibold">Síntese integradora</h2>
                 <p className="text-sm text-muted-foreground">
-                  A IA integra os resultados registrados em uma síntese por domínios cognitivos. Sempre revise o texto.
+                  A IA integra os resultados por domínios cognitivos. Sempre revise.
                 </p>
                 {evaluations.length === 0 ? (
                   <p className="mt-4 text-sm text-muted-foreground">Nenhuma avaliação planejada ainda.</p>
                 ) : (
                   <div className="mt-4 flex flex-col gap-3">
                     {evaluations.map((ev) => (
-                      <SynthesisCard key={ev.id} evaluation={ev} taskCount={tasks.filter((t) => t.evaluation_id === ev.id && (t.synthesis || t.raw_score || t.standard_score)).length} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
+                      <SynthesisCard
+                        key={ev.id}
+                        evaluation={ev}
+                        taskCount={tasks.filter((t) => t.evaluation_id === ev.id && (t.synthesis || t.raw_score || t.standard_score)).length}
+                        onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })}
+                      />
                     ))}
                   </div>
                 )}
@@ -252,12 +274,49 @@ function PatientDetailPage() {
             </TabsContent>
           </Tabs>
         </main>
+
+        {/* RIGHT — timeline / history */}
+        <aside className="flex flex-col gap-6 lg:col-span-3">
+          <section className="rounded-2xl border bg-card p-6 shadow-sm">
+            <h2 className="font-serif text-lg font-semibold">Histórico</h2>
+            {history.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">Sem eventos registrados.</p>
+            ) : (
+              <ul className="relative mt-4 flex flex-col gap-5 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-border">
+                {history.map((h, i) => (
+                  <li key={i} className="relative pl-6">
+                    <span
+                      className={`absolute left-0 top-1.5 size-3.5 rounded-full border-[3px] border-background ${
+                        i === 0 ? 'bg-primary' : 'bg-muted'
+                      }`}
+                    />
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      {format(new Date(h.at), 'dd/MM/yyyy')}
+                    </p>
+                    <p className="text-sm font-medium">{h.text}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(h.at), "HH:mm")}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </aside>
       </div>
     </div>
   )
 }
 
-function PatientStatusActions({ patientId, status, onChanged }: { patientId: string; status: string; onChanged: () => void }) {
+function PatientMoreMenu({
+  patientId,
+  status,
+  onChanged,
+}: {
+  patientId: string
+  status: string
+  onChanged: () => void
+}) {
   const router = useRouter()
   const setStatus = useServerFn(setPatientStatus)
   const removePatient = useServerFn(deletePatient)
@@ -279,29 +338,42 @@ function PatientStatusActions({ patientId, status, onChanged }: { patientId: str
   })
   const isActive = status === 'active'
   return (
-    <>
-      <Button
-        variant="outline"
-        onClick={() => statusMut.mutate(isActive ? 'archived' : 'active')}
-        disabled={statusMut.isPending}
-      >
-        {isActive ? 'Desativar' : 'Ativar'}
-      </Button>
-      <Button
-        variant="outline"
-        className="text-destructive hover:text-destructive"
-        onClick={() => {
-          if (confirm('Excluir permanentemente este paciente e todos os seus dados? Esta ação não pode ser desfeita.')) {
-            delMut.mutate()
-          }
-        }}
-        disabled={delMut.isPending}
-      >
-        <Trash2 className="mr-1 size-4" /> Excluir
-      </Button>
-    </>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="outline" size="icon" aria-label="Mais ações">
+            <MoreHorizontal className="size-4" />
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem
+          onSelect={() => statusMut.mutate(isActive ? 'archived' : 'active')}
+          disabled={statusMut.isPending}
+        >
+          {isActive ? 'Desativar paciente' : 'Ativar paciente'}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive"
+          onSelect={() => {
+            if (
+              confirm(
+                'Excluir permanentemente este paciente e todos os seus dados? Esta ação não pode ser desfeita.',
+              )
+            ) {
+              delMut.mutate()
+            }
+          }}
+          disabled={delMut.isPending}
+        >
+          <Trash2 className="mr-2 size-4" /> Excluir
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
+
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
