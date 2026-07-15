@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { useQueryClient } from '@tanstack/react-query'
+import { TimeClock } from '@/components/time-clock'
 
 const adminNav = [
   { to: '/dashboard', label: 'Visão geral', icon: LayoutDashboard },
@@ -36,6 +37,7 @@ const adminNav = [
 
 const staffNav = [
   { to: '/kanban', label: 'Correções', icon: ClipboardList },
+  { to: '/patients', label: 'Pacientes', icon: Users },
   { to: '/tasks', label: 'Tarefas', icon: ListTodo },
   { to: '/formularios', label: 'Formulários', icon: FileText },
   { to: '/supervision', label: 'Supervisão', icon: MessagesSquare },
@@ -134,6 +136,7 @@ export function AppShell({
             </Sheet>
           </div>
           <div className="flex items-center gap-3">
+            <TimeClock />
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium text-foreground">{userName}</p>
               <p className="text-xs text-muted-foreground">
