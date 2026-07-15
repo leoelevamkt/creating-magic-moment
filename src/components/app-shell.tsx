@@ -13,6 +13,7 @@ import {
   PanelLeft,
   Settings,
   Users,
+  Wallet,
 } from 'lucide-react'
 import logoAsset from '@/assets/neuroflux-logo.png.asset.json'
 import { toast } from 'sonner'
@@ -32,6 +33,7 @@ const adminNav = [
   { to: '/supervision', label: 'Supervisão', icon: MessagesSquare },
   { to: '/materials', label: 'Materiais', icon: Boxes },
   { to: '/catalog', label: 'Catálogo de testes', icon: Library },
+  { to: '/financeiro', label: 'Financeiro', icon: Wallet },
   { to: '/reports', label: 'Relatórios', icon: BarChart3 },
 ] as const
 
