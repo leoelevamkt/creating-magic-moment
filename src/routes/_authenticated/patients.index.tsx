@@ -155,7 +155,10 @@ function PatientsPage() {
                   </select>
                 </div>
                 <Field label="Data de nascimento" name="birthDate" type="date" />
-                <Field label="CPF" name="cpf" placeholder="000.000.000-00" />
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="cpf">CPF<span className="ml-1 text-xs font-normal text-muted-foreground">(opcional)</span></Label>
+                  <CpfInput id="cpf" name="cpf" />
+                </div>
                 <Field label="Escolaridade" name="schooling" placeholder="Ex.: Ensino médio" />
                 <Field label="Cidade" name="city" />
                 <Field label="Telefone" name="phone" placeholder="(11) 90000-0000" />
