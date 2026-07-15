@@ -23,7 +23,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 
-export const Route = createFileRoute('/_authenticated/patients/$id')({
+export const Route = createFileRoute('/_authenticated/patients/$id/')({
   beforeLoad: ({ context }) => {
     if ((context as { role?: string }).role !== 'admin') throw redirect({ to: '/kanban' })
   },
