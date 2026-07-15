@@ -370,7 +370,16 @@ function AgendaPage() {
                         {(s.patients as { name: string } | null)?.name ?? '—'}
                       </p>
                       <button
-                        onClick={() => removeMut.mutate(s.id)}
+                        onClick={() =>
+                          removeMut.mutate({
+                            id: s.id,
+                            sessionDate: s.session_date,
+                            startTime: s.start_time ?? null,
+                            endTime: s.end_time ?? null,
+                            modality: (s.modality === 'online' ? 'online' : 'presencial') as 'presencial' | 'online',
+                          })
+                        }
+
                         className="text-muted-foreground hover:text-destructive"
                         aria-label="Remover"
                       >
