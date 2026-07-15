@@ -55,8 +55,10 @@ function KanbanPage() {
   const [customAcronym, setCustomAcronym] = useState('')
   const [editing, setEditing] = useState<null | {
     id: string
-    scheduled_at: string | null
-    duration_minutes: number | null
+    patientId: string
+    title: string
+    modality: 'presencial' | 'online'
+    testId: string
   }>(null)
   const qc = useQueryClient()
   const tasksFn = useServerFn(listTasks)
