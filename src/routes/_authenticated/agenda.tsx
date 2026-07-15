@@ -224,7 +224,15 @@ function AgendaPage() {
             Organize os atendimentos da semana e os testes que podem ser aplicados em cada sessão.
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <AgendaBlocksDialog />
+          <Link to="/lista-espera">
+            <Button variant="outline">
+              <ListChecks /> Lista de espera
+            </Button>
+          </Link>
         <Dialog open={open} onOpenChange={setOpen}>
+
           <DialogTrigger render={<Button />}>
             <CalendarDays /> Nova sessão
           </DialogTrigger>
