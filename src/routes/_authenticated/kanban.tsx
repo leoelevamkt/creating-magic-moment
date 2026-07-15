@@ -172,8 +172,29 @@ function KanbanPage() {
         {columns.map((col) => {
           const items = grouped.get(col.id) ?? []
           const Icon = col.icon
+          const isOver = overCol === col.id
           return (
-            <div key={col.id} className="flex min-h-[240px] flex-col gap-3 rounded-2xl border bg-card p-4">
+            <div
+              key={col.id}
+              onDragOver={(e) => {
+                if (dragId) {
+                  e.preventDefault()
+                  if (overCol !== col.id) setOverCol(col.id)
+                }
+              }}
+              onDragLeave={(e) => {
+                if (e.currentTarget.contains(e.relatedTarget as Node)) return
+                if (overCol === col.id) setOverCol(null)
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                const id = dragId
+                setDragId(null)
+                setOverCol(null)
+                if (id) statusMut.mutate({ id, status: col.id })
+              }}
+              className={`flex min-h-[240px] flex-col gap-3 rounded-2xl border bg-card p-4 transition-colors ${isOver ? 'border-primary bg-primary/5' : ''}`}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Icon size={16} className="text-primary" />
@@ -185,15 +206,29 @@ function KanbanPage() {
               </div>
               {items.length === 0 ? (
                 <div className="my-auto flex flex-1 items-center justify-center rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
-                  Nenhuma tarefa nesta etapa.
+                  Arraste aqui ou nenhuma tarefa nesta etapa.
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
                   {items.map((t) => {
                     const acronym = (t.test_catalog as { acronym: string | null } | null)?.acronym ?? '—'
                     const patient = (t.patients as { name: string } | null)?.name ?? '—'
+                    const isDragging = dragId === t.id
                     return (
-                      <article key={t.id} className="flex flex-col gap-2 rounded-xl border bg-background p-3 text-sm">
+                      <article
+                        key={t.id}
+                        draggable
+                        onDragStart={(e) => {
+                          setDragId(t.id)
+                          e.dataTransfer.effectAllowed = 'move'
+                          e.dataTransfer.setData('text/plain', t.id)
+                        }}
+                        onDragEnd={() => {
+                          setDragId(null)
+                          setOverCol(null)
+                        }}
+                        className={`flex cursor-grab flex-col gap-2 rounded-xl border bg-background p-3 text-sm active:cursor-grabbing ${isDragging ? 'opacity-50' : ''}`}
+                      >
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <p className="text-xs font-semibold text-primary">{acronym}</p>
@@ -214,17 +249,32 @@ function KanbanPage() {
                           <p className="rounded-md bg-primary/10 px-2 py-1 text-center text-xs text-primary">
                             Aprovado em {format(new Date(t.approved_at), 'dd/MM/yyyy')}
                           </p>
-                        ) : col.next ? (
-                          <Button
-                            size="sm"
-                            variant={col.id === 'todo' ? 'default' : 'outline'}
-                            onClick={() => statusMut.mutate({ id: t.id, status: col.next! })}
-                            disabled={statusMut.isPending}
-                          >
-                            {col.id === 'todo' ? <Play /> : null}
-                            {col.nextLabel}
-                          </Button>
                         ) : null}
+                        <div className="flex flex-wrap gap-2">
+                          {col.prev ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => statusMut.mutate({ id: t.id, status: col.prev! })}
+                              disabled={statusMut.isPending}
+                              title={col.prevLabel}
+                            >
+                              <ArrowLeft /> Voltar
+                            </Button>
+                          ) : null}
+                          {col.next ? (
+                            <Button
+                              size="sm"
+                              variant={col.id === 'todo' ? 'default' : 'outline'}
+                              onClick={() => statusMut.mutate({ id: t.id, status: col.next! })}
+                              disabled={statusMut.isPending}
+                              className="ml-auto"
+                            >
+                              {col.id === 'todo' ? <Play /> : <ArrowRight />}
+                              {col.nextLabel}
+                            </Button>
+                          ) : null}
+                        </div>
                       </article>
                     )
                   })}
