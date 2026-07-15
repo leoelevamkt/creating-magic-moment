@@ -22,30 +22,39 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: 'description',
         content:
-          'Gestão segura de pacientes, avaliações neuropsicológicas, correções e aprovações clínicas.',
+          'NeuroFlux organiza pacientes, avaliações neuropsicológicas, correções e laudos em um fluxo clínico seguro.',
       },
+      {
+        name: 'keywords',
+        content:
+          'neuropsicologia, avaliação neuropsicológica, laudo neuropsicológico, gestão clínica, prontuário, psicologia',
+      },
+      { name: 'author', content: 'NeuroFlux' },
+      { name: 'robots', content: 'index, follow' },
       { name: 'theme-color', content: '#214d48' },
+      { property: 'og:site_name', content: 'NeuroFlux' },
       { property: 'og:title', content: 'NeuroFlux — Gestão neuropsicológica' },
       {
         property: 'og:description',
         content:
-          'Organize pacientes, testes, correções e revisões administrativas em um fluxo clínico simples.',
+          'Organize pacientes, testes, correções e laudos neuropsicológicos com segurança e clareza.',
       },
       { property: 'og:type', content: 'website' },
+      { property: 'og:locale', content: 'pt_BR' },
+      { property: 'og:url', content: 'https://neuroflux0.lovable.app' },
       { name: 'twitter:card', content: 'summary_large_image' },
-      { title: "Lovable App" },
-      { property: "og:title", content: "Lovable App" },
-      { name: "twitter:title", content: "Lovable App" },
-      { name: "description", content: "Vamos Criar Juntos is a project creation tool." },
-      { property: "og:description", content: "Vamos Criar Juntos is a project creation tool." },
-      { name: "twitter:description", content: "Vamos Criar Juntos is a project creation tool." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2faee8a3-43b8-4942-932a-28920a234bd7/id-preview-2fcf56a8--aff4f85b-f80b-469b-b803-cd0a9a44cc00.lovable.app-1784075059637.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2faee8a3-43b8-4942-932a-28920a234bd7/id-preview-2fcf56a8--aff4f85b-f80b-469b-b803-cd0a9a44cc00.lovable.app-1784075059637.png" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:type", content: "website" },
+      { name: 'twitter:title', content: 'NeuroFlux — Gestão neuropsicológica' },
+      {
+        name: 'twitter:description',
+        content:
+          'Plataforma clínica para avaliações neuropsicológicas, correções e laudos.',
+      },
     ],
     links: [
       { rel: 'stylesheet', href: styles },
+      { rel: 'icon', type: 'image/png', href: '/favicon.png' },
+      { rel: 'apple-touch-icon', href: '/favicon.png' },
+      { rel: 'canonical', href: 'https://neuroflux0.lovable.app' },
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
       { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
       {
@@ -53,7 +62,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: 'https://fonts.googleapis.com/css2?family=Geist:wght@300..900&family=Lora:wght@400;500;600;700&display=swap',
       },
     ],
+    scripts: [
+      {
+        type: 'application/ld+json',
+        children: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'NeuroFlux',
+          url: 'https://neuroflux0.lovable.app',
+          description:
+            'Plataforma de gestão neuropsicológica para pacientes, avaliações, correções e laudos.',
+          inLanguage: 'pt-BR',
+        }),
+      },
+    ],
   }),
+
   errorComponent: DefaultCatchBoundary,
   notFoundComponent: NotFound,
   shellComponent: RootDocument,
