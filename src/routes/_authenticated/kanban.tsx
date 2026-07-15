@@ -64,7 +64,13 @@ function KanbanPage() {
   })
 
   const createMut = useMutation({
-    mutationFn: (v: Parameters<typeof create>[0]['data']) => create({ data: v }),
+    mutationFn: (v: {
+      patientId: string
+      title: string
+      modality: 'presencial' | 'online'
+      scheduledAt: string | null
+      testIds: string[]
+    }) => create({ data: v }),
     onSuccess: () => {
       toast.success('Avaliação planejada.')
       setOpen(false)

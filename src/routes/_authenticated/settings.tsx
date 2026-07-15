@@ -29,7 +29,8 @@ function SettingsPage() {
 
   const [pending, setPending] = useState(false)
   const createMut = useMutation({
-    mutationFn: (v: Parameters<typeof create>[0]['data']) => create({ data: v }),
+    mutationFn: (v: { name: string; email: string; password: string; role: 'admin' | 'staff' }) =>
+      create({ data: v }),
     onSuccess: () => {
       toast.success('Acesso criado.')
       qc.invalidateQueries({ queryKey: ['team'] })

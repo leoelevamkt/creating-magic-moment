@@ -73,7 +73,17 @@ function AgendaPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
   })
   const createMut = useMutation({
-    mutationFn: (v: Parameters<typeof create>[0]['data']) => create({ data: v }),
+    mutationFn: (v: {
+      patientId: string
+      title: string
+      modality: 'presencial' | 'online'
+      sessionDate: string
+      startTime: string | null
+      endTime: string | null
+      objectives: string | null
+      notes: string | null
+      plannedTestIds: string[]
+    }) => create({ data: v }),
     onSuccess: () => {
       toast.success('Sessão agendada.')
       setOpen(false)
