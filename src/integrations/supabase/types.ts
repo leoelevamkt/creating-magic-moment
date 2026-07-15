@@ -257,6 +257,62 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_forms: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          expires_at: string | null
+          fields: Json
+          id: string
+          patient_id: string
+          responses: Json | null
+          status: string
+          submitted_at: string | null
+          title: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expires_at?: string | null
+          fields?: Json
+          id?: string
+          patient_id: string
+          responses?: Json | null
+          status?: string
+          submitted_at?: string | null
+          title: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expires_at?: string | null
+          fields?: Json
+          id?: string
+          patient_id?: string
+          responses?: Json | null
+          status?: string
+          submitted_at?: string | null
+          title?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_forms_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           birth_date: string
