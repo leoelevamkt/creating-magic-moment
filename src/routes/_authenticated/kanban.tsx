@@ -370,11 +370,6 @@ function KanbanPage() {
                             <p className="text-xs font-semibold text-primary">{acronym}</p>
                             <p className="font-serif text-base font-semibold">{patient}</p>
                           </div>
-                          {t.duration_minutes ? (
-                            <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
-                              {t.duration_minutes} min
-                            </span>
-                          ) : null}
                         </div>
                         <dl className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                           {t.scheduled_at ? (
