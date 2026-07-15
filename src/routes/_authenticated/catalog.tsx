@@ -76,6 +76,7 @@ function CatalogPage() {
 
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm)
+  const [search, setSearch] = useState('')
 
   const openNew = () => {
     setForm(emptyForm)
@@ -133,14 +134,19 @@ function CatalogPage() {
   })
 
   const grouped = useMemo(() => {
+    const q = search.trim().toLowerCase()
     const g: Record<string, TestRow[]> = {}
     for (const t of (catalogQ.data ?? []) as TestRow[]) {
+      if (q) {
+        const hay = `${t.name} ${t.acronym ?? ''} ${t.category} ${t.source}`.toLowerCase()
+        if (!hay.includes(q)) continue
+      }
       const k = t.category || 'Outros'
       g[k] = g[k] ?? []
       g[k].push(t)
     }
     return Object.entries(g).sort(([a], [b]) => a.localeCompare(b))
-  }, [catalogQ.data])
+  }, [catalogQ.data, search])
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -227,12 +233,31 @@ function CatalogPage() {
         ) : null}
       </div>
 
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Input
+          placeholder="Pesquisar por nome, sigla ou categoria…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="sm:max-w-md"
+        />
+        {search ? (
+          <p className="text-xs text-muted-foreground">
+            {grouped.reduce((acc, [, list]) => acc + list.length, 0)} resultado(s)
+          </p>
+        ) : null}
+      </div>
+
       {catalogQ.isLoading ? (
         <p className="p-8 text-sm text-muted-foreground">Carregando catálogo…</p>
       ) : !catalogQ.data || catalogQ.data.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border bg-card p-12 text-center">
           <Library className="text-muted-foreground" />
           <p className="text-sm text-muted-foreground">Nenhum teste cadastrado.</p>
+        </div>
+      ) : grouped.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border bg-card p-12 text-center">
+          <Library className="text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Nenhum teste encontrado para “{search}”.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-6">
