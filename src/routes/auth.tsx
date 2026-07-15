@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Loader2, ShieldCheck } from 'lucide-react'
-import logoAsset from '@/assets/neuroflux-logo.jpg.asset.json'
+import logoAsset from '@/assets/neuroflux-logo.png.asset.json'
 import { supabase } from '@/integrations/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
