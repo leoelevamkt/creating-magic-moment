@@ -26,6 +26,7 @@ import { getPatientDetail, updateTaskResult, generateEvaluationSynthesis, update
 import { DocumentsTab } from '@/components/patients/DocumentsTab'
 import { FinanceTab } from '@/components/patients/FinanceTab'
 import { CpfInput } from '@/components/patients/CpfInput'
+import { formatAge } from '@/lib/age'
 
 import { useRouter } from '@tanstack/react-router'
 import { createSession } from '@/lib/sessions.functions'
@@ -147,7 +148,7 @@ function PatientDetailPage() {
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            {patient.birth_date ? `${ageFromDate(patient.birth_date)} anos · ` : ''}
+            {patient.birth_date ? `${formatAge(patient.birth_date)} · ` : ''}
             {sexLabel((patient as { sex?: string | null }).sex) ? `${sexLabel((patient as { sex?: string | null }).sex)} · ` : ''}
             {patient.schooling ? `${patient.schooling} · ` : ''}
             {patient.city ? `${patient.city} · ` : ''}
@@ -193,19 +194,8 @@ function PatientDetailPage() {
             <section className="rounded-2xl border bg-card p-6 shadow-sm">
               <h2 className="font-serif text-lg font-semibold">Dados do paciente</h2>
               <dl className="mt-5 grid gap-5 text-sm">
-                <Info label="CPF" value={patient.cpf ?? '—'} />
-                <Info label="Escolaridade" value={patient.schooling ?? '—'} />
-                <Info label="Cidade" value={patient.city ?? '—'} />
-                <Info label="Hipóteses diagnósticas" value={patient.hypotheses ?? '—'} />
-                <Info label="Observações" value={patient.notes ?? 'Sem observações'} />
-              </dl>
-            </section>
-
-            <section className="rounded-2xl border bg-card p-6 shadow-sm">
-              <h2 className="font-serif text-lg font-semibold">Dados do paciente</h2>
-              <dl className="mt-5 grid gap-5 text-sm">
                 {patient.birth_date ? (
-                  <Info label="Idade" value={`${ageFromDate(patient.birth_date)} anos`} />
+                  <Info label="Idade" value={formatAge(patient.birth_date)} />
                 ) : null}
                 <Info label="Sexo" value={sexLabel((patient as { sex?: string | null }).sex) || '—'} />
                 <Info label="Telefone" value={(patient as { phone?: string | null }).phone ?? '—'} />

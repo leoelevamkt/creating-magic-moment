@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import * as XLSX from 'xlsx'
 import { bulkCreatePatients, createPatient, listPatients } from '@/lib/patients.functions'
+import { formatAge } from '@/lib/age'
 import {
   GuardiansEmergencyFields,
   EMPTY_EMERGENCY,
@@ -197,6 +198,7 @@ function PatientsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
+                <TableHead>Idade</TableHead>
                 <TableHead>Nascimento</TableHead>
                 <TableHead>Cidade</TableHead>
                 <TableHead>Escolaridade</TableHead>
@@ -211,6 +213,7 @@ function PatientsPage() {
                   onClick={() => router.navigate({ to: '/patients/$id', params: { id: p.id } })}
                 >
                   <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell>{formatAge(p.birth_date)}</TableCell>
                   <TableCell>{p.birth_date ? format(new Date(p.birth_date), 'dd/MM/yyyy') : '—'}</TableCell>
                   <TableCell>{p.city ?? '—'}</TableCell>
                   <TableCell>{p.schooling ?? '—'}</TableCell>
