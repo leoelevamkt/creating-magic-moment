@@ -29,7 +29,10 @@ export const listTeam = createServerFn({ method: 'GET' })
     }))
   })
 
-async function assertAdmin(supabase: ReturnType<typeof requireSupabaseAuth> extends never ? never : any, userId: string) {
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/integrations/supabase/types'
+
+async function assertAdmin(supabase: SupabaseClient<Database>, userId: string) {
   const { data, error } = await supabase.rpc('has_role', { _user_id: userId, _role: 'admin' })
   if (error) throw new Error(error.message)
   if (!data) throw new Error('Apenas administradoras podem executar esta ação.')

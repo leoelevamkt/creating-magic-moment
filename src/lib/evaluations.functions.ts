@@ -43,7 +43,7 @@ export const createEvaluation = createServerFn({ method: 'POST' })
       evaluation_id: ev!.id,
       patient_id: data.patientId,
       test_id: testId,
-      status: 'todo' as const,
+      status: 'todo' as 'todo',
       scheduled_at: scheduled,
     }))
     const { error: tErr } = await context.supabase.from('test_tasks').insert(tasks)
@@ -64,20 +64,24 @@ export const listTasks = createServerFn({ method: 'GET' })
     return data ?? []
   })
 
+export type TaskStatus = 'todo' | 'correcting' | 'review' | 'approved'
+
 export const updateTaskStatus = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (i: {
-      id: string
-      status: 'todo' | 'in_correction' | 'awaiting_admin' | 'approved'
-    }) => i,
-  )
+  .inputValidator((i: { id: string; status: TaskStatus }) => i)
   .handler(async ({ context, data }) => {
-    const patch: Record<string, unknown> = { status: data.status }
-    if (data.status === 'in_correction') patch.started_at = new Date().toISOString()
-    if (data.status === 'awaiting_admin') patch.completed_at = new Date().toISOString()
+    const nowIso = new Date().toISOString()
+    const patch: {
+      status: TaskStatus
+      started_at?: string
+      completed_at?: string
+      approved_at?: string
+      approved_by?: string
+    } = { status: data.status }
+    if (data.status === 'correcting') patch.started_at = nowIso
+    if (data.status === 'review') patch.completed_at = nowIso
     if (data.status === 'approved') {
-      patch.approved_at = new Date().toISOString()
+      patch.approved_at = nowIso
       patch.approved_by = context.userId
     }
     const { error } = await context.supabase.from('test_tasks').update(patch).eq('id', data.id)
