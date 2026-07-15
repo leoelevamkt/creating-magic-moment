@@ -339,7 +339,17 @@ function SynthesisCard({ evaluation, taskCount, onSaved }: { evaluation: Evaluat
             {taskCount} teste(s) com resultado registrado
           </p>
         </div>
-        <Button size="sm" onClick={() => mut.mutate()} disabled={mut.isPending}>
+        <Button
+          size="sm"
+          onClick={() => {
+            if (taskCount === 0) {
+              toast.error('Registre pelo menos um resultado antes de gerar a síntese.')
+              return
+            }
+            mut.mutate()
+          }}
+          disabled={mut.isPending || taskCount === 0}
+        >
           <Sparkles /> {mut.isPending ? 'Gerando…' : 'Gerar síntese com IA'}
         </Button>
       </div>
