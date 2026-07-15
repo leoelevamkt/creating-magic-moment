@@ -23,6 +23,8 @@ function safeNext(next: string | undefined): string {
 
 function AuthPage() {
   const navigate = useNavigate()
+  const { next } = Route.useSearch()
+  const target = safeNext(next)
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -33,9 +35,9 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: '/dashboard', replace: true })
+      if (data.session) window.location.replace(target)
     })
-  }, [navigate])
+  }, [target])
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
