@@ -2,10 +2,17 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { ShieldCheck, UserCog, UserPlus, Users } from 'lucide-react'
+import { CalendarCheck, ShieldCheck, UserCog, UserPlus, Users, Video } from 'lucide-react'
 import { toast } from 'sonner'
 import { getMyProfile } from '@/lib/profile.functions'
 import { createStaff, listTeam, setRole } from '@/lib/staff.functions'
+import {
+  disconnectGoogle,
+  getGoogleConnectionStatus,
+  saveGoogleConnection,
+  startGoogleConnect,
+} from '@/lib/googleCalendar.functions'
+import { connectAppUser } from '@/integrations/lovable/appUserConnectorClient'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
