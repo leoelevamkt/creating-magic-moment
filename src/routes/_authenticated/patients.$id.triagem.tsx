@@ -27,7 +27,7 @@ export const Route = createFileRoute('/_authenticated/patients/$id/triagem')({
   ),
 })
 
-type Criterion = { code: string; label: string; present: boolean; notes?: string | null }
+type Criterion = { code: string; label: string; present: boolean; notes?: string | null; value?: string | number | null }
 type ScreeningRow = {
   id: string
   patient_id: string
