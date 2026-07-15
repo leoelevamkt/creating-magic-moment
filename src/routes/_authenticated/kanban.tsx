@@ -379,6 +379,12 @@ function KanbanPage() {
                           </div>
                         </div>
                         <dl className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                          {t.created_at ? (
+                            <div className="flex justify-between gap-2">
+                              <dt>Criada</dt>
+                              <dd className="font-medium text-foreground">{fmtBR(t.created_at)}</dd>
+                            </div>
+                          ) : null}
                           {t.scheduled_at ? (
                             <div className="flex justify-between gap-2">
                               <dt>Agendada</dt>
