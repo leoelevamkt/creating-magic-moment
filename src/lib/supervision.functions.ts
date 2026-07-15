@@ -15,10 +15,17 @@ export const listCases = createServerFn({ method: 'GET' })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from('supervision_cases')
-      .select('id, title, hypothesis, evolution, questions, status, owner_id, patient_id, created_at, patients(name), profiles!supervision_cases_owner_id_fkey(name)')
+      .select('id, title, hypothesis, evolution, questions, status, owner_id, patient_id, created_at, patients(name)')
       .order('created_at', { ascending: false })
     if (error) throw new Error(error.message)
-    return data ?? []
+    const rows = data ?? []
+    const ownerIds = Array.from(new Set(rows.map((r) => r.owner_id)))
+    const owners: Record<string, string> = {}
+    if (ownerIds.length) {
+      const { data: profs } = await context.supabase.from('profiles').select('id, name').in('id', ownerIds)
+      for (const p of profs ?? []) owners[p.id] = p.name
+    }
+    return rows.map((r) => ({ ...r, owner_name: owners[r.owner_id] ?? '—' }))
   })
 
 export const createCase = createServerFn({ method: 'POST' })
@@ -60,11 +67,17 @@ export const listCaseNotes = createServerFn({ method: 'GET' })
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from('supervision_notes')
-      .select('id, body, author_id, created_at, profiles!supervision_notes_author_id_fkey(name)')
+      .select('id, body, author_id, created_at')
       .eq('case_id', data.caseId)
       .order('created_at', { ascending: true })
     if (error) throw new Error(error.message)
-    return rows ?? []
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.author_id)))
+    const authors: Record<string, string> = {}
+    if (ids.length) {
+      const { data: profs } = await context.supabase.from('profiles').select('id, name').in('id', ids)
+      for (const p of profs ?? []) authors[p.id] = p.name
+    }
+    return (rows ?? []).map((r) => ({ ...r, author_name: authors[r.author_id] ?? '—' }))
   })
 
 export const addCaseNote = createServerFn({ method: 'POST' })
