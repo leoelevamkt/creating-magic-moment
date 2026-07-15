@@ -409,3 +409,116 @@ function EditStaffDialog({
   )
 }
 
+function fmtHours(ms: number) {
+  const total = Math.max(0, Math.floor(ms / 60_000))
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  return `${h}h ${String(m).padStart(2, '0')}m`
+}
+
+function sessionDurationMs(s: WorkSession) {
+  const end = s.ended_at ? new Date(s.ended_at).getTime() : Date.now()
+  return end - new Date(s.started_at).getTime()
+}
+
+function WorkSessionsSection({ isAdmin }: { isAdmin: boolean }) {
+  const mine = useServerFn(listMyWorkSessions)
+  const team = useServerFn(listTeamWorkSessions)
+  const meQ = useQuery({
+    queryKey: ['work-session', 'mine', 30],
+    queryFn: () => mine({ data: { days: 30 } }),
+  })
+  const teamQ = useQuery({
+    queryKey: ['work-session', 'team', 30],
+    queryFn: () => team({ data: { days: 30 } }),
+    enabled: isAdmin,
+  })
+  const teamNames = useServerFn(listTeam)
+  const teamMembers = useQuery({ queryKey: ['team'], queryFn: () => teamNames(), enabled: isAdmin })
+
+  const sessions = meQ.data ?? []
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayMs = sessions
+    .filter((s) => new Date(s.started_at) >= today)
+    .reduce((acc, s) => acc + sessionDurationMs(s), 0)
+  const weekStart = new Date(today)
+  weekStart.setDate(today.getDate() - 6)
+  const weekMs = sessions
+    .filter((s) => new Date(s.started_at) >= weekStart)
+    .reduce((acc, s) => acc + sessionDurationMs(s), 0)
+
+  const teamTotals = new Map<string, number>()
+  ;(teamQ.data ?? []).forEach((s) => {
+    teamTotals.set(s.user_id, (teamTotals.get(s.user_id) ?? 0) + sessionDurationMs(s))
+  })
+
+  return (
+    <section className="rounded-2xl border bg-card p-6">
+      <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <Clock size={20} />
+      </span>
+      <h2 className="mt-4 font-serif text-2xl font-semibold">Meu ponto</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Use o botão no topo da tela para iniciar e encerrar seu turno. O tempo é somado abaixo.
+      </p>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="rounded-xl border bg-background p-4">
+          <p className="text-xs text-muted-foreground">Hoje</p>
+          <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">{fmtHours(todayMs)}</p>
+        </div>
+        <div className="rounded-xl border bg-background p-4">
+          <p className="text-xs text-muted-foreground">Últimos 7 dias</p>
+          <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">{fmtHours(weekMs)}</p>
+        </div>
+      </div>
+
+      <h3 className="mt-6 text-sm font-semibold">Histórico (30 dias)</h3>
+      <div className="mt-2 max-h-60 space-y-1 overflow-auto text-sm">
+        {sessions.length === 0 ? (
+          <p className="text-muted-foreground">Nenhum registro ainda.</p>
+        ) : (
+          sessions.map((s) => (
+            <div key={s.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+              <span>
+                {new Date(s.started_at).toLocaleString('pt-BR', {
+                  day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+                })}
+                {' → '}
+                {s.ended_at
+                  ? new Date(s.ended_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                  : 'em aberto'}
+              </span>
+              <span className="font-mono tabular-nums text-muted-foreground">
+                {fmtHours(sessionDurationMs(s))}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+
+      {isAdmin ? (
+        <>
+          <h3 className="mt-6 text-sm font-semibold">Ponto da equipe (30 dias)</h3>
+          <div className="mt-2 space-y-1 text-sm">
+            {(teamMembers.data ?? []).length === 0 ? (
+              <p className="text-muted-foreground">Nenhum membro cadastrado.</p>
+            ) : (
+              (teamMembers.data ?? []).map((m) => (
+                <div key={m.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <div>
+                    <p className="font-medium">{m.name}</p>
+                    <p className="text-xs text-muted-foreground">{m.email}</p>
+                  </div>
+                  <span className="font-mono tabular-nums">{fmtHours(teamTotals.get(m.id) ?? 0)}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      ) : null}
+    </section>
+  )
+}
+
+
