@@ -715,7 +715,7 @@ function NotesBoard({ patientId }: { patientId: string }) {
   })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['patient-notes', patientId] })
   const createMut = useMutation({
-    mutationFn: (v: { title: string; content: string; color: string; checklist: ChecklistItem[] }) =>
+    mutationFn: (v: NoteFormValues) =>
       createFn({ data: { patientId, ...v, pinned: false } }),
     onSuccess: () => {
       toast.success('Anotação criada.')
