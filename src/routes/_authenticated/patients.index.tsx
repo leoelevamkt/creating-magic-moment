@@ -142,6 +142,8 @@ function PatientsPage() {
 
       </header>
 
+      <PatientsReportCards data={data ?? []} />
+
       <div className="rounded-2xl border bg-card">
         {isLoading ? (
           <p className="p-8 text-sm text-muted-foreground">Carregando pacientes…</p>
