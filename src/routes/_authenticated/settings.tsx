@@ -35,7 +35,6 @@ function SettingsPage() {
   const profile = useServerFn(getMyProfile)
   const team = useServerFn(listTeam)
   const create = useServerFn(createStaff)
-  const role = useServerFn(setRole)
   const qc = useQueryClient()
 
   const me = useQuery({ queryKey: ['profile'], queryFn: () => profile() })
@@ -53,14 +52,7 @@ function SettingsPage() {
     onError: (e: Error) => toast.error(e.message),
     onSettled: () => setPending(false),
   })
-  const roleMut = useMutation({
-    mutationFn: (v: { userId: string; role: 'admin' | 'staff' }) => role({ data: v }),
-    onSuccess: () => {
-      toast.success('Papel atualizado.')
-      qc.invalidateQueries({ queryKey: ['team'] })
-    },
-    onError: (e: Error) => toast.error(e.message),
-  })
+
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
