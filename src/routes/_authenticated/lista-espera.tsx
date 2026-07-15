@@ -23,6 +23,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ExportCsvButton } from '@/components/common/ExportCsvButton'
 
 export const Route = createFileRoute('/_authenticated/lista-espera')({
   beforeLoad: ({ context }) => {
