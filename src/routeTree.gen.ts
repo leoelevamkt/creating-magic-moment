@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedSupervisionRouteImport } from './routes/_authenticated/supervision'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedPatientsRouteImport } from './routes/_authenticated/patients'
 import { Route as AuthenticatedMaterialsRouteImport } from './routes/_authenticated/materials'
 import { Route as AuthenticatedKanbanRouteImport } from './routes/_authenticated/kanban'
@@ -54,6 +55,11 @@ const AuthenticatedSupervisionRoute =
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPatientsRoute = AuthenticatedPatientsRouteImport.update({
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/kanban': typeof AuthenticatedKanbanRoute
   '/materials': typeof AuthenticatedMaterialsRoute
   '/patients': typeof AuthenticatedPatientsRouteWithChildren
+  '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/supervision': typeof AuthenticatedSupervisionRoute
   '/tasks': typeof AuthenticatedTasksRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/kanban': typeof AuthenticatedKanbanRoute
   '/materials': typeof AuthenticatedMaterialsRoute
   '/patients': typeof AuthenticatedPatientsRouteWithChildren
+  '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/supervision': typeof AuthenticatedSupervisionRoute
   '/tasks': typeof AuthenticatedTasksRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/_authenticated/kanban': typeof AuthenticatedKanbanRoute
   '/_authenticated/materials': typeof AuthenticatedMaterialsRoute
   '/_authenticated/patients': typeof AuthenticatedPatientsRouteWithChildren
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/supervision': typeof AuthenticatedSupervisionRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/materials'
     | '/patients'
+    | '/reports'
     | '/settings'
     | '/supervision'
     | '/tasks'
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/materials'
     | '/patients'
+    | '/reports'
     | '/settings'
     | '/supervision'
     | '/tasks'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/_authenticated/kanban'
     | '/_authenticated/materials'
     | '/_authenticated/patients'
+    | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/_authenticated/supervision'
     | '/_authenticated/tasks'
@@ -266,6 +278,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/patients': {
@@ -379,6 +398,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedKanbanRoute: typeof AuthenticatedKanbanRoute
   AuthenticatedMaterialsRoute: typeof AuthenticatedMaterialsRoute
   AuthenticatedPatientsRoute: typeof AuthenticatedPatientsRouteWithChildren
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSupervisionRoute: typeof AuthenticatedSupervisionRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
@@ -391,6 +411,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedKanbanRoute: AuthenticatedKanbanRoute,
   AuthenticatedMaterialsRoute: AuthenticatedMaterialsRoute,
   AuthenticatedPatientsRoute: AuthenticatedPatientsRouteWithChildren,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSupervisionRoute: AuthenticatedSupervisionRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
