@@ -59,9 +59,7 @@ function AuthPage() {
     <main className="flex min-h-svh bg-background">
       <section className="hidden flex-1 flex-col justify-between bg-primary p-12 text-primary-foreground lg:flex">
         <div className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center overflow-hidden rounded-xl bg-primary-foreground">
-            <img src={logoAsset.url} alt="NeuroFlux" className="size-full object-contain" />
-          </span>
+          <img src={logoAsset.url} alt="NeuroFlux" className="size-10 object-contain" />
           <span className="font-serif text-2xl font-semibold">NeuroFlux</span>
         </div>
         <div className="max-w-xl">
