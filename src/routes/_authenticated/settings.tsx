@@ -537,6 +537,16 @@ function WorkSessionsSection({ isAdmin }: { isAdmin: boolean }) {
   const sessions = meQ.data ?? []
   const t = totals(sessions)
 
+  const byDay = new Map<string, { total: number; rows: WorkSession[] }>()
+  for (const s of sessions) {
+    const key = new Date(s.started_at).toISOString().slice(0, 10)
+    const cur = byDay.get(key) ?? { total: 0, rows: [] }
+    cur.total += sessionDurationMs(s)
+    cur.rows.push(s)
+    byDay.set(key, cur)
+  }
+  const days = Array.from(byDay.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1))
+
   return (
     <section className="rounded-2xl border bg-card p-6">
       <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -544,7 +554,7 @@ function WorkSessionsSection({ isAdmin }: { isAdmin: boolean }) {
       </span>
       <h2 className="mt-4 font-serif text-2xl font-semibold">Meu ponto</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Use o botão no topo da tela para iniciar e encerrar seu turno. O tempo é somado abaixo.
+        Use o botão no topo da tela para iniciar e encerrar seu turno. Veja abaixo o total por dia.
       </p>
       <div className="mt-4 grid grid-cols-3 gap-3">
         <div className="rounded-xl border bg-background p-4">
@@ -561,25 +571,37 @@ function WorkSessionsSection({ isAdmin }: { isAdmin: boolean }) {
         </div>
       </div>
 
-      <h3 className="mt-6 text-sm font-semibold">Histórico (30 dias)</h3>
-      <div className="mt-2 max-h-60 space-y-1 overflow-auto text-sm">
-        {sessions.length === 0 ? (
-          <p className="text-muted-foreground">Nenhum registro ainda.</p>
+      <h3 className="mt-6 text-sm font-semibold">Horas por dia (30 dias)</h3>
+      <div className="mt-2 max-h-[28rem] space-y-3 overflow-auto">
+        {days.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum registro ainda.</p>
         ) : (
-          sessions.map((s) => (
-            <div key={s.id} className="flex items-center justify-between rounded-md border px-3 py-2">
-              <span>
-                {new Date(s.started_at).toLocaleString('pt-BR', {
-                  day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
-                })}
-                {' → '}
-                {s.ended_at
-                  ? new Date(s.ended_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-                  : 'em aberto'}
-              </span>
-              <span className="font-mono tabular-nums text-muted-foreground">
-                {fmtHours(sessionDurationMs(s))}
-              </span>
+          days.map(([day, info]) => (
+            <div key={day} className="rounded-xl border p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold">
+                  {new Date(day + 'T00:00:00').toLocaleDateString('pt-BR', {
+                    weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
+                  })}
+                </p>
+                <span className="font-mono text-sm font-semibold tabular-nums">{fmtHours(info.total)}</span>
+              </div>
+              <div className="mt-2 space-y-1">
+                {info.rows.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between rounded-md border px-3 py-1.5 text-xs">
+                    <span>
+                      {new Date(s.started_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      {' → '}
+                      {s.ended_at
+                        ? new Date(s.ended_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                        : 'em aberto'}
+                    </span>
+                    <span className="font-mono tabular-nums text-muted-foreground">
+                      {fmtHours(sessionDurationMs(s))}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           ))
         )}
