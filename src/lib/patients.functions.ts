@@ -156,7 +156,16 @@ export const updateTaskResult = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => UpdateTaskInput.parse(i))
   .handler(async ({ context, data }) => {
-    const patch: Record<string, unknown> = {
+    const patch: {
+      raw_score: string | null
+      standard_score: string | null
+      classification: string | null
+      correction_notes: string | null
+      synthesis: string | null
+      duration_minutes: number | null
+      status?: 'review'
+      completed_at?: string
+    } = {
       raw_score: data.raw_score ?? null,
       standard_score: data.standard_score ?? null,
       classification: data.classification ?? null,
