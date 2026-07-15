@@ -323,6 +323,9 @@ export type Database = {
           id: string
           patient_id: string
           pinned: boolean
+          planned_tests: string | null
+          session_dates: string[]
+          session_number: number | null
           title: string
           updated_at: string
         }
@@ -335,6 +338,9 @@ export type Database = {
           id?: string
           patient_id: string
           pinned?: boolean
+          planned_tests?: string | null
+          session_dates?: string[]
+          session_number?: number | null
           title?: string
           updated_at?: string
         }
@@ -347,6 +353,9 @@ export type Database = {
           id?: string
           patient_id?: string
           pinned?: boolean
+          planned_tests?: string | null
+          session_dates?: string[]
+          session_number?: number | null
           title?: string
           updated_at?: string
         }
