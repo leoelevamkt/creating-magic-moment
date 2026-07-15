@@ -200,6 +200,31 @@ function PatientDetailPage() {
               </dl>
             </section>
 
+            <section className="rounded-2xl border bg-card p-6 shadow-sm">
+              <h2 className="font-serif text-lg font-semibold">Dados do paciente</h2>
+              <dl className="mt-5 grid gap-5 text-sm">
+                {patient.birth_date ? (
+                  <Info label="Idade" value={`${ageFromDate(patient.birth_date)} anos`} />
+                ) : null}
+                <Info label="Sexo" value={sexLabel((patient as { sex?: string | null }).sex) || '—'} />
+                <Info label="Telefone" value={(patient as { phone?: string | null }).phone ?? '—'} />
+                <Info label="CPF" value={patient.cpf ?? '—'} />
+                <Info label="Escolaridade" value={patient.schooling ?? '—'} />
+                <Info label="Cidade" value={patient.city ?? '—'} />
+                <Info label="Medicações" value={(patient as { medications?: string | null }).medications ?? '—'} />
+                <Info label="Hipóteses diagnósticas" value={patient.hypotheses ?? '—'} />
+                <Info label="Observações" value={patient.notes ?? 'Sem observações'} />
+              </dl>
+            </section>
+
+            <ProfessionalsCard
+              list={
+                Array.isArray((patient as { professionals?: unknown }).professionals)
+                  ? ((patient as { professionals?: Array<{ name: string; role?: string | null; contact?: string | null }> }).professionals ?? [])
+                  : []
+              }
+            />
+
             <ContactsCard
               hasGuardians={!!patient.has_guardians}
               guardians={patient.guardians as unknown as Array<{ name: string; phone: string; relation: string }> | null}
