@@ -59,14 +59,6 @@ export const createPatient = createServerFn({ method: 'POST' })
         has_guardians: !!data.hasGuardians,
         guardians,
         emergency_contact: data.emergencyContact ?? null,
-        created_by: context.userId,
-        name: data.name,
-        birth_date: data.birthDate,
-        cpf: data.cpf,
-        schooling: data.schooling,
-        city: data.city,
-        hypotheses: data.hypotheses || null,
-        notes: data.notes || null,
         status: 'active',
       })
       .select('id')
