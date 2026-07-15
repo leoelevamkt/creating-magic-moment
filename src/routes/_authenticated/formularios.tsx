@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { toast } from 'sonner'
-import { Archive, Copy, Eye, Link2, Plus } from 'lucide-react'
+import { Archive, Copy, Eye, Link2, Plus, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select'
 import { supabase } from '@/integrations/supabase/client'
 import { archiveForm, createForm, getFormResponses, listForms } from '@/lib/forms.functions'
-import { formTemplates } from '@/lib/form-templates'
+import { formTemplates, PRE_CADASTRO_TEMPLATE_ID } from '@/lib/form-templates'
 
 export const Route = createFileRoute('/_authenticated/formularios')({
   head: () => ({ meta: [{ title: 'Formulários — NeuroFlux' }] }),
