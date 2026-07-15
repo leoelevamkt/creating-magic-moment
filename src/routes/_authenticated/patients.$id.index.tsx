@@ -4,7 +4,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { CalendarPlus, Pencil, Plus, Sparkles } from 'lucide-react'
+import { CalendarPlus, Pencil, Pin, PinOff, Plus, Sparkles, Trash2 } from 'lucide-react'
+import {
+  listPatientNotes,
+  createPatientNote,
+  updatePatientNote,
+  deletePatientNote,
+  listPatientPlan,
+  createPatientPlanEntry,
+  updatePatientPlanEntry,
+  deletePatientPlanEntry,
+} from '@/lib/patient-plan.functions'
 import { getPatientDetail, updateTaskResult, generateEvaluationSynthesis, updatePatient, generatePatientOverallSynthesis } from '@/lib/patients.functions'
 import { createSession } from '@/lib/sessions.functions'
 import { createEvaluation } from '@/lib/evaluations.functions'
