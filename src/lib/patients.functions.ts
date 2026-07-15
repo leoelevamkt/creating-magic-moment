@@ -312,7 +312,7 @@ export const updatePatient = createServerFn({ method: 'POST' })
       name: string; birth_date: string; cpf: string; schooling: string; city: string;
       hypotheses: string | null; notes: string | null;
       status?: 'active' | 'archived' | 'discharged';
-      has_guardians?: boolean; guardians?: Guardian[]; emergency_contact?: EmergencyContact | null;
+      has_guardians?: boolean; guardians?: unknown; emergency_contact?: unknown;
     } = {
       name: data.name,
       birth_date: data.birthDate,
