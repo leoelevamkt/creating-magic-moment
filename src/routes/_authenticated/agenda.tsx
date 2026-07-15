@@ -51,6 +51,8 @@ function AgendaPage() {
   const create = useServerFn(createSession)
   const remove = useServerFn(deleteSession)
   const setStatus = useServerFn(updateSessionStatus)
+  const meetFn = useServerFn(createMeetForSession)
+  const googleStatus = useServerFn(getGoogleConnectionStatus)
 
   const weekStart = startOfWeek(anchor, { weekStartsOn: 1 })
   const weekEnd = endOfWeek(anchor, { weekStartsOn: 1 })
@@ -63,6 +65,7 @@ function AgendaPage() {
   })
   const patients = useQuery({ queryKey: ['patients'], queryFn: () => useServerFnSafe(listPatients)() })
   const catalog = useQuery({ queryKey: ['catalog'], queryFn: () => useServerFnSafe(listCatalog)() })
+  const gStatus = useQuery({ queryKey: ['google-status'], queryFn: () => googleStatus() })
 
   const removeMut = useMutation({
     mutationFn: (id: string) => remove({ data: { id } }),
@@ -76,8 +79,17 @@ function AgendaPage() {
     mutationFn: (v: { id: string; status: 'done' }) => setStatus({ data: v }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
   })
+  const meetMut = useMutation({
+    mutationFn: (sessionId: string) => meetFn({ data: { sessionId } }),
+    onSuccess: (r) => {
+      toast.success('Meet criado.')
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+      if (r?.meetUrl) window.open(r.meetUrl, '_blank', 'noopener')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
   const createMut = useMutation({
-    mutationFn: (v: {
+    mutationFn: async (v: {
       patientId: string
       title: string
       modality: 'presencial' | 'online'
@@ -87,7 +99,19 @@ function AgendaPage() {
       objectives: string | null
       notes: string | null
       plannedTestIds: string[]
-    }) => create({ data: v }),
+      createMeet: boolean
+    }) => {
+      const { createMeet, ...rest } = v
+      const res = await create({ data: rest })
+      if (createMeet && res.id) {
+        try {
+          await meetFn({ data: { sessionId: res.id } })
+        } catch (e) {
+          toast.error(`Sessão criada, mas Meet falhou: ${(e as Error).message}`)
+        }
+      }
+      return res
+    },
     onSuccess: () => {
       toast.success('Sessão agendada.')
       setOpen(false)
@@ -115,6 +139,7 @@ function AgendaPage() {
       objectives: String(fd.get('objectives') ?? '') || null,
       notes: String(fd.get('notes') ?? '') || null,
       plannedTestIds: testIds,
+      createMeet: fd.get('createMeet') === 'on',
     })
   }
 
