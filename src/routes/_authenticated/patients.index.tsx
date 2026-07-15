@@ -54,6 +54,7 @@ function PatientsPage() {
   const [contact, setContact] = useState<GuardiansEmergencyValue>({
     hasGuardians: false, guardians: [], emergencyContact: { ...EMPTY_EMERGENCY },
   })
+  const [professionals, setProfessionals] = useState<Professional[]>([])
 
   const { data, isLoading } = useQuery({
     queryKey: ['patients'],
@@ -64,6 +65,8 @@ function PatientsPage() {
     name: string;
     sex: 'feminino' | 'masculino' | 'outro' | 'nao_informado' | null;
     birthDate: string; cpf: string; schooling: string; city: string;
+    phone: string; medications: string;
+    professionals: Professional[];
     hypotheses: string; notes: string;
     hasGuardians: boolean;
     guardians: { name: string; phone: string; relation: string }[];
@@ -75,6 +78,7 @@ function PatientsPage() {
       toast.success('Paciente cadastrado.')
       setOpen(false)
       setContact({ hasGuardians: false, guardians: [], emergencyContact: { ...EMPTY_EMERGENCY } })
+      setProfessionals([])
       qc.invalidateQueries({ queryKey: ['patients'] })
       router.invalidate()
     },
@@ -97,6 +101,9 @@ function PatientsPage() {
       cpf: String(fd.get('cpf') ?? ''),
       schooling: String(fd.get('schooling') ?? ''),
       city: String(fd.get('city') ?? ''),
+      phone: String(fd.get('phone') ?? ''),
+      medications: String(fd.get('medications') ?? ''),
+      professionals: normalizeProfessionals(professionals),
       hypotheses: String(fd.get('hypotheses') ?? ''),
       notes: String(fd.get('notes') ?? ''),
       ...contactPayload,
