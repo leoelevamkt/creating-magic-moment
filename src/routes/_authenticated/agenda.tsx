@@ -516,6 +516,7 @@ function SessionTranscribeButton({ sessionId, existing }: { sessionId: string; e
               <input type="file" accept="audio/*" onChange={onFile} className="hidden" disabled={busy} />
             </label>
           </div>
+          {progress ? <p className="text-xs text-muted-foreground">{progress}</p> : null}
           <Textarea rows={12} value={text} onChange={(e) => setText(e.target.value)} />
           <div className="flex justify-end">
             <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
