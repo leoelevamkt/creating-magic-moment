@@ -34,6 +34,22 @@ export const createSession = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => CreateSession.parse(i))
   .handler(async ({ context, data }) => {
+    // Overlap check against this user's agenda blocks
+    if (data.startTime && data.endTime) {
+      const weekday = new Date(`${data.sessionDate}T00:00:00`).getDay()
+      const { data: blocks } = await context.supabase
+        .from('agenda_blocks')
+        .select('id, title, recurrence, weekday, block_date, start_time, end_time')
+        .eq('owner_id', context.userId)
+      const hit = (blocks ?? []).find((b) => {
+        if (b.recurrence === 'weekly' && b.weekday !== weekday) return false
+        if (b.recurrence === 'once' && b.block_date !== data.sessionDate) return false
+        return data.startTime! < b.end_time && data.endTime! > b.start_time
+      })
+      if (hit) {
+        throw new Error(`Horário conflita com o bloqueio "${hit.title}".`)
+      }
+    }
     const { data: row, error } = await context.supabase
       .from('sessions_plan')
       .insert({
@@ -54,6 +70,7 @@ export const createSession = createServerFn({ method: 'POST' })
     if (error) throw new Error(error.message)
     return { ok: true, id: row.id }
   })
+
 
 export const updateSessionStatus = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
