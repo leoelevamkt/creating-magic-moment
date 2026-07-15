@@ -11,7 +11,9 @@ export const listPatientNotes = createServerFn({ method: 'GET' })
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from('patient_notes')
-      .select('id, title, content, color, pinned, checklist, created_at, updated_at, created_by')
+      .select(
+        'id, title, content, color, pinned, checklist, session_number, session_dates, planned_tests, created_at, updated_at, created_by',
+      )
       .eq('patient_id', data.patientId)
       .order('pinned', { ascending: false })
       .order('updated_at', { ascending: false })
@@ -26,6 +28,9 @@ const NoteInput = z.object({
   color: z.string().default('default'),
   pinned: z.boolean().default(false),
   checklist: z.array(NoteChecklistItem).default([]),
+  sessionNumber: z.number().int().positive().nullable().optional(),
+  sessionDates: z.array(z.string()).default([]),
+  plannedTests: z.string().optional().nullable(),
 })
 export const createPatientNote = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
@@ -39,7 +44,10 @@ export const createPatientNote = createServerFn({ method: 'POST' })
       color: data.color,
       pinned: data.pinned,
       checklist: data.checklist,
-    })
+      session_number: data.sessionNumber ?? null,
+      session_dates: data.sessionDates,
+      planned_tests: data.plannedTests || null,
+    } as never)
     if (error) throw new Error(error.message)
     return { ok: true }
   })
@@ -51,13 +59,23 @@ const NoteUpdate = z.object({
   color: z.string().optional(),
   pinned: z.boolean().optional(),
   checklist: z.array(NoteChecklistItem).optional(),
+  sessionNumber: z.number().int().positive().nullable().optional(),
+  sessionDates: z.array(z.string()).optional(),
+  plannedTests: z.string().nullable().optional(),
 })
 export const updatePatientNote = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => NoteUpdate.parse(i))
   .handler(async ({ context, data }) => {
-    const { id, ...patch } = data
-    const { error } = await context.supabase.from('patient_notes').update(patch).eq('id', id)
+    const { id, sessionNumber, sessionDates, plannedTests, ...rest } = data
+    const patch: Record<string, unknown> = { ...rest }
+    if (sessionNumber !== undefined) patch.session_number = sessionNumber
+    if (sessionDates !== undefined) patch.session_dates = sessionDates
+    if (plannedTests !== undefined) patch.planned_tests = plannedTests || null
+    const { error } = await context.supabase
+      .from('patient_notes')
+      .update(patch as never)
+      .eq('id', id)
     if (error) throw new Error(error.message)
     return { ok: true }
   })

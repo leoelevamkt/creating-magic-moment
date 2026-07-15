@@ -715,7 +715,7 @@ function NotesBoard({ patientId }: { patientId: string }) {
   })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['patient-notes', patientId] })
   const createMut = useMutation({
-    mutationFn: (v: { title: string; content: string; color: string; checklist: ChecklistItem[] }) =>
+    mutationFn: (v: NoteFormValues) =>
       createFn({ data: { patientId, ...v, pinned: false } }),
     onSuccess: () => {
       toast.success('Anotação criada.')
@@ -760,12 +760,21 @@ function NotesBoard({ patientId }: { patientId: string }) {
 }
 
 type Note = Awaited<ReturnType<typeof listPatientNotes>>[number]
+type NoteFormValues = {
+  title: string
+  content: string
+  color: string
+  checklist: ChecklistItem[]
+  sessionNumber: number | null
+  sessionDates: string[]
+  plannedTests: string
+}
 
 function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
   const upd = useServerFn(updatePatientNote)
   const del = useServerFn(deletePatientNote)
   const updMut = useMutation({
-    mutationFn: (v: Partial<{ title: string; content: string; color: string; pinned: boolean; checklist: ChecklistItem[] }>) =>
+    mutationFn: (v: Partial<NoteFormValues & { pinned: boolean }>) =>
       upd({ data: { id: note.id, ...v } }),
     onSuccess: onChanged,
     onError: (e: Error) => toast.error(e.message),
@@ -781,16 +790,36 @@ function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
 
   const checklist = toChecklist(note.checklist)
   const doneCount = checklist.filter((c) => c.done).length
+  const n = note as Note & {
+    session_number?: number | null
+    session_dates?: string[] | null
+    planned_tests?: string | null
+  }
+  const sessionDates = Array.isArray(n.session_dates) ? n.session_dates : []
+  const plannedTests = n.planned_tests ?? ''
 
   function toggleItem(idx: number) {
     const next = checklist.map((c, i) => (i === idx ? { ...c, done: !c.done } : c))
     updMut.mutate({ checklist: next })
   }
 
+  function fmtDate(d: string) {
+    try {
+      return format(new Date(d.length <= 10 ? d + 'T00:00:00' : d), 'dd/MM/yyyy')
+    } catch {
+      return d
+    }
+  }
+
   return (
     <div className={`flex flex-col gap-2 rounded-xl border p-3 ${NOTE_COLORS[note.color] ?? NOTE_COLORS.default}`}>
       <div className="flex items-start justify-between gap-2">
-        <p className="font-semibold text-sm">{note.title || 'Sem título'}</p>
+        <div className="min-w-0">
+          <p className="font-semibold text-sm">{note.title || 'Sem título'}</p>
+          {n.session_number ? (
+            <p className="text-[11px] font-medium text-primary">Sessão nº {n.session_number}</p>
+          ) : null}
+        </div>
         <div className="flex gap-1">
           <Button size="icon" variant="ghost" className="size-7" onClick={() => updMut.mutate({ pinned: !note.pinned })} title={note.pinned ? 'Desfixar' : 'Fixar'}>
             {note.pinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
@@ -801,7 +830,15 @@ function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
                 <Pencil className="size-3.5" />
               </Button>
             }
-            initial={{ title: note.title, content: note.content, color: note.color, checklist }}
+            initial={{
+              title: note.title,
+              content: note.content,
+              color: note.color,
+              checklist,
+              sessionNumber: n.session_number ?? null,
+              sessionDates,
+              plannedTests,
+            }}
             onSubmit={(v) => updMut.mutate(v)}
             isPending={updMut.isPending}
           />
@@ -818,8 +855,26 @@ function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
           </Button>
         </div>
       </div>
+      {sessionDates.length > 0 ? (
+        <div className="flex flex-wrap gap-1">
+          {sessionDates.map((d, i) => (
+            <span key={i} className="rounded-full border bg-background/60 px-2 py-0.5 text-[11px]">
+              {fmtDate(d)}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {plannedTests ? (
+        <div className="rounded-md bg-background/60 p-2 text-xs">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">O que será aplicado</p>
+          <p className="mt-0.5 whitespace-pre-wrap">{plannedTests}</p>
+        </div>
+      ) : null}
       {note.content ? (
-        <p className="whitespace-pre-wrap text-sm text-foreground/90">{note.content}</p>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Observações</p>
+          <p className="mt-0.5 whitespace-pre-wrap text-sm text-foreground/90">{note.content}</p>
+        </div>
       ) : null}
       {checklist.length > 0 ? (
         <div className="mt-1 flex flex-col gap-1.5 border-t pt-2">
@@ -860,13 +915,15 @@ function NoteDialog({
   isPending,
 }: {
   trigger: React.ReactNode
-  initial?: { title: string; content: string; color: string; checklist: ChecklistItem[] }
-  onSubmit: (v: { title: string; content: string; color: string; checklist: ChecklistItem[] }) => void
+  initial?: NoteFormValues
+  onSubmit: (v: NoteFormValues) => void
   isPending: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<ChecklistItem[]>(initial?.checklist ?? [])
   const [newItem, setNewItem] = useState('')
+  const [dates, setDates] = useState<string[]>(initial?.sessionDates ?? [])
+  const [newDate, setNewDate] = useState('')
 
   function addItem() {
     const label = newItem.trim()
@@ -875,14 +932,25 @@ function NoteDialog({
     setNewItem('')
   }
 
+  function addDate() {
+    if (!newDate) return
+    setDates((prev) => (prev.includes(newDate) ? prev : [...prev, newDate].sort()))
+    setNewDate('')
+  }
+
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    const rawNum = String(fd.get('session_number') ?? '').trim()
+    const parsedNum = rawNum ? Number(rawNum) : null
     onSubmit({
       title: String(fd.get('title') ?? ''),
       content: String(fd.get('content') ?? ''),
       color: String(fd.get('color') ?? 'default'),
       checklist: items,
+      sessionNumber: parsedNum && Number.isFinite(parsedNum) && parsedNum > 0 ? parsedNum : null,
+      sessionDates: dates,
+      plannedTests: String(fd.get('planned_tests') ?? ''),
     })
     setOpen(false)
   }
@@ -891,7 +959,10 @@ function NoteDialog({
       open={open}
       onOpenChange={(v) => {
         setOpen(v)
-        if (v) setItems(initial?.checklist ?? [])
+        if (v) {
+          setItems(initial?.checklist ?? [])
+          setDates(initial?.sessionDates ?? [])
+        }
       }}
     >
       <DialogTrigger render={trigger as React.ReactElement} />
@@ -901,13 +972,67 @@ function NoteDialog({
             {initial ? 'Editar anotação' : 'Nova anotação'}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={submit} className="grid gap-3 pt-2">
+        <form onSubmit={submit} className="grid max-h-[75vh] gap-3 overflow-y-auto pt-2">
           <div className="flex flex-col gap-1.5">
             <Label>Título</Label>
             <Input name="title" defaultValue={initial?.title ?? ''} />
           </div>
+          <div className="grid gap-3 sm:grid-cols-[140px_1fr]">
+            <div className="flex flex-col gap-1.5">
+              <Label>Nº da sessão</Label>
+              <Input
+                name="session_number"
+                type="number"
+                min={1}
+                defaultValue={initial?.sessionNumber ?? ''}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Possíveis datas</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={newDate}
+                  onChange={(e) => setNewDate(e.target.value)}
+                  className="h-9"
+                />
+                <Button type="button" size="sm" variant="outline" onClick={addDate}>
+                  <Plus /> Adicionar
+                </Button>
+              </div>
+              {dates.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {dates.map((d) => (
+                    <span
+                      key={d}
+                      className="flex items-center gap-1 rounded-full border bg-background px-2 py-0.5 text-xs"
+                    >
+                      {format(new Date(d + 'T00:00:00'), 'dd/MM/yyyy')}
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => setDates((prev) => prev.filter((x) => x !== d))}
+                        aria-label="Remover data"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
           <div className="flex flex-col gap-1.5">
-            <Label>Conteúdo</Label>
+            <Label>O que será aplicado</Label>
+            <Textarea
+              name="planned_tests"
+              rows={2}
+              placeholder="Ex.: WAIS-IV, Rey, TDE-II…"
+              defaultValue={initial?.plannedTests ?? ''}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Observações</Label>
             <Textarea name="content" rows={4} defaultValue={initial?.content ?? ''} />
           </div>
           <div className="flex flex-col gap-1.5">
