@@ -39,6 +39,8 @@ const columns: Array<{ id: TaskStatus; label: string; icon: typeof ClipboardList
 
 function KanbanPage() {
   const [open, setOpen] = useState(false)
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [overCol, setOverCol] = useState<TaskStatus | null>(null)
   const qc = useQueryClient()
   const tasksFn = useServerFn(listTasks)
   const setStatus = useServerFn(updateTaskStatus)
