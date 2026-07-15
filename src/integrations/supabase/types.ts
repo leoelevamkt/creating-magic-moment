@@ -183,6 +183,75 @@ export type Database = {
           },
         ]
       }
+      financial_transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          kind: string
+          notes: string | null
+          paid_at: string | null
+          patient_id: string | null
+          payment_method: string | null
+          session_id: string | null
+          status: string
+          transaction_date: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          kind: string
+          notes?: string | null
+          paid_at?: string | null
+          patient_id?: string | null
+          payment_method?: string | null
+          session_id?: string | null
+          status?: string
+          transaction_date?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          paid_at?: string | null
+          patient_id?: string | null
+          payment_method?: string | null
+          session_id?: string | null
+          status?: string
+          transaction_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions_plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       material_movements: {
         Row: {
           author_id: string
@@ -256,6 +325,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      patient_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          mime_type: string | null
+          name: string
+          patient_id: string
+          size_bytes: number | null
+          storage_path: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          mime_type?: string | null
+          name: string
+          patient_id: string
+          size_bytes?: number | null
+          storage_path: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          mime_type?: string | null
+          name?: string
+          patient_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_documents_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       patient_forms: {
         Row: {

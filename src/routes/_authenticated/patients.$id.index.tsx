@@ -15,7 +15,11 @@ import {
   updatePatientPlanEntry,
   deletePatientPlanEntry,
 } from '@/lib/patient-plan.functions'
-import { getPatientDetail, updateTaskResult, generateEvaluationSynthesis, updatePatient, generatePatientOverallSynthesis } from '@/lib/patients.functions'
+import { getPatientDetail, updateTaskResult, generateEvaluationSynthesis, updatePatient, generatePatientOverallSynthesis, setPatientStatus, deletePatient } from '@/lib/patients.functions'
+import { DocumentsTab } from '@/components/patients/DocumentsTab'
+import { FinanceTab } from '@/components/patients/FinanceTab'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useRouter } from '@tanstack/react-router'
 import { createSession } from '@/lib/sessions.functions'
 import { createEvaluation } from '@/lib/evaluations.functions'
 import { listCatalog } from '@/lib/profile.functions'
@@ -103,6 +107,7 @@ function PatientDetailPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <PatientStatusActions patientId={id} status={patient.status} onChanged={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
           <EditPatientDialog patient={patient} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
           <Button variant="outline" render={<Link to="/patients/$id/anamnese" params={{ id }} />}>Anamnese</Button>
           <Button variant="outline" render={<Link to="/patients/$id/triagem" params={{ id }} />}>Triagem</Button>
@@ -111,6 +116,12 @@ function PatientDetailPage() {
           <NewEvaluationDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
         </div>
       </header>
+
+      <div className="mb-1 flex items-center gap-2 text-xs">
+        <Badge variant={patient.status === 'active' ? 'default' : patient.status === 'discharged' ? 'secondary' : 'outline'}>
+          {patient.status === 'active' ? 'Ativo' : patient.status === 'archived' ? 'Inativo' : patient.status === 'discharged' ? 'Alta' : patient.status}
+        </Badge>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <aside className="flex flex-col gap-6">
@@ -172,56 +183,116 @@ function PatientDetailPage() {
         </aside>
 
         <main className="flex flex-col gap-6">
-          <NotesBoard patientId={id} />
+          <Tabs defaultValue="chart" className="w-full">
+            <TabsList>
+              <TabsTrigger value="chart">Prontuário</TabsTrigger>
+              <TabsTrigger value="documents">Documentos</TabsTrigger>
+              <TabsTrigger value="finance">Financeiro</TabsTrigger>
+            </TabsList>
+            <TabsContent value="chart" className="mt-4 flex flex-col gap-6">
+              <NotesBoard patientId={id} />
 
-          <OverallSynthesisCard patientId={id} synthesis={patient.overall_synthesis ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
+              <OverallSynthesisCard patientId={id} synthesis={patient.overall_synthesis ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
 
-          <section className="rounded-2xl border bg-card p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-serif text-2xl font-semibold">Testes e correções</h2>
+              <section className="rounded-2xl border bg-card p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-serif text-2xl font-semibold">Testes e correções</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Tudo o que foi aplicado, corrigido e aprovado para este paciente.
+                    </p>
+                  </div>
+                  <span className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                    {tasks.length}
+                  </span>
+                </div>
+                {tasks.length === 0 ? (
+                  <p className="mt-6 text-sm text-muted-foreground">
+                    Nenhum teste ainda. Use “Nova avaliação” para planejar.
+                  </p>
+                ) : (
+                  <div className="mt-4 flex flex-col divide-y">
+                    {tasks.map((t) => (
+                      <TaskRow key={t.id} task={t} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-2xl border bg-card p-5">
+                <h2 className="font-serif text-2xl font-semibold">Síntese integradora</h2>
                 <p className="text-sm text-muted-foreground">
-                  Tudo o que foi aplicado, corrigido e aprovado para este paciente.
+                  A IA integra os resultados registrados em uma síntese por domínios cognitivos. Sempre revise o texto.
                 </p>
-              </div>
-              <span className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-                {tasks.length}
-              </span>
-            </div>
-            {tasks.length === 0 ? (
-              <p className="mt-6 text-sm text-muted-foreground">
-                Nenhum teste ainda. Use “Nova avaliação” para planejar.
-              </p>
-            ) : (
-              <div className="mt-4 flex flex-col divide-y">
-                {tasks.map((t) => (
-                  <TaskRow key={t.id} task={t} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
-                ))}
-              </div>
-            )}
-          </section>
+                {evaluations.length === 0 ? (
+                  <p className="mt-4 text-sm text-muted-foreground">Nenhuma avaliação planejada ainda.</p>
+                ) : (
+                  <div className="mt-4 flex flex-col gap-3">
+                    {evaluations.map((ev) => (
+                      <SynthesisCard key={ev.id} evaluation={ev} taskCount={tasks.filter((t) => t.evaluation_id === ev.id && (t.synthesis || t.raw_score || t.standard_score)).length} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
+                    ))}
+                  </div>
+                )}
+              </section>
 
-          <section className="rounded-2xl border bg-card p-5">
-            <h2 className="font-serif text-2xl font-semibold">Síntese integradora</h2>
-            <p className="text-sm text-muted-foreground">
-              A IA integra os resultados registrados em uma síntese por domínios cognitivos. Sempre revise o texto.
-            </p>
-            {evaluations.length === 0 ? (
-              <p className="mt-4 text-sm text-muted-foreground">Nenhuma avaliação planejada ainda.</p>
-            ) : (
-              <div className="mt-4 flex flex-col gap-3">
-                {evaluations.map((ev) => (
-                  <SynthesisCard key={ev.id} evaluation={ev} taskCount={tasks.filter((t) => t.evaluation_id === ev.id && (t.synthesis || t.raw_score || t.standard_score)).length} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
-                ))}
-              </div>
-            )}
-          </section>
-
-          <EvaluationPlan patientId={id} />
-
+              <EvaluationPlan patientId={id} />
+            </TabsContent>
+            <TabsContent value="documents" className="mt-4">
+              <DocumentsTab patientId={id} />
+            </TabsContent>
+            <TabsContent value="finance" className="mt-4">
+              <FinanceTab patientId={id} />
+            </TabsContent>
+          </Tabs>
         </main>
       </div>
     </div>
+  )
+}
+
+function PatientStatusActions({ patientId, status, onChanged }: { patientId: string; status: string; onChanged: () => void }) {
+  const router = useRouter()
+  const setStatus = useServerFn(setPatientStatus)
+  const removePatient = useServerFn(deletePatient)
+  const statusMut = useMutation({
+    mutationFn: (s: 'active' | 'archived' | 'discharged') => setStatus({ data: { id: patientId, status: s } }),
+    onSuccess: () => {
+      toast.success('Status atualizado.')
+      onChanged()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+  const delMut = useMutation({
+    mutationFn: () => removePatient({ data: { id: patientId } }),
+    onSuccess: () => {
+      toast.success('Paciente excluído.')
+      router.navigate({ to: '/patients' })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+  const isActive = status === 'active'
+  return (
+    <>
+      <Button
+        variant="outline"
+        onClick={() => statusMut.mutate(isActive ? 'archived' : 'active')}
+        disabled={statusMut.isPending}
+      >
+        {isActive ? 'Desativar' : 'Ativar'}
+      </Button>
+      <Button
+        variant="outline"
+        className="text-destructive hover:text-destructive"
+        onClick={() => {
+          if (confirm('Excluir permanentemente este paciente e todos os seus dados? Esta ação não pode ser desfeita.')) {
+            delMut.mutate()
+          }
+        }}
+        disabled={delMut.isPending}
+      >
+        <Trash2 className="mr-1 size-4" /> Excluir
+      </Button>
+    </>
   )
 }
 
