@@ -72,6 +72,18 @@ function PublicFormPage() {
   return (
     <div className="min-h-svh bg-muted/40 py-10">
       <div className="mx-auto max-w-2xl px-4">
+        {state.kind === 'ready' && state.data.professional?.name && (
+          <div className="mb-4 flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm">
+            <img src={logoAsset.url} alt="Logo" className="size-12 shrink-0 object-contain" />
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Enviado por</p>
+              <p className="truncate font-serif text-base font-semibold">{state.data.professional.name}</p>
+              {state.data.professional.email && (
+                <p className="truncate text-xs text-muted-foreground">{state.data.professional.email}</p>
+              )}
+            </div>
+          </div>
+        )}
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           {state.kind === 'loading' && <p className="text-sm text-muted-foreground">Carregando…</p>}
           {state.kind === 'error' && (
