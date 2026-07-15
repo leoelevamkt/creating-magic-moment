@@ -7,6 +7,12 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import * as XLSX from 'xlsx'
 import { bulkCreatePatients, createPatient, listPatients } from '@/lib/patients.functions'
+import {
+  GuardiansEmergencyFields,
+  EMPTY_EMERGENCY,
+  toPatientContactPayload,
+  type GuardiansEmergencyValue,
+} from '@/components/patients/GuardiansEmergencyFields'
 
 import { Button } from '@/components/ui/button'
 import {
