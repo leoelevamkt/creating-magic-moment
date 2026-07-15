@@ -99,8 +99,13 @@ function KanbanPage() {
   })
 
   const updateMut = useMutation({
-    mutationFn: (v: { id: string; scheduledAt: string | null; durationMinutes: number | null }) =>
-      patchTask({ data: v }),
+    mutationFn: (v: {
+      id: string
+      patientId: string
+      title: string
+      modality: 'presencial' | 'online'
+      testId: string
+    }) => patchTask({ data: v }),
     onSuccess: () => {
       toast.success('Tarefa atualizada.')
       setEditing(null)
