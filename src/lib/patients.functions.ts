@@ -335,6 +335,34 @@ export const updatePatient = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
+export const setPatientStatus = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      status: z.enum(['active', 'archived', 'discharged']),
+    }).parse(i),
+  )
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from('patients')
+      .update({ status: data.status })
+      .eq('id', data.id)
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
+export const deletePatient = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ context, data }) => {
+    const isAdmin = await context.supabase.rpc('has_role', { _user_id: context.userId, _role: 'admin' })
+    if (!isAdmin.data) throw new Error('Apenas administradores podem excluir pacientes.')
+    const { error } = await context.supabase.from('patients').delete().eq('id', data.id)
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
 export const generatePatientOverallSynthesis = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { id: string }) => i)
