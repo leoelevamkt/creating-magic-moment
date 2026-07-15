@@ -156,9 +156,6 @@ export const Route = createFileRoute('/api/public/forms/$token')({
 
         // Pré-cadastro: cria o paciente antes de marcar como submetido.
         let patientId: string | null = form.patient_id
-        const isPreCadastro =
-          !patientId &&
-          form.title?.startsWith('Pré-cadastro') // fallback
         if (!patientId) {
           if (!form.created_by) {
             return new Response(
@@ -183,9 +180,8 @@ export const Route = createFileRoute('/api/public/forms/$token')({
             .single()
           if (eIns) return new Response(eIns.message, { status: 500 })
           patientId = newPatient.id as string
-          // marca `isPreCadastro` usado — evita warning
-          void isPreCadastro
         }
+
 
         const { error: e2 } = await (supabaseAdmin as any)
           .from('patient_forms')
