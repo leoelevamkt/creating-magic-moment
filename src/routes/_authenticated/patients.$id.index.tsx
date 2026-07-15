@@ -760,6 +760,15 @@ function NotesBoard({ patientId }: { patientId: string }) {
 }
 
 type Note = Awaited<ReturnType<typeof listPatientNotes>>[number]
+type NoteFormValues = {
+  title: string
+  content: string
+  color: string
+  checklist: ChecklistItem[]
+  sessionNumber: number | null
+  sessionDates: string[]
+  plannedTests: string
+}
 
 function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
   const upd = useServerFn(updatePatientNote)
