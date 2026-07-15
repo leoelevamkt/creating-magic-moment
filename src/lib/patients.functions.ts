@@ -299,25 +299,33 @@ const UpdatePatientInput = z.object({
   hypotheses: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   status: z.enum(['active', 'archived', 'discharged']).optional(),
+  hasGuardians: z.boolean().optional(),
+  guardians: z.array(GuardianSchema).max(10).optional(),
+  emergencyContact: EmergencyContactSchema.nullable().optional(),
 })
 
 export const updatePatient = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => UpdatePatientInput.parse(i))
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase
-      .from('patients')
-      .update({
-        name: data.name,
-        birth_date: data.birthDate,
-        cpf: data.cpf,
-        schooling: data.schooling,
-        city: data.city,
-        hypotheses: data.hypotheses || null,
-        notes: data.notes || null,
-        ...(data.status ? { status: data.status } : {}),
-      })
-      .eq('id', data.id)
+    const patch: Record<string, unknown> = {
+      name: data.name,
+      birth_date: data.birthDate,
+      cpf: data.cpf,
+      schooling: data.schooling,
+      city: data.city,
+      hypotheses: data.hypotheses || null,
+      notes: data.notes || null,
+    }
+    if (data.status) patch.status = data.status
+    if (typeof data.hasGuardians === 'boolean') {
+      patch.has_guardians = data.hasGuardians
+      patch.guardians = data.hasGuardians ? (data.guardians ?? []) : []
+    } else if (data.guardians) {
+      patch.guardians = data.guardians
+    }
+    if (data.emergencyContact !== undefined) patch.emergency_contact = data.emergencyContact
+    const { error } = await context.supabase.from('patients').update(patch).eq('id', data.id)
     if (error) throw new Error(error.message)
     return { ok: true }
   })
