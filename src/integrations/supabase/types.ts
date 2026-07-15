@@ -268,6 +268,7 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          overall_synthesis: string | null
           schooling: string
           status: string
           updated_at: string
@@ -282,6 +283,7 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          overall_synthesis?: string | null
           schooling: string
           status?: string
           updated_at?: string
@@ -296,6 +298,7 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          overall_synthesis?: string | null
           schooling?: string
           status?: string
           updated_at?: string
