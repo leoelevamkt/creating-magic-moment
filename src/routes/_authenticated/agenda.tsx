@@ -231,6 +231,23 @@ function AgendaPage() {
                 <Label>Observações</Label>
                 <Textarea name="notes" rows={2} />
               </div>
+              <label className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-sm">
+                <input
+                  type="checkbox"
+                  name="createMeet"
+                  defaultChecked={gStatus.data?.connected ?? false}
+                  disabled={!gStatus.data?.connected}
+                  className="mt-1"
+                />
+                <span>
+                  <span className="font-medium">Gerar link do Google Meet</span>
+                  <span className="ml-1 text-muted-foreground">
+                    {gStatus.data?.connected
+                      ? '(cria evento no seu Google Calendar)'
+                      : '(conecte o Google Calendar em Configurações)'}
+                  </span>
+                </span>
+              </label>
               <div className="flex justify-end">
                 <Button type="submit" disabled={createMut.isPending}>
                   {createMut.isPending ? 'Agendando…' : 'Agendar sessão'}
