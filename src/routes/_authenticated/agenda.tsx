@@ -1,9 +1,10 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Plus, Video, X } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Mic, Plus, Square, Video, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { transcribeAudio, saveSessionTranscript } from '@/lib/transcribe.functions'
 import {
   addDays,
   endOfWeek,
@@ -350,6 +351,10 @@ function AgendaPage() {
                         <Video size={12} /> Gerar Meet
                       </Button>
                     ) : null}
+                    <SessionTranscribeButton
+                      sessionId={s.id}
+                      existing={(s as { transcript?: string | null }).transcript ?? null}
+                    />
                     {s.status !== 'done' ? (
                       <Button
                         size="sm"
@@ -412,4 +417,102 @@ function TestPicker({ tests }: { tests: Array<{ id: string; acronym: string | nu
 // Small helper to satisfy hooks-in-callback lint when passing server fns to react-query.
 function useServerFnSafe<T extends (...args: never[]) => unknown>(fn: T): T {
   return fn
+}
+
+function SessionTranscribeButton({ sessionId, existing }: { sessionId: string; existing: string | null }) {
+  const [open, setOpen] = useState(false)
+  const [recording, setRecording] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [text, setText] = useState(existing ?? '')
+  const mediaRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  const transcribe = useServerFn(transcribeAudio)
+  const save = useServerFn(saveSessionTranscript)
+
+  const saveMut = useMutation({
+    mutationFn: () => save({ data: { sessionId, transcript: text } }),
+    onSuccess: () => { toast.success('Transcrição salva.'); setOpen(false) },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  async function start() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '' })
+      chunksRef.current = []
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop())
+        const blob = new Blob(chunksRef.current, { type: mr.mimeType || 'audio/webm' })
+        await sendBlob(blob, mr.mimeType || 'audio/webm')
+      }
+      mediaRef.current = mr
+      mr.start()
+      setRecording(true)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Sem acesso ao microfone.')
+    }
+  }
+  function stop() { mediaRef.current?.stop(); setRecording(false) }
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    await sendBlob(f, f.type || 'audio/webm')
+    e.target.value = ''
+  }
+  async function sendBlob(blob: Blob, mimeType: string) {
+    setBusy(true)
+    try {
+      const b64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader()
+        r.onerror = () => reject(new Error('Falha ao ler áudio'))
+        r.onload = () => {
+          const s = String(r.result ?? '')
+          const i = s.indexOf(',')
+          resolve(i >= 0 ? s.slice(i + 1) : s)
+        }
+        r.readAsDataURL(blob)
+      })
+      const r = await transcribe({ data: { audioBase64: b64, mimeType, language: 'pt' } })
+      setText((cur) => (cur ? cur + '\n\n' : '') + r.text)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Falha na transcrição')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button size="sm" variant="outline" className="mt-1" />}>
+        <Mic size={12} /> Transcrever
+      </DialogTrigger>
+      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl">Transcrição da sessão</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3 pt-2">
+          <div className="flex flex-wrap gap-2">
+            {!recording ? (
+              <Button onClick={start} disabled={busy}>
+                <Mic /> {busy ? 'Enviando…' : 'Gravar'}
+              </Button>
+            ) : (
+              <Button variant="destructive" onClick={stop}><Square /> Parar</Button>
+            )}
+            <label className="inline-flex h-10 cursor-pointer items-center rounded-md border px-3 text-sm hover:bg-accent">
+              Enviar áudio
+              <input type="file" accept="audio/*" onChange={onFile} className="hidden" disabled={busy} />
+            </label>
+          </div>
+          <Textarea rows={12} value={text} onChange={(e) => setText(e.target.value)} />
+          <div className="flex justify-end">
+            <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+              {saveMut.isPending ? 'Salvando…' : 'Salvar transcrição'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 }

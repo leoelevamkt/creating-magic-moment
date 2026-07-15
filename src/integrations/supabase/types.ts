@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      anamneses: {
+        Row: {
+          created_at: string
+          created_by: string
+          desenvolvimento: string | null
+          historia_atual: string | null
+          historia_escolar: string | null
+          historia_familiar: string | null
+          historia_medica: string | null
+          historia_social: string | null
+          id: string
+          medicacoes: string | null
+          observacoes: string | null
+          patient_id: string
+          queixa_principal: string | null
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          desenvolvimento?: string | null
+          historia_atual?: string | null
+          historia_escolar?: string | null
+          historia_familiar?: string | null
+          historia_medica?: string | null
+          historia_social?: string | null
+          id?: string
+          medicacoes?: string | null
+          observacoes?: string | null
+          patient_id: string
+          queixa_principal?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          desenvolvimento?: string | null
+          historia_atual?: string | null
+          historia_escolar?: string | null
+          historia_familiar?: string | null
+          historia_medica?: string | null
+          historia_social?: string | null
+          id?: string
+          medicacoes?: string | null
+          observacoes?: string | null
+          patient_id?: string
+          queixa_principal?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anamneses_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_user_connections: {
         Row: {
           account_email: string | null
@@ -264,6 +326,56 @@ export type Database = {
         }
         Relationships: []
       }
+      screenings: {
+        Row: {
+          ai_analysis: string | null
+          created_at: string
+          created_by: string
+          criteria: Json
+          domain: string | null
+          id: string
+          instrument: string
+          notes: string | null
+          patient_id: string
+          score: number | null
+          updated_at: string
+        }
+        Insert: {
+          ai_analysis?: string | null
+          created_at?: string
+          created_by: string
+          criteria?: Json
+          domain?: string | null
+          id?: string
+          instrument: string
+          notes?: string | null
+          patient_id: string
+          score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ai_analysis?: string | null
+          created_at?: string
+          created_by?: string
+          criteria?: Json
+          domain?: string | null
+          id?: string
+          instrument?: string
+          notes?: string | null
+          patient_id?: string
+          score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screenings_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions_plan: {
         Row: {
           create_meet: boolean
@@ -282,6 +394,7 @@ export type Database = {
           start_time: string | null
           status: string
           title: string
+          transcript: string | null
           updated_at: string
         }
         Insert: {
@@ -301,6 +414,7 @@ export type Database = {
           start_time?: string | null
           status?: string
           title?: string
+          transcript?: string | null
           updated_at?: string
         }
         Update: {
@@ -320,6 +434,7 @@ export type Database = {
           start_time?: string | null
           status?: string
           title?: string
+          transcript?: string | null
           updated_at?: string
         }
         Relationships: [

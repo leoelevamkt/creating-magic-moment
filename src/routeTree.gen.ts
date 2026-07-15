@@ -22,6 +22,8 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
 import { Route as AuthenticatedPatientsIdRouteImport } from './routes/_authenticated/patients.$id'
+import { Route as AuthenticatedPatientsIdTriagemRouteImport } from './routes/_authenticated/patients.$id.triagem'
+import { Route as AuthenticatedPatientsIdAnamneseRouteImport } from './routes/_authenticated/patients.$id.anamnese'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -88,6 +90,18 @@ const AuthenticatedPatientsIdRoute = AuthenticatedPatientsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedPatientsRoute,
 } as any)
+const AuthenticatedPatientsIdTriagemRoute =
+  AuthenticatedPatientsIdTriagemRouteImport.update({
+    id: '/triagem',
+    path: '/triagem',
+    getParentRoute: () => AuthenticatedPatientsIdRoute,
+  } as any)
+const AuthenticatedPatientsIdAnamneseRoute =
+  AuthenticatedPatientsIdAnamneseRouteImport.update({
+    id: '/anamnese',
+    path: '/anamnese',
+    getParentRoute: () => AuthenticatedPatientsIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,7 +115,9 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/supervision': typeof AuthenticatedSupervisionRoute
   '/tasks': typeof AuthenticatedTasksRoute
-  '/patients/$id': typeof AuthenticatedPatientsIdRoute
+  '/patients/$id': typeof AuthenticatedPatientsIdRouteWithChildren
+  '/patients/$id/anamnese': typeof AuthenticatedPatientsIdAnamneseRoute
+  '/patients/$id/triagem': typeof AuthenticatedPatientsIdTriagemRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -115,7 +131,9 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/supervision': typeof AuthenticatedSupervisionRoute
   '/tasks': typeof AuthenticatedTasksRoute
-  '/patients/$id': typeof AuthenticatedPatientsIdRoute
+  '/patients/$id': typeof AuthenticatedPatientsIdRouteWithChildren
+  '/patients/$id/anamnese': typeof AuthenticatedPatientsIdAnamneseRoute
+  '/patients/$id/triagem': typeof AuthenticatedPatientsIdTriagemRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -131,7 +149,9 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/supervision': typeof AuthenticatedSupervisionRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
-  '/_authenticated/patients/$id': typeof AuthenticatedPatientsIdRoute
+  '/_authenticated/patients/$id': typeof AuthenticatedPatientsIdRouteWithChildren
+  '/_authenticated/patients/$id/anamnese': typeof AuthenticatedPatientsIdAnamneseRoute
+  '/_authenticated/patients/$id/triagem': typeof AuthenticatedPatientsIdTriagemRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -148,6 +168,8 @@ export interface FileRouteTypes {
     | '/supervision'
     | '/tasks'
     | '/patients/$id'
+    | '/patients/$id/anamnese'
+    | '/patients/$id/triagem'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -162,6 +184,8 @@ export interface FileRouteTypes {
     | '/supervision'
     | '/tasks'
     | '/patients/$id'
+    | '/patients/$id/anamnese'
+    | '/patients/$id/triagem'
   id:
     | '__root__'
     | '/'
@@ -177,6 +201,8 @@ export interface FileRouteTypes {
     | '/_authenticated/supervision'
     | '/_authenticated/tasks'
     | '/_authenticated/patients/$id'
+    | '/_authenticated/patients/$id/anamnese'
+    | '/_authenticated/patients/$id/triagem'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -278,15 +304,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPatientsIdRouteImport
       parentRoute: typeof AuthenticatedPatientsRoute
     }
+    '/_authenticated/patients/$id/triagem': {
+      id: '/_authenticated/patients/$id/triagem'
+      path: '/triagem'
+      fullPath: '/patients/$id/triagem'
+      preLoaderRoute: typeof AuthenticatedPatientsIdTriagemRouteImport
+      parentRoute: typeof AuthenticatedPatientsIdRoute
+    }
+    '/_authenticated/patients/$id/anamnese': {
+      id: '/_authenticated/patients/$id/anamnese'
+      path: '/anamnese'
+      fullPath: '/patients/$id/anamnese'
+      preLoaderRoute: typeof AuthenticatedPatientsIdAnamneseRouteImport
+      parentRoute: typeof AuthenticatedPatientsIdRoute
+    }
   }
 }
 
+interface AuthenticatedPatientsIdRouteChildren {
+  AuthenticatedPatientsIdAnamneseRoute: typeof AuthenticatedPatientsIdAnamneseRoute
+  AuthenticatedPatientsIdTriagemRoute: typeof AuthenticatedPatientsIdTriagemRoute
+}
+
+const AuthenticatedPatientsIdRouteChildren: AuthenticatedPatientsIdRouteChildren =
+  {
+    AuthenticatedPatientsIdAnamneseRoute: AuthenticatedPatientsIdAnamneseRoute,
+    AuthenticatedPatientsIdTriagemRoute: AuthenticatedPatientsIdTriagemRoute,
+  }
+
+const AuthenticatedPatientsIdRouteWithChildren =
+  AuthenticatedPatientsIdRoute._addFileChildren(
+    AuthenticatedPatientsIdRouteChildren,
+  )
+
 interface AuthenticatedPatientsRouteChildren {
-  AuthenticatedPatientsIdRoute: typeof AuthenticatedPatientsIdRoute
+  AuthenticatedPatientsIdRoute: typeof AuthenticatedPatientsIdRouteWithChildren
 }
 
 const AuthenticatedPatientsRouteChildren: AuthenticatedPatientsRouteChildren = {
-  AuthenticatedPatientsIdRoute: AuthenticatedPatientsIdRoute,
+  AuthenticatedPatientsIdRoute: AuthenticatedPatientsIdRouteWithChildren,
 }
 
 const AuthenticatedPatientsRouteWithChildren =
