@@ -72,7 +72,10 @@ export const updatePatientNote = createServerFn({ method: 'POST' })
     if (sessionNumber !== undefined) patch.session_number = sessionNumber
     if (sessionDates !== undefined) patch.session_dates = sessionDates
     if (plannedTests !== undefined) patch.planned_tests = plannedTests || null
-    const { error } = await context.supabase.from('patient_notes').update(patch).eq('id', id)
+    const { error } = await context.supabase
+      .from('patient_notes')
+      .update(patch as never)
+      .eq('id', id)
     if (error) throw new Error(error.message)
     return { ok: true }
   })
