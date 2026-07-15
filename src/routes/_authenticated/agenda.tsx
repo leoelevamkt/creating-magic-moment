@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
@@ -35,6 +35,9 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 
 export const Route = createFileRoute('/_authenticated/agenda')({
+  beforeLoad: ({ context }) => {
+    if ((context as { role?: string }).role !== 'admin') throw redirect({ to: '/kanban' })
+  },
   head: () => ({ meta: [{ title: 'Agenda — NeuroFlux' }] }),
   component: AgendaPage,
 })
