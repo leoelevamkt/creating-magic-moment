@@ -25,6 +25,7 @@ import {
 import { getPatientDetail, updateTaskResult, generateEvaluationSynthesis, updatePatient, generatePatientOverallSynthesis, setPatientStatus, deletePatient } from '@/lib/patients.functions'
 import { DocumentsTab } from '@/components/patients/DocumentsTab'
 import { FinanceTab } from '@/components/patients/FinanceTab'
+import { CpfInput } from '@/components/patients/CpfInput'
 
 import { useRouter } from '@tanstack/react-router'
 import { createSession } from '@/lib/sessions.functions'
