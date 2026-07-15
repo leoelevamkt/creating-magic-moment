@@ -381,7 +381,7 @@ function KanbanPage() {
                             Aprovado em {format(new Date(t.approved_at), 'dd/MM/yyyy')}
                           </p>
                         ) : null}
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           {col.prev ? (
                             <Button
                               size="sm"
@@ -393,6 +393,31 @@ function KanbanPage() {
                               <ArrowLeft /> Voltar
                             </Button>
                           ) : null}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              setEditing({
+                                id: t.id,
+                                scheduled_at: t.scheduled_at,
+                                duration_minutes: t.duration_minutes,
+                              })
+                            }
+                            title="Editar tarefa"
+                          >
+                            <Pencil />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              if (confirm('Excluir esta tarefa?')) deleteMut.mutate(t.id)
+                            }}
+                            disabled={deleteMut.isPending}
+                            title="Excluir tarefa"
+                          >
+                            <Trash2 />
+                          </Button>
                           {col.next ? (
                             <Button
                               size="sm"
