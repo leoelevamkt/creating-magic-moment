@@ -126,12 +126,26 @@ function PatientsPage() {
                 <DialogTitle className="font-serif text-2xl">Cadastrar paciente</DialogTitle>
               </DialogHeader>
               <form onSubmit={onSubmit} className="grid gap-5 py-2 sm:grid-cols-2">
-                <Field label="Nome completo" name="name" />
+                <Field label="Nome completo" name="name" required />
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="sex">Sexo<span className="ml-1 text-xs font-normal text-muted-foreground">(opcional)</span></Label>
+                  <select
+                    id="sex"
+                    name="sex"
+                    defaultValue=""
+                    className="h-10 rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="">Selecione…</option>
+                    <option value="feminino">Feminino</option>
+                    <option value="masculino">Masculino</option>
+                    <option value="outro">Outro</option>
+                    <option value="nao_informado">Prefere não informar</option>
+                  </select>
+                </div>
                 <Field label="Data de nascimento" name="birthDate" type="date" />
                 <Field label="CPF" name="cpf" placeholder="000.000.000-00" />
                 <Field label="Escolaridade" name="schooling" placeholder="Ex.: Ensino médio" />
                 <Field label="Cidade" name="city" />
-                <div />
                 <Area label="Hipóteses diagnósticas" name="hypotheses" />
                 <Area label="Observações clínicas" name="notes" />
                 <GuardiansEmergencyFields value={contact} onChange={setContact} />
