@@ -9,7 +9,7 @@ export const Route = createFileRoute('/_authenticated')({
   ssr: false,
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser()
-    if (error || !data.user) throw redirect({ to: '/auth' })
+    if (error || !data.user) throw redirect({ to: '/auth', search: {} })
     const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', data.user.id)
     const role = (roles?.[0]?.role as 'admin' | 'staff' | undefined) ?? 'staff'
     return { user: data.user, role }
