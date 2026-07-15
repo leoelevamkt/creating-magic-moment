@@ -18,10 +18,11 @@ export type EmergencyContact = z.infer<typeof EmergencyContactSchema>
 
 const CreateInput = z.object({
   name: z.string().min(2),
-  birthDate: z.string().min(4),
-  cpf: z.string().min(3),
-  schooling: z.string().min(1),
-  city: z.string().min(1),
+  sex: z.enum(['feminino', 'masculino', 'outro', 'nao_informado']).optional().nullable(),
+  birthDate: z.string().optional().nullable(),
+  cpf: z.string().optional().nullable(),
+  schooling: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
   hypotheses: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   hasGuardians: z.boolean().optional().default(false),
