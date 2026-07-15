@@ -419,13 +419,16 @@ function KanbanPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() =>
+                            onClick={() => {
+                              const ev = t.evaluations as { title: string; modality: string } | null
                               setEditing({
                                 id: t.id,
-                                scheduled_at: t.scheduled_at,
-                                duration_minutes: t.duration_minutes,
+                                patientId: t.patient_id,
+                                title: ev?.title ?? '',
+                                modality: (ev?.modality ?? 'presencial') as 'presencial' | 'online',
+                                testId: t.test_id,
                               })
-                            }
+                            }}
                             title="Editar tarefa"
                           >
                             <Pencil />
