@@ -124,6 +124,20 @@ function PatientsPage() {
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ExportCsvButton
+            rows={data ?? []}
+            columns={[
+              { header: 'Nome', value: (p) => p.name },
+              { header: 'Sexo', value: (p) => (p as { sex?: string | null }).sex ?? '' },
+              { header: 'Nascimento', value: (p) => (p as { birth_date?: string | null }).birth_date ?? '' },
+              { header: 'CPF', value: (p) => (p as { cpf?: string | null }).cpf ?? '' },
+              { header: 'Telefone', value: (p) => (p as { phone?: string | null }).phone ?? '' },
+              { header: 'Cidade', value: (p) => (p as { city?: string | null }).city ?? '' },
+              { header: 'Escolaridade', value: (p) => (p as { schooling?: string | null }).schooling ?? '' },
+              { header: 'Criado em', value: (p) => (p as { created_at?: string | null }).created_at ?? '' },
+            ]}
+            filename="pacientes"
+          />
           <ImportPatientsDialog
             onDone={() => {
               qc.invalidateQueries({ queryKey: ['patients'] })
