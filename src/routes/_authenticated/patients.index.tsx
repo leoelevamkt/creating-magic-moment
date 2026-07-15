@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 
-export const Route = createFileRoute('/_authenticated/patients')({
+export const Route = createFileRoute('/_authenticated/patients/')({
   beforeLoad: ({ context }) => {
     if ((context as { role?: string }).role !== 'admin') throw redirect({ to: '/kanban' })
   },
