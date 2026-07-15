@@ -22,8 +22,7 @@ export const listMaterials = createServerFn({ method: 'GET' })
     return data ?? []
   })
 
-type Ctx = { userId: string; supabase: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> } }
-async function requireAdmin(context: Ctx) {
+async function requireAdmin(context: { userId: string; supabase: { rpc: (fn: 'has_role', args: { _user_id: string; _role: 'admin' | 'staff' }) => Promise<{ data: boolean | null; error: { message: string } | null }> } }) {
   const { data, error } = await context.supabase.rpc('has_role', {
     _user_id: context.userId,
     _role: 'admin',
