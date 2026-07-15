@@ -175,9 +175,9 @@ function PatientDetailPage() {
             <section className="rounded-2xl border bg-card p-6 shadow-sm">
               <h2 className="font-serif text-lg font-semibold">Dados do paciente</h2>
               <dl className="mt-5 grid gap-5 text-sm">
-                <Info label="CPF" value={patient.cpf} />
-                <Info label="Escolaridade" value={patient.schooling} />
-                <Info label="Cidade" value={patient.city} />
+                <Info label="CPF" value={patient.cpf ?? '—'} />
+                <Info label="Escolaridade" value={patient.schooling ?? '—'} />
+                <Info label="Cidade" value={patient.city ?? '—'} />
                 <Info label="Hipóteses diagnósticas" value={patient.hypotheses ?? '—'} />
                 <Info label="Observações" value={patient.notes ?? 'Sem observações'} />
               </dl>
