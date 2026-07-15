@@ -487,9 +487,9 @@ export type Database = {
       }
       patients: {
         Row: {
-          birth_date: string
-          city: string
-          cpf: string
+          birth_date: string | null
+          city: string | null
+          cpf: string | null
           created_at: string
           created_by: string
           emergency_contact: Json | null
@@ -500,14 +500,15 @@ export type Database = {
           name: string
           notes: string | null
           overall_synthesis: string | null
-          schooling: string
+          schooling: string | null
+          sex: string | null
           status: string
           updated_at: string
         }
         Insert: {
-          birth_date: string
-          city: string
-          cpf: string
+          birth_date?: string | null
+          city?: string | null
+          cpf?: string | null
           created_at?: string
           created_by: string
           emergency_contact?: Json | null
@@ -518,14 +519,15 @@ export type Database = {
           name: string
           notes?: string | null
           overall_synthesis?: string | null
-          schooling: string
+          schooling?: string | null
+          sex?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
-          birth_date?: string
-          city?: string
-          cpf?: string
+          birth_date?: string | null
+          city?: string | null
+          cpf?: string | null
           created_at?: string
           created_by?: string
           emergency_contact?: Json | null
@@ -536,7 +538,8 @@ export type Database = {
           name?: string
           notes?: string | null
           overall_synthesis?: string | null
-          schooling?: string
+          schooling?: string | null
+          sex?: string | null
           status?: string
           updated_at?: string
         }
