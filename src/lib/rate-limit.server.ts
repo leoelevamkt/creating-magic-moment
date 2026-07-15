@@ -92,6 +92,7 @@ export const RATE_LIMITS = {
   loginEmail: { action: 'login_email', max: 5, windowSeconds: 900, blockSeconds: 1800 },
   aiSynthesis: { action: 'ai_synthesis', max: 30, windowSeconds: 3600, blockSeconds: 900 },
   aiReport: { action: 'ai_report', max: 20, windowSeconds: 3600, blockSeconds: 900 },
-  aiTranscribe: { action: 'ai_transcribe', max: 3600, windowSeconds: 86400 },
+  // Budget de transcrição por usuário: 14.400 s/dia (~4h) — suporta várias sessões de até 2h.
+  aiTranscribe: { action: 'ai_transcribe', max: 14400, windowSeconds: 86400 },
   genericWrite: { action: 'generic_write', max: 300, windowSeconds: 60, blockSeconds: 300 },
 } as const satisfies Record<string, RateLimitConfig>
