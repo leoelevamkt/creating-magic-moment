@@ -179,7 +179,7 @@ export const deleteTask = createServerFn({ method: 'POST' })
 export const dashboardData = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const [patientsQ, tasksQ, upcomingQ] = await Promise.all([
+    const [patientsQ, tasksQ, upcomingQ, birthdaysQ] = await Promise.all([
       context.supabase.from('patients').select('id', { count: 'exact', head: true }).eq('status', 'active'),
       context.supabase
         .from('test_tasks')
@@ -192,6 +192,11 @@ export const dashboardData = createServerFn({ method: 'GET' })
         .gte('session_date', new Date().toISOString().slice(0, 10))
         .order('session_date', { ascending: true })
         .limit(5),
+      context.supabase
+        .from('patients')
+        .select('id, name, birth_date')
+        .eq('status', 'active')
+        .not('birth_date', 'is', null),
     ])
     const tasks = tasksQ.data ?? []
     const counts = {
@@ -199,10 +204,25 @@ export const dashboardData = createServerFn({ method: 'GET' })
       awaitingAdmin: tasks.filter((t) => t.status === 'review').length,
       approved: tasks.filter((t) => t.status === 'approved').length,
     }
+    const thisMonth = new Date().getMonth() + 1
+    const birthdays = (birthdaysQ.data ?? [])
+      .filter((p) => {
+        if (!p.birth_date) return false
+        const m = Number(String(p.birth_date).slice(5, 7))
+        return m === thisMonth
+      })
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        birth_date: p.birth_date as string,
+        day: Number(String(p.birth_date).slice(8, 10)),
+      }))
+      .sort((a, b) => a.day - b.day)
     return {
       patients: patientsQ.count ?? 0,
       ...counts,
       activity: tasks.slice(0, 8),
       upcoming: upcomingQ.data ?? [],
+      birthdays,
     }
   })
