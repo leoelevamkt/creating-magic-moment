@@ -134,14 +134,19 @@ function CatalogPage() {
   })
 
   const grouped = useMemo(() => {
+    const q = search.trim().toLowerCase()
     const g: Record<string, TestRow[]> = {}
     for (const t of (catalogQ.data ?? []) as TestRow[]) {
+      if (q) {
+        const hay = `${t.name} ${t.acronym ?? ''} ${t.category} ${t.source}`.toLowerCase()
+        if (!hay.includes(q)) continue
+      }
       const k = t.category || 'Outros'
       g[k] = g[k] ?? []
       g[k].push(t)
     }
     return Object.entries(g).sort(([a], [b]) => a.localeCompare(b))
-  }, [catalogQ.data])
+  }, [catalogQ.data, search])
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
