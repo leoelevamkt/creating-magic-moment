@@ -1,12 +1,15 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
+import { RATE_LIMITS, enforceRateLimit } from '@/lib/rate-limit.server'
 
 const Input = z.object({
-  // base64-encoded audio blob (no data: prefix), max ~15MB
-  audioBase64: z.string().min(10),
-  mimeType: z.string().default('audio/webm'),
-  language: z.string().default('pt'),
+  // base64-encoded audio blob (no data: prefix), max ~20MB after decoding
+  audioBase64: z.string().min(10).max(30 * 1024 * 1024),
+  mimeType: z.string().max(120).default('audio/webm'),
+  language: z.string().max(10).default('pt'),
+  // duration in seconds (approximate, from MediaRecorder); used for rate limit accounting
+  durationSeconds: z.number().int().min(0).max(60 * 60).optional(),
 })
 
 /**
@@ -16,7 +19,10 @@ const Input = z.object({
 export const transcribeAudio = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => Input.parse(i))
-  .handler(async ({ data }) => {
+  .handler(async ({ context, data }) => {
+    const seconds = Math.max(1, Math.min(data.durationSeconds ?? 60, 3600))
+    await enforceRateLimit(RATE_LIMITS.aiTranscribe, `user:${context.userId}`, seconds)
+
     const key = process.env.LOVABLE_API_KEY
     if (!key) throw new Error('LOVABLE_API_KEY ausente.')
 

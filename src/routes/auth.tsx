@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
 import { useEffect, useState } from 'react'
 import { Loader2, ShieldCheck } from 'lucide-react'
 import logoAsset from '@/assets/neuroflux-logo.png.asset.json'
@@ -6,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { checkLoginRateLimit, resetLoginRateLimit } from '@/lib/auth-rate-limit.functions'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/auth')({
@@ -20,6 +22,8 @@ function AuthPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const checkLimit = useServerFn(checkLoginRateLimit)
+  const resetLimit = useServerFn(resetLoginRateLimit)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -30,23 +34,46 @@ function AuthPage() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setLoading(true)
+    const normalizedEmail = email.trim().toLowerCase()
+
+    if (mode === 'sign-in') {
+      try {
+        const gate = await checkLimit({ data: { email: normalizedEmail } })
+        if (!gate.allowed) {
+          setLoading(false)
+          const mins = Math.ceil(gate.retryAfter / 60)
+          toast.error(
+            gate.reason === 'ip'
+              ? `Muitas tentativas deste dispositivo. Aguarde ${mins} min.`
+              : `Muitas tentativas para este e-mail. Aguarde ${mins} min.`,
+          )
+          return
+        }
+      } catch (err) {
+        console.error('[auth] rate-limit check failed', err)
+      }
+    }
+
     const result =
       mode === 'sign-up'
         ? await supabase.auth.signUp({
-            email,
+            email: normalizedEmail,
             password,
             options: {
               data: { name },
               emailRedirectTo: `${window.location.origin}/dashboard`,
             },
           })
-        : await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
     setLoading(false)
     if (result.error) {
       toast.error(result.error.message)
       return
     }
     if (result.data.session) {
+      if (mode === 'sign-in') {
+        resetLimit({ data: { email: normalizedEmail } }).catch(() => {})
+      }
       navigate({ to: '/dashboard', replace: true })
     } else {
       toast.success('Verifique seu e-mail para confirmar o acesso.')

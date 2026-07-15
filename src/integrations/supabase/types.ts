@@ -441,6 +441,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          action: string
+          blocked_until: string | null
+          count: number
+          id: string
+          key: string
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          action: string
+          blocked_until?: string | null
+          count?: number
+          id?: string
+          key: string
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          action?: string
+          blocked_until?: string | null
+          count?: number
+          id?: string
+          key?: string
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       screenings: {
         Row: {
           ai_analysis: string | null
@@ -881,12 +911,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          _action: string
+          _block_seconds?: number
+          _increment?: number
+          _key: string
+          _max: number
+          _window_seconds: number
+        }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          retry_after: number
+        }[]
+      }
+      cleanup_rate_limits: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      reset_rate_limit: {
+        Args: { _action: string; _key: string }
+        Returns: undefined
       }
     }
     Enums: {
