@@ -28,6 +28,7 @@ import { suggestWaitlistForSlot } from '@/lib/waitlist.functions'
 import { listPatients } from '@/lib/patients.functions'
 import { listCatalog } from '@/lib/profile.functions'
 import { Button } from '@/components/ui/button'
+import { ExportCsvButton } from '@/components/common/ExportCsvButton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -226,6 +227,21 @@ function AgendaPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <AgendaBlocksDialog />
+          <ExportCsvButton
+            rows={sessions.data ?? []}
+            columns={[
+              { header: 'Data', value: (s) => s.session_date },
+              { header: 'Início', value: (s) => s.start_time ?? '' },
+              { header: 'Fim', value: (s) => s.end_time ?? '' },
+              { header: 'Paciente', value: (s) => (s.patients as { name?: string } | null)?.name ?? '' },
+              { header: 'Título', value: (s) => s.title },
+              { header: 'Modalidade', value: (s) => s.modality },
+              { header: 'Status', value: (s) => s.status ?? '' },
+              { header: 'Objetivos', value: (s) => s.objectives ?? '' },
+              { header: 'Meet', value: (s) => s.meet_url ?? '' },
+            ]}
+            filename="agenda-sessoes"
+          />
           <Link to="/lista-espera">
             <Button variant="outline">
               <ListChecks /> Lista de espera

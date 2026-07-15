@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { ExportCsvButton } from '@/components/common/ExportCsvButton'
 import {
   Dialog,
   DialogContent,
@@ -102,22 +103,38 @@ export function FinanceTab({
             Controle entradas, saídas e status de pagamento.
           </p>
         </div>
-        <Dialog open={openNew} onOpenChange={setOpenNew}>
-          <DialogTrigger render={<Button><Plus className="mr-1 size-4" /> Novo lançamento</Button>} />
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="font-serif text-2xl">Novo lançamento</DialogTitle>
-            </DialogHeader>
-            <TxForm
-              defaultPatientId={patientId ?? null}
-              lockPatient={!!patientId}
-              onDone={() => {
-                setOpenNew(false)
-                invalidate()
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportCsvButton<TxRow>
+            rows={rows}
+            columns={[
+              { header: 'Data', value: (r) => r.transaction_date },
+              { header: 'Tipo', value: (r) => KIND_LABELS[r.kind] ?? r.kind },
+              { header: 'Categoria', value: (r) => r.category },
+              { header: 'Paciente', value: (r) => (r.patients as { name?: string } | null)?.name ?? '' },
+              { header: 'Descrição', value: (r) => r.description ?? '' },
+              { header: 'Valor', value: (r) => Number(r.amount) },
+              { header: 'Status', value: (r) => STATUS_LABELS[r.status] ?? r.status },
+            ]}
+            filename={patientId ? `financeiro-paciente-${patientId}` : 'financeiro'}
+          />
+          <Dialog open={openNew} onOpenChange={setOpenNew}>
+            <DialogTrigger render={<Button><Plus className="mr-1 size-4" /> Novo lançamento</Button>} />
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="font-serif text-2xl">Novo lançamento</DialogTitle>
+              </DialogHeader>
+              <TxForm
+                defaultPatientId={patientId ?? null}
+                lockPatient={!!patientId}
+                onDone={() => {
+                  setOpenNew(false)
+                  invalidate()
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+
       </div>
 
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -2,7 +2,9 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Pencil, Play, Plus, ShieldCheck, Trash2, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Pencil, Play, Plus, ShieldCheck, Trash2, X } from 'lucide-react'
+import { ExportCsvButton } from '@/components/common/ExportCsvButton'
+import { KANBAN_STALE_DAYS, daysInColumn, isStale } from '@/lib/kanban-stale'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -49,6 +51,7 @@ function KanbanPage() {
   const [dragId, setDragId] = useState<string | null>(null)
   const [overCol, setOverCol] = useState<TaskStatus | null>(null)
   const [search, setSearch] = useState('')
+  const [onlyStale, setOnlyStale] = useState(false)
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set())
   const [customTests, setCustomTests] = useState<Array<{ name: string; acronym: string }>>([])
   const [customName, setCustomName] = useState('')
@@ -76,9 +79,34 @@ function KanbanPage() {
   const grouped = useMemo(() => {
     const map = new Map<TaskStatus, NonNullable<typeof tasks.data>>()
     for (const c of columns) map.set(c.id, [])
-    for (const t of tasks.data ?? []) map.get(t.status as TaskStatus)?.push(t)
+    for (const t of tasks.data ?? []) {
+      if (onlyStale && !isStale(t)) continue
+      map.get(t.status as TaskStatus)?.push(t)
+    }
     return map
-  }, [tasks.data])
+  }, [tasks.data, onlyStale])
+
+  const staleCount = useMemo(
+    () => (tasks.data ?? []).filter((t) => isStale(t)).length,
+    [tasks.data],
+  )
+
+  const csvColumns = useMemo(
+    () => [
+      { header: 'Paciente', value: (t: NonNullable<typeof tasks.data>[number]) => (t.patients as { name?: string } | null)?.name ?? '' },
+      { header: 'Teste', value: (t: NonNullable<typeof tasks.data>[number]) => (t.test_catalog as { acronym?: string | null; name?: string } | null)?.acronym ?? (t.test_catalog as { name?: string } | null)?.name ?? '' },
+      { header: 'Avaliação', value: (t: NonNullable<typeof tasks.data>[number]) => (t.evaluations as { title?: string } | null)?.title ?? '' },
+      { header: 'Modalidade', value: (t: NonNullable<typeof tasks.data>[number]) => (t.evaluations as { modality?: string } | null)?.modality ?? '' },
+      { header: 'Status', value: (t: NonNullable<typeof tasks.data>[number]) => t.status },
+      { header: 'Criada', value: (t: NonNullable<typeof tasks.data>[number]) => t.created_at ?? '' },
+      { header: 'Iniciada', value: (t: NonNullable<typeof tasks.data>[number]) => t.started_at ?? '' },
+      { header: 'Finalizada', value: (t: NonNullable<typeof tasks.data>[number]) => t.completed_at ?? '' },
+      { header: 'Aprovada', value: (t: NonNullable<typeof tasks.data>[number]) => t.approved_at ?? '' },
+      { header: 'Duração (min)', value: (t: NonNullable<typeof tasks.data>[number]) => t.duration_minutes ?? '' },
+      { header: 'Dias na coluna', value: (t: NonNullable<typeof tasks.data>[number]) => daysInColumn(t) ?? '' },
+    ],
+    [],
+  )
 
   const filteredCatalog = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -198,10 +226,30 @@ function KanbanPage() {
             horário e duração registrados.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button />}>
-            <Plus /> Nova tarefa
-          </DialogTrigger>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={onlyStale ? 'default' : 'outline'}
+            onClick={() => setOnlyStale((v) => !v)}
+            title="Mostrar apenas tarefas paradas há mais dias que o limite da coluna"
+          >
+            <AlertTriangle /> Atrasadas
+            {staleCount > 0 ? (
+              <span className="ml-1 rounded-full bg-background/40 px-1.5 text-xs font-semibold">
+                {staleCount}
+              </span>
+            ) : null}
+          </Button>
+          <ExportCsvButton
+            rows={tasks.data ?? []}
+            columns={csvColumns}
+            filename="tarefas-kanban"
+          />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger render={<Button />}>
+              <Plus /> Nova tarefa
+            </DialogTrigger>
           <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle className="font-serif text-2xl">Planejar avaliação</DialogTitle>
@@ -309,7 +357,9 @@ function KanbanPage() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </header>
+
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {columns.map((col) => {
@@ -357,6 +407,9 @@ function KanbanPage() {
                     const acronym = (t.test_catalog as { acronym: string | null } | null)?.acronym ?? '—'
                     const patient = (t.patients as { name: string } | null)?.name ?? '—'
                     const isDragging = dragId === t.id
+                    const stale = isStale(t)
+                    const dCol = daysInColumn(t)
+                    const threshold = KANBAN_STALE_DAYS[col.id]
                     return (
                       <article
                         key={t.id}
@@ -370,14 +423,23 @@ function KanbanPage() {
                           setDragId(null)
                           setOverCol(null)
                         }}
-                        className={`flex cursor-grab flex-col gap-2 rounded-xl border bg-background p-3 text-sm active:cursor-grabbing ${isDragging ? 'opacity-50' : ''}`}
+                        className={`flex cursor-grab flex-col gap-2 rounded-xl border bg-background p-3 text-sm active:cursor-grabbing ${isDragging ? 'opacity-50' : ''} ${stale ? 'border-amber-500 ring-1 ring-amber-500/40' : ''}`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <p className="text-xs font-semibold text-primary">{acronym}</p>
                             <p className="font-serif text-base font-semibold">{patient}</p>
                           </div>
+                          {stale && threshold != null && dCol != null ? (
+                            <span
+                              className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
+                              title={`Parada há ${dCol} dia(s) — limite desta coluna é ${threshold}`}
+                            >
+                              <AlertTriangle size={10} /> {dCol}d
+                            </span>
+                          ) : null}
                         </div>
+
                         <dl className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                           {t.created_at ? (
                             <div className="flex justify-between gap-2">

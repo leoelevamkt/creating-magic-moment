@@ -20,6 +20,7 @@ import {
   type Professional,
 } from '@/components/patients/ProfessionalsField'
 import { CpfInput } from '@/components/patients/CpfInput'
+import { ExportCsvButton } from '@/components/common/ExportCsvButton'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -46,6 +47,7 @@ export const Route = createFileRoute('/_authenticated/patients/')({
   head: () => ({ meta: [{ title: 'Pacientes — NeuroFlux' }] }),
   component: PatientsPage,
 })
+
 
 function PatientsPage() {
   const list = useServerFn(listPatients)
@@ -124,6 +126,21 @@ function PatientsPage() {
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ExportCsvButton<PatientRow>
+            rows={data ?? []}
+            columns={[
+              { header: 'Nome', value: (p) => p.name ?? '' },
+              { header: 'Sexo', value: (p) => p.sex ?? '' },
+              { header: 'Nascimento', value: (p) => p.birth_date ?? '' },
+              { header: 'CPF', value: (p) => p.cpf ?? '' },
+              { header: 'Telefone', value: (p) => p.phone ?? '' },
+              { header: 'Cidade', value: (p) => p.city ?? '' },
+              { header: 'Escolaridade', value: (p) => p.schooling ?? '' },
+              { header: 'Criado em', value: (p) => p.created_at ?? '' },
+            ]}
+            filename="pacientes"
+          />
+
           <ImportPatientsDialog
             onDone={() => {
               qc.invalidateQueries({ queryKey: ['patients'] })
