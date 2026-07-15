@@ -967,7 +967,18 @@ function PlanRow({ entry, onChanged }: { entry: PlanEntry; onChanged: () => void
   const checklist = toChecklist(entry.checklist)
   const done = checklist.filter((c) => c.done).length
   const updMut = useMutation({
-    mutationFn: (v: Parameters<typeof upd>[0]['data']) => upd({ data: v }),
+    mutationFn: (v: {
+      id: string
+      title?: string
+      sessionNumber?: number | null
+      sessionDate?: string
+      startTime?: string | null
+      modality?: 'presencial' | 'online'
+      objectives?: string | null
+      notes?: string | null
+      status?: 'scheduled' | 'done' | 'cancelled'
+      checklist?: ChecklistItem[]
+    }) => upd({ data: v }),
     onSuccess: onChanged,
     onError: (e: Error) => toast.error(e.message),
   })
