@@ -43,14 +43,25 @@ export function AgendaBlocksDialog() {
 
   const [recurrence, setRecurrence] = useState<'weekly' | 'once'>('weekly')
 
+  type BlockPayload = {
+    title: string
+    kind: 'lunch' | 'supervision' | 'off' | 'other'
+    recurrence: 'weekly' | 'once'
+    weekday: number | null
+    blockDate: string | null
+    startTime: string
+    endTime: string
+    notes: string | null
+  }
   const createMut = useMutation({
-    mutationFn: (v: Parameters<typeof create>[0]['data']) => create({ data: v }),
+    mutationFn: (v: BlockPayload) => create({ data: v }),
     onSuccess: () => {
       toast.success('Bloqueio salvo.')
       qc.invalidateQueries({ queryKey: ['agenda-blocks'] })
     },
     onError: (e: Error) => toast.error(e.message),
   })
+
   const removeMut = useMutation({
     mutationFn: (id: string) => remove({ data: { id } }),
     onSuccess: () => {
