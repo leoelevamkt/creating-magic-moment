@@ -201,7 +201,11 @@ function FormulariosPage() {
           <tbody>
             {(formsQ.data ?? []).map((f) => (
               <tr key={f.id} className="border-b last:border-b-0">
-                <td className="p-3 font-medium">{f.patients?.name ?? '—'}</td>
+                <td className="p-3 font-medium">
+                  {f.patients?.name ?? (f.patient_id ? '—' : (
+                    <span className="text-muted-foreground italic">Pré-cadastro (aguardando)</span>
+                  ))}
+                </td>
                 <td className="p-3">{f.title}</td>
                 <td className="p-3">
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${
