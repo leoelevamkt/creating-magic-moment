@@ -73,12 +73,64 @@ function AgendaPage() {
   const patients = useQuery({ queryKey: ['patients'], queryFn: () => useServerFnSafe(listPatients)() })
   const catalog = useQuery({ queryKey: ['catalog'], queryFn: () => useServerFnSafe(listCatalog)() })
   const gStatus = useQuery({ queryKey: ['google-status'], queryFn: () => googleStatus() })
+  const blocks = useQuery({
+    queryKey: ['agenda-blocks'],
+    queryFn: () => useServerFnSafe(listAgendaBlocks)(),
+  })
+
+  const suggestFn = useServerFn(suggestWaitlistForSlot)
+  const [suggest, setSuggest] = useState<
+    | null
+    | {
+        sessionDate: string
+        startTime: string | null
+        endTime: string | null
+        modality: 'presencial' | 'online'
+        entries: Array<{
+          id: string
+          patient_id: string | null
+          patient_name: string | null
+          contact_phone: string | null
+          contact_email: string | null
+          modality: string
+          priority: number
+          patients: { name: string } | null
+        }>
+      }
+  >(null)
 
   const removeMut = useMutation({
-    mutationFn: (id: string) => remove({ data: { id } }),
-    onSuccess: () => {
+    mutationFn: async (s: {
+      id: string
+      sessionDate: string
+      startTime: string | null
+      endTime: string | null
+      modality: 'presencial' | 'online'
+    }) => {
+      await remove({ data: { id: s.id } })
+      const entries = await suggestFn({
+        data: {
+          sessionDate: s.sessionDate,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          modality: s.modality,
+          limit: 5,
+        },
+      })
+      return { ...s, entries }
+    },
+    onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['sessions'] })
       toast.success('Sessão removida.')
+      if (r.entries.length > 0) {
+        setSuggest({
+          sessionDate: r.sessionDate,
+          startTime: r.startTime,
+          endTime: r.endTime,
+          modality: r.modality,
+          entries: r.entries as typeof suggest extends null ? never : NonNullable<typeof suggest>['entries'],
+        })
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -86,6 +138,7 @@ function AgendaPage() {
     mutationFn: (v: { id: string; status: 'done' }) => setStatus({ data: v }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
   })
+
   const meetMut = useMutation({
     mutationFn: (sessionId: string) => meetFn({ data: { sessionId } }),
     onSuccess: (r) => {
