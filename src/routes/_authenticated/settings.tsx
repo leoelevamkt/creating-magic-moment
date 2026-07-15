@@ -2,10 +2,10 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { CalendarCheck, ShieldCheck, UserCog, UserPlus, Users, Video } from 'lucide-react'
+import { CalendarCheck, Pencil, ShieldCheck, Trash2, UserCog, UserPlus, Users, Video } from 'lucide-react'
 import { toast } from 'sonner'
 import { getMyProfile } from '@/lib/profile.functions'
-import { createStaff, listTeam, setRole } from '@/lib/staff.functions'
+import { createStaff, deleteStaff, listTeam, updateStaff } from '@/lib/staff.functions'
 import {
   disconnectGoogle,
   getGoogleConnectionStatus,
@@ -17,6 +17,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+
 
 export const Route = createFileRoute('/_authenticated/settings')({
   head: () => ({ meta: [{ title: 'Configurações — NeuroFlux' }] }),
