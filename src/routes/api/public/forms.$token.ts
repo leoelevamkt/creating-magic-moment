@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
-import { PRE_CADASTRO_TEMPLATE_ID } from '@/lib/form-templates'
 
 const jsonHeaders = { 'Content-Type': 'application/json' }
 
