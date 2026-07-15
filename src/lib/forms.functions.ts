@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { templateById, type FormField } from './form-templates'
 
 const CreateInput = z.object({
-  patientId: z.string().uuid(),
+  patientId: z.string().uuid().nullable().optional(),
   templateId: z.string().min(1),
   expiresInDays: z.number().int().min(1).max(365).optional().nullable(),
 })
@@ -19,7 +19,7 @@ export const listForms = createServerFn({ method: 'GET' })
     if (error) throw new Error(error.message)
     return (data ?? []) as Array<{
       id: string
-      patient_id: string
+      patient_id: string | null
       title: string
       description: string | null
       token: string
@@ -50,13 +50,16 @@ export const createForm = createServerFn({ method: 'POST' })
   .handler(async ({ context, data }) => {
     const tpl = templateById(data.templateId)
     if (!tpl) throw new Error('Template não encontrado.')
+    if (!data.patientId && !tpl.createsPatient) {
+      throw new Error('Este template exige um paciente vinculado.')
+    }
     const expires_at = data.expiresInDays
       ? new Date(Date.now() + data.expiresInDays * 86400_000).toISOString()
       : null
     const { data: row, error } = await (context.supabase as any)
       .from('patient_forms')
       .insert({
-        patient_id: data.patientId,
+        patient_id: data.patientId ?? null,
         title: tpl.title,
         description: tpl.description,
         fields: tpl.fields as unknown as FormField[],

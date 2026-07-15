@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { toast } from 'sonner'
-import { Archive, Copy, Eye, Link2, Plus } from 'lucide-react'
+import { Archive, Copy, Eye, Link2, Plus, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select'
 import { supabase } from '@/integrations/supabase/client'
 import { archiveForm, createForm, getFormResponses, listForms } from '@/lib/forms.functions'
-import { formTemplates } from '@/lib/form-templates'
+import { formTemplates, PRE_CADASTRO_TEMPLATE_ID } from '@/lib/form-templates'
 
 export const Route = createFileRoute('/_authenticated/formularios')({
   head: () => ({ meta: [{ title: 'Formulários — NeuroFlux' }] }),
@@ -53,11 +53,14 @@ function FormulariosPage() {
   const [templateId, setTemplateId] = useState(formTemplates[0].id)
   const [expiresDays, setExpiresDays] = useState('14')
 
+  const selectedTpl = formTemplates.find((t) => t.id === templateId)
+  const isPreCadastro = !!selectedTpl?.createsPatient
+
   const createM = useMutation({
     mutationFn: () =>
       create({
         data: {
-          patientId,
+          patientId: isPreCadastro ? null : patientId,
           templateId,
           expiresInDays: expiresDays ? Number(expiresDays) : null,
         },
@@ -71,6 +74,13 @@ function FormulariosPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   })
+
+  const openPreCadastro = () => {
+    setTemplateId(PRE_CADASTRO_TEMPLATE_ID)
+    setPatientId('')
+    setExpiresDays('30')
+    setOpen(true)
+  }
 
   const archiveM = useMutation({
     mutationFn: (id: string) => archive({ data: { id } }),
@@ -103,61 +113,77 @@ function FormulariosPage() {
             Envie links para pacientes preencherem anamnese, escalas e questionários.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button />}>
-            <Plus className="mr-2 h-4 w-4" /> Novo formulário
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Novo formulário</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4">
-              <div className="grid gap-1.5">
-                <Label>Paciente</Label>
-                <Select value={patientId} onValueChange={(v) => setPatientId(v ?? '')}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                  <SelectContent>
-                    {(patientsQ.data ?? []).map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={openPreCadastro}>
+            <UserPlus className="mr-2 h-4 w-4" /> Link de pré-cadastro
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger render={<Button />}>
+              <Plus className="mr-2 h-4 w-4" /> Novo formulário
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {isPreCadastro ? 'Link de pré-cadastro' : 'Novo formulário'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4">
+                {!isPreCadastro && (
+                  <div className="grid gap-1.5">
+                    <Label>Paciente</Label>
+                    <Select value={patientId} onValueChange={(v) => setPatientId(v ?? '')}>
+                      <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                      <SelectContent>
+                        {(patientsQ.data ?? []).map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="grid gap-1.5">
+                  <Label>Template</Label>
+                  <Select value={templateId} onValueChange={(v) => setTemplateId(v ?? templateId)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {formTemplates.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedTpl?.description}
+                  </p>
+                </div>
+                {isPreCadastro && (
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
+                    Este link cria o paciente automaticamente quando a pessoa responder — ideal para
+                    enviar por WhatsApp no momento em que o agendamento é confirmado.
+                  </div>
+                )}
+                <div className="grid gap-1.5">
+                  <Label>Expira em (dias)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={expiresDays}
+                    onChange={(e) => setExpiresDays(e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="grid gap-1.5">
-                <Label>Template</Label>
-                <Select value={templateId} onValueChange={(v) => setTemplateId(v ?? templateId)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {formTemplates.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {formTemplates.find((t) => t.id === templateId)?.description}
-                </p>
-              </div>
-              <div className="grid gap-1.5">
-                <Label>Expira em (dias)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={expiresDays}
-                  onChange={(e) => setExpiresDays(e.target.value)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                onClick={() => createM.mutate()}
-                disabled={!patientId || createM.isPending}
-              >
-                {createM.isPending ? 'Criando…' : 'Criar e copiar link'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button
+                  onClick={() => createM.mutate()}
+                  disabled={(!isPreCadastro && !patientId) || createM.isPending}
+                >
+                  {createM.isPending ? 'Criando…' : 'Criar e copiar link'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
       </header>
 
       <div className="overflow-hidden rounded-2xl border bg-card">
@@ -175,7 +201,11 @@ function FormulariosPage() {
           <tbody>
             {(formsQ.data ?? []).map((f) => (
               <tr key={f.id} className="border-b last:border-b-0">
-                <td className="p-3 font-medium">{f.patients?.name ?? '—'}</td>
+                <td className="p-3 font-medium">
+                  {f.patients?.name ?? (f.patient_id ? '—' : (
+                    <span className="text-muted-foreground italic">Pré-cadastro (aguardando)</span>
+                  ))}
+                </td>
                 <td className="p-3">{f.title}</td>
                 <td className="p-3">
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${
