@@ -79,9 +79,34 @@ function KanbanPage() {
   const grouped = useMemo(() => {
     const map = new Map<TaskStatus, NonNullable<typeof tasks.data>>()
     for (const c of columns) map.set(c.id, [])
-    for (const t of tasks.data ?? []) map.get(t.status as TaskStatus)?.push(t)
+    for (const t of tasks.data ?? []) {
+      if (onlyStale && !isStale(t)) continue
+      map.get(t.status as TaskStatus)?.push(t)
+    }
     return map
-  }, [tasks.data])
+  }, [tasks.data, onlyStale])
+
+  const staleCount = useMemo(
+    () => (tasks.data ?? []).filter((t) => isStale(t)).length,
+    [tasks.data],
+  )
+
+  const csvColumns = useMemo(
+    () => [
+      { header: 'Paciente', value: (t: NonNullable<typeof tasks.data>[number]) => (t.patients as { name?: string } | null)?.name ?? '' },
+      { header: 'Teste', value: (t: NonNullable<typeof tasks.data>[number]) => (t.test_catalog as { acronym?: string | null; name?: string } | null)?.acronym ?? (t.test_catalog as { name?: string } | null)?.name ?? '' },
+      { header: 'Avaliação', value: (t: NonNullable<typeof tasks.data>[number]) => (t.evaluations as { title?: string } | null)?.title ?? '' },
+      { header: 'Modalidade', value: (t: NonNullable<typeof tasks.data>[number]) => (t.evaluations as { modality?: string } | null)?.modality ?? '' },
+      { header: 'Status', value: (t: NonNullable<typeof tasks.data>[number]) => t.status },
+      { header: 'Criada', value: (t: NonNullable<typeof tasks.data>[number]) => t.created_at ?? '' },
+      { header: 'Iniciada', value: (t: NonNullable<typeof tasks.data>[number]) => t.started_at ?? '' },
+      { header: 'Finalizada', value: (t: NonNullable<typeof tasks.data>[number]) => t.completed_at ?? '' },
+      { header: 'Aprovada', value: (t: NonNullable<typeof tasks.data>[number]) => t.approved_at ?? '' },
+      { header: 'Duração (min)', value: (t: NonNullable<typeof tasks.data>[number]) => t.duration_minutes ?? '' },
+      { header: 'Dias na coluna', value: (t: NonNullable<typeof tasks.data>[number]) => daysInColumn(t) ?? '' },
+    ],
+    [],
+  )
 
   const filteredCatalog = useMemo(() => {
     const q = search.trim().toLowerCase()
