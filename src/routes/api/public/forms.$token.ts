@@ -109,7 +109,7 @@ export const Route = createFileRoute('/api/public/forms/$token')({
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
         const { data, error } = await (supabaseAdmin as any)
           .from('patient_forms')
-          .select('id, title, description, fields, status, expires_at')
+          .select('id, title, description, fields, status, expires_at, created_by')
           .eq('token', params.token)
           .maybeSingle()
         if (error) return new Response(error.message, { status: 500 })
@@ -121,11 +121,23 @@ export const Route = createFileRoute('/api/public/forms/$token')({
           })
         if (data.expires_at && new Date(data.expires_at).getTime() < Date.now())
           return new Response('Formulário expirado.', { status: 410 })
+
+        let professional: { name: string; email: string | null } | null = null
+        if (data.created_by) {
+          const { data: prof } = await (supabaseAdmin as any)
+            .from('profiles')
+            .select('name, email')
+            .eq('id', data.created_by)
+            .maybeSingle()
+          if (prof) professional = { name: prof.name ?? '', email: prof.email ?? null }
+        }
+
         return new Response(
           JSON.stringify({
             title: data.title,
             description: data.description,
             fields: data.fields,
+            professional,
           }),
           { headers: jsonHeaders },
         )

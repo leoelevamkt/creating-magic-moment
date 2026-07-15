@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import type { FormField } from '@/lib/form-templates'
+import logoAsset from '@/assets/neuroflux-logo.png.asset.json'
 
 export const Route = createFileRoute('/f/$token')({
   head: () => ({ meta: [{ title: 'Formulário — NeuroFlux' }] }),
@@ -16,6 +17,7 @@ type FormData = {
   title: string
   description: string | null
   fields: FormField[]
+  professional?: { name: string; email: string | null } | null
 }
 
 function PublicFormPage() {
@@ -70,6 +72,18 @@ function PublicFormPage() {
   return (
     <div className="min-h-svh bg-muted/40 py-10">
       <div className="mx-auto max-w-2xl px-4">
+        {state.kind === 'ready' && state.data.professional?.name && (
+          <div className="mb-4 flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm">
+            <img src={logoAsset.url} alt="Logo" className="size-12 shrink-0 object-contain" />
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Enviado por</p>
+              <p className="truncate font-serif text-base font-semibold">{state.data.professional.name}</p>
+              {state.data.professional.email && (
+                <p className="truncate text-xs text-muted-foreground">{state.data.professional.email}</p>
+              )}
+            </div>
+          </div>
+        )}
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           {state.kind === 'loading' && <p className="text-sm text-muted-foreground">Carregando…</p>}
           {state.kind === 'error' && (
