@@ -109,9 +109,21 @@ export const updateTaskStatus = createServerFn({ method: 'POST' })
       completed_at?: string
       approved_at?: string
       approved_by?: string
+      duration_minutes?: number
     } = { status: data.status }
     if (data.status === 'correcting') patch.started_at = nowIso
-    if (data.status === 'review') patch.completed_at = nowIso
+    if (data.status === 'review') {
+      patch.completed_at = nowIso
+      const { data: current } = await context.supabase
+        .from('test_tasks')
+        .select('started_at, duration_minutes')
+        .eq('id', data.id)
+        .maybeSingle()
+      if (current?.started_at && !current.duration_minutes) {
+        const diffMs = Date.now() - new Date(current.started_at).getTime()
+        patch.duration_minutes = Math.max(1, Math.round(diffMs / 60000))
+      }
+    }
     if (data.status === 'approved') {
       patch.approved_at = nowIso
       patch.approved_by = context.userId

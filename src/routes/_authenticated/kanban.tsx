@@ -4,6 +4,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Pencil, Play, Plus, ShieldCheck, Trash2, X } from 'lucide-react'
 import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+
+const BR = "dd/MM/yyyy 'às' HH:mm"
+const fmtBR = (iso: string | null | undefined) =>
+  iso ? format(new Date(iso), BR, { locale: ptBR }) : null
 import { toast } from 'sonner'
 import {
   createEvaluation,
@@ -365,20 +370,36 @@ function KanbanPage() {
                             <p className="text-xs font-semibold text-primary">{acronym}</p>
                             <p className="font-serif text-base font-semibold">{patient}</p>
                           </div>
-                          {t.duration_minutes ? (
-                            <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
-                              {t.duration_minutes} min
-                            </span>
-                          ) : null}
                         </div>
-                        {t.scheduled_at ? (
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(t.scheduled_at), "dd/MM/yyyy 'às' HH:mm")}
-                          </p>
-                        ) : null}
+                        <dl className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                          {t.scheduled_at ? (
+                            <div className="flex justify-between gap-2">
+                              <dt>Agendada</dt>
+                              <dd className="font-medium text-foreground">{fmtBR(t.scheduled_at)}</dd>
+                            </div>
+                          ) : null}
+                          {t.started_at ? (
+                            <div className="flex justify-between gap-2">
+                              <dt>Iniciada</dt>
+                              <dd className="font-medium text-foreground">{fmtBR(t.started_at)}</dd>
+                            </div>
+                          ) : null}
+                          {t.completed_at ? (
+                            <div className="flex justify-between gap-2">
+                              <dt>Finalizada</dt>
+                              <dd className="font-medium text-foreground">{fmtBR(t.completed_at)}</dd>
+                            </div>
+                          ) : null}
+                          {t.duration_minutes ? (
+                            <div className="flex justify-between gap-2">
+                              <dt>Duração</dt>
+                              <dd className="font-medium text-foreground">{t.duration_minutes} min</dd>
+                            </div>
+                          ) : null}
+                        </dl>
                         {t.status === 'approved' && t.approved_at ? (
                           <p className="rounded-md bg-primary/10 px-2 py-1 text-center text-xs text-primary">
-                            Aprovado em {format(new Date(t.approved_at), 'dd/MM/yyyy')}
+                            Aprovado em {fmtBR(t.approved_at)}
                           </p>
                         ) : null}
                         <div className="flex flex-wrap items-center gap-2">
