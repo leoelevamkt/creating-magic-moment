@@ -14,7 +14,7 @@ import {
   Settings,
   Users,
 } from 'lucide-react'
-import logoAsset from '@/assets/neuroflux-logo.jpg.asset.json'
+import logoAsset from '@/assets/neuroflux-logo.png.asset.json'
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { Button } from '@/components/ui/button'
