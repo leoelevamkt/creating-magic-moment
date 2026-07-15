@@ -89,26 +89,46 @@ function TriagemPage() {
       ) : (
         <div className="flex flex-col gap-4">
           {rows.map((r) => {
-            const domain = DSM5TR_DOMAINS.find((d) => d.id === r.domain)
-            const total = r.criteria.length
-            const present = r.criteria.filter((c) => c.present).length
+            const isSocial = r.instrument === 'social'
+            const domain = isSocial ? null : DSM5TR_DOMAINS.find((d) => d.id === r.domain)
+            const meta = isSocial ? socialMeta(r.criteria) : null
+            const nonMeta = r.criteria.filter((c) => !['RENDA_MENSAL', 'PESSOAS_DOMICILIO'].includes(c.code))
+            const total = nonMeta.length
+            const present = nonMeta.filter((c) => c.present).length
+            const title = isSocial
+              ? 'Triagem social'
+              : (domain?.name ?? r.domain ?? r.instrument)
             return (
               <article key={r.id} className="rounded-2xl border bg-card p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-serif text-xl font-semibold">
-                      {domain?.name ?? r.domain ?? r.instrument}
-                    </h3>
+                    <h3 className="font-serif text-xl font-semibold">{title}</h3>
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(r.created_at), "dd/MM/yyyy 'às' HH:mm")}
                     </p>
                     {domain?.cutoff ? (
                       <p className="mt-1 text-xs text-muted-foreground">Corte: {domain.cutoff}</p>
                     ) : null}
+                    {meta ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Renda per capita: R$ {meta.perCapita.toFixed(2)} ({meta.perCapitaSM.toFixed(2)} SM · SM = R$ {SALARIO_MINIMO_BRL})
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">{present}/{total} critérios</Badge>
-                    <Button size="sm" variant="outline" onClick={() => analyzeMut.mutate(r.id)} disabled={analyzeMut.isPending}>
+                    {meta ? (
+                      <Badge variant={meta.faixa === 'gratuidade' ? 'default' : meta.faixa === 'subsidio' ? 'secondary' : 'outline'}>
+                        {FAIXA_LABELS[meta.faixa].badge}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">{present}/{total} critérios</Badge>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => analyzeMut.mutate({ id: r.id, social: isSocial })}
+                      disabled={analyzeMut.isPending}
+                    >
                       <Sparkles /> IA
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => delMut.mutate(r.id)}>
@@ -117,7 +137,7 @@ function TriagemPage() {
                   </div>
                 </div>
                 <ul className="mt-3 grid gap-1 text-sm sm:grid-cols-2">
-                  {r.criteria.map((c) => (
+                  {nonMeta.map((c) => (
                     <li key={c.code} className={c.present ? 'text-foreground' : 'text-muted-foreground/60'}>
                       <span className="font-mono text-xs">{c.code}</span> {c.label}{c.present ? ' ✓' : ''}
                     </li>
@@ -137,6 +157,7 @@ function TriagemPage() {
           })}
         </div>
       )}
+
     </div>
   )
 }
