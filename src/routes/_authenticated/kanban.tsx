@@ -43,10 +43,22 @@ function KanbanPage() {
   const [open, setOpen] = useState(false)
   const [dragId, setDragId] = useState<string | null>(null)
   const [overCol, setOverCol] = useState<TaskStatus | null>(null)
+  const [search, setSearch] = useState('')
+  const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set())
+  const [customTests, setCustomTests] = useState<Array<{ name: string; acronym: string }>>([])
+  const [customName, setCustomName] = useState('')
+  const [customAcronym, setCustomAcronym] = useState('')
+  const [editing, setEditing] = useState<null | {
+    id: string
+    scheduled_at: string | null
+    duration_minutes: number | null
+  }>(null)
   const qc = useQueryClient()
   const tasksFn = useServerFn(listTasks)
   const setStatus = useServerFn(updateTaskStatus)
   const create = useServerFn(createEvaluation)
+  const patchTask = useServerFn(updateTask)
+  const removeTask = useServerFn(deleteTask)
   const patientsFn = useServerFn(listPatients)
   const catalogFn = useServerFn(listCatalog)
 
@@ -61,11 +73,51 @@ function KanbanPage() {
     return map
   }, [tasks.data])
 
+  const filteredCatalog = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const all = catalog.data ?? []
+    if (!q) return all
+    return all.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        (t.acronym ?? '').toLowerCase().includes(q) ||
+        t.category.toLowerCase().includes(q),
+    )
+  }, [catalog.data, search])
+
   const statusMut = useMutation({
     mutationFn: (v: { id: string; status: TaskStatus }) => setStatus({ data: v }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
     onError: (e: Error) => toast.error(e.message),
   })
+
+  const updateMut = useMutation({
+    mutationFn: (v: { id: string; scheduledAt: string | null; durationMinutes: number | null }) =>
+      patchTask({ data: v }),
+    onSuccess: () => {
+      toast.success('Tarefa atualizada.')
+      setEditing(null)
+      qc.invalidateQueries({ queryKey: ['tasks'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => removeTask({ data: { id } }),
+    onSuccess: () => {
+      toast.success('Tarefa excluída.')
+      qc.invalidateQueries({ queryKey: ['tasks'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  function resetForm() {
+    setSearch('')
+    setSelectedTests(new Set())
+    setCustomTests([])
+    setCustomName('')
+    setCustomAcronym('')
+  }
 
   const createMut = useMutation({
     mutationFn: (v: {
@@ -74,21 +126,43 @@ function KanbanPage() {
       modality: 'presencial' | 'online'
       scheduledAt: string | null
       testIds: string[]
+      customTests: Array<{ name: string; acronym: string }>
     }) => create({ data: v }),
     onSuccess: () => {
       toast.success('Avaliação planejada.')
       setOpen(false)
+      resetForm()
       qc.invalidateQueries({ queryKey: ['tasks'] })
     },
     onError: (e: Error) => toast.error(e.message),
   })
 
+  function toggleTest(id: string) {
+    setSelectedTests((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function addCustom() {
+    const name = customName.trim()
+    if (name.length < 2) {
+      toast.error('Informe o nome do teste personalizado.')
+      return
+    }
+    setCustomTests((prev) => [...prev, { name, acronym: customAcronym.trim() }])
+    setCustomName('')
+    setCustomAcronym('')
+  }
+
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
-    const testIds = fd.getAll('testId').map(String)
-    if (testIds.length === 0) {
-      toast.error('Selecione ao menos um teste.')
+    const testIds = Array.from(selectedTests)
+    if (testIds.length === 0 && customTests.length === 0) {
+      toast.error('Selecione ou adicione ao menos um teste.')
       return
     }
     createMut.mutate({
@@ -97,6 +171,7 @@ function KanbanPage() {
       modality: (String(fd.get('modality') ?? 'presencial') as 'presencial' | 'online'),
       scheduledAt: String(fd.get('scheduledAt') ?? '') || null,
       testIds,
+      customTests,
     })
   }
 
