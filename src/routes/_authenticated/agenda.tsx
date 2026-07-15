@@ -349,6 +349,10 @@ function AgendaPage() {
           const key = format(day, 'yyyy-MM-dd')
           const dayEvents = grouped.get(key) ?? []
           const isToday = isSameDay(day, new Date())
+          const wd = day.getDay()
+          const dayBlocks = (blocks.data ?? []).filter((b) =>
+            b.recurrence === 'weekly' ? b.weekday === wd : b.block_date === key,
+          )
           return (
             <div
               key={key}
@@ -367,6 +371,23 @@ function AgendaPage() {
                   </span>
                 ) : null}
               </div>
+              {dayBlocks.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  {dayBlocks.map((b) => (
+                    <div
+                      key={b.id}
+                      className="rounded-md border border-dashed border-muted-foreground/30 bg-muted/60 px-2 py-1 text-[11px] text-muted-foreground"
+                      title={b.notes ?? undefined}
+                    >
+                      <span className="font-medium">{b.title}</span>{' '}
+                      <span>
+                        · {b.start_time?.slice(0, 5)}–{b.end_time?.slice(0, 5)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
               {dayEvents.length === 0 ? (
                 <p className="my-auto text-center text-xs text-muted-foreground">Sem sessões</p>
               ) : (
