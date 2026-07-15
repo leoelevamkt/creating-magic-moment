@@ -124,6 +124,7 @@ Observações do avaliador: ${row.notes ?? '—'}`
       .eq('id', data.id)
     if (upErr) throw new Error(upErr.message)
     return { analysis }
+  })
 
 type SocialCriterion = { code: string; label: string; present: boolean; notes?: string | null; value?: string | number | null }
 
