@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
@@ -15,9 +15,6 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 export const Route = createFileRoute('/_authenticated/patients/$id/triagem')({
-  beforeLoad: ({ context }) => {
-    if ((context as { role?: string }).role !== 'admin') throw redirect({ to: '/kanban' })
-  },
   head: () => ({ meta: [{ title: 'Triagem — NeuroFlux' }] }),
   component: TriagemPage,
   errorComponent: ({ error }) => (

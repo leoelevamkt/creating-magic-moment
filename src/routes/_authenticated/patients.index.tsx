@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
@@ -30,9 +30,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 
 export const Route = createFileRoute('/_authenticated/patients/')({
-  beforeLoad: ({ context }) => {
-    if ((context as { role?: string }).role !== 'admin') throw redirect({ to: '/kanban' })
-  },
   head: () => ({ meta: [{ title: 'Pacientes — NeuroFlux' }] }),
   component: PatientsPage,
 })
