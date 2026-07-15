@@ -69,14 +69,6 @@ export const Route = createFileRoute('/_authenticated/patients/$id/')({
   ),
 })
 
-function ageFromDate(d: string) {
-  const b = new Date(d)
-  const now = new Date()
-  let age = now.getFullYear() - b.getFullYear()
-  const m = now.getMonth() - b.getMonth()
-  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--
-  return age
-}
 
 const SEX_LABELS: Record<string, string> = {
   feminino: 'Feminino',
