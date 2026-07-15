@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import { useEffect, useState } from 'react'
 import { Loader2, ShieldCheck } from 'lucide-react'
@@ -12,11 +12,19 @@ import { toast } from 'sonner'
 
 export const Route = createFileRoute('/auth')({
   head: () => ({ meta: [{ title: 'Entrar — NeuroFlux' }] }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } =>
+    typeof s.next === 'string' && s.next.startsWith('/') ? { next: s.next } : {},
   component: AuthPage,
 })
 
+function safeNext(next: string | undefined): string {
+  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
+}
+
 function AuthPage() {
-  const navigate = useNavigate()
+  
+  const { next } = Route.useSearch()
+  const target = safeNext(next)
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -27,9 +35,9 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: '/dashboard', replace: true })
+      if (data.session) window.location.replace(target)
     })
-  }, [navigate])
+  }, [target])
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -61,7 +69,7 @@ function AuthPage() {
             password,
             options: {
               data: { name },
-              emailRedirectTo: `${window.location.origin}/dashboard`,
+              emailRedirectTo: `${window.location.origin}${target}`,
             },
           })
         : await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
@@ -74,7 +82,7 @@ function AuthPage() {
       if (mode === 'sign-in') {
         resetLimit({ data: { email: normalizedEmail } }).catch(() => {})
       }
-      navigate({ to: '/dashboard', replace: true })
+      window.location.replace(target)
     } else {
       toast.success('Verifique seu e-mail para confirmar o acesso.')
     }

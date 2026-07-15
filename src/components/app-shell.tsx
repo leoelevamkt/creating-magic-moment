@@ -116,7 +116,7 @@ export function AppShell({
     queryClient.clear()
     await supabase.auth.signOut()
     toast.success('Sessão encerrada.')
-    navigate({ to: '/auth', replace: true })
+    navigate({ to: '/auth', search: {}, replace: true })
   }
 
   return (

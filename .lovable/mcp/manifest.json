@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "sdk_version": "0.22.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://qqudojpmbgwhgtcabmrg.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "neuroflux-mcp",
+      "version": "0.1.0",
+      "title": "NeuroFlux"
+    },
+    "tools": [
+      {
+        "name": "list_patients",
+        "title": "Listar pacientes",
+        "description": "Lista pacientes do NeuroFlux visíveis para o usuário autenticado. Aceita busca por nome/CPF e filtro por status. Respeita RLS.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "search": {
+              "description": "Busca parcial por nome ou CPF.",
+              "type": "string"
+            },
+            "status": {
+              "description": "Filtrar por status do paciente.",
+              "type": "string",
+              "enum": [
+                "ativo",
+                "em_avaliacao",
+                "inativo",
+                "concluido"
+              ]
+            },
+            "limit": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_patient",
+        "title": "Detalhes do paciente",
+        "description": "Retorna o cadastro completo de um paciente pelo id: dados demográficos, hipóteses, medicações, responsáveis e síntese geral. Respeita RLS.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "UUID do paciente."
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_tasks",
+        "title": "Minhas tarefas",
+        "description": "Lista as tarefas do kanban atribuídas ao usuário autenticado, opcionalmente filtradas por status.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "Coluna do kanban.",
+              "type": "string",
+              "enum": [
+                "todo",
+                "doing",
+                "review",
+                "correcting",
+                "done"
+              ]
+            },
+            "limit": {
+              "default": 25,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_upcoming_sessions",
+        "title": "Próximas sessões",
+        "description": "Lista as próximas sessões planejadas (a partir de hoje), com paciente, data, horário e modalidade. Respeita RLS.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "days": {
+              "default": 14,
+              "description": "Janela em dias a partir de hoje.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 60
+            },
+            "limit": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_patient_note",
+        "title": "Criar nota clínica",
+        "description": "Cria uma nota no prontuário de um paciente. A nota fica associada ao usuário autenticado.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "patient_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "content": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10000
+            },
+            "pinned": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "patient_id",
+            "title",
+            "content"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
