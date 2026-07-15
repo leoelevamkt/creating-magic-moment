@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import type { FormField } from '@/lib/form-templates'
+import logoAsset from '@/assets/neuroflux-logo.png.asset.json'
 
 export const Route = createFileRoute('/f/$token')({
   head: () => ({ meta: [{ title: 'Formulário — NeuroFlux' }] }),
@@ -16,6 +17,7 @@ type FormData = {
   title: string
   description: string | null
   fields: FormField[]
+  professional?: { name: string; email: string | null } | null
 }
 
 function PublicFormPage() {
