@@ -34,9 +34,6 @@ import {
 } from '@/components/ui/dialog'
 
 export const Route = createFileRoute('/_authenticated/patients/$id/')({
-  beforeLoad: ({ context }) => {
-    if ((context as { role?: string }).role !== 'admin') throw redirect({ to: '/kanban' })
-  },
   head: () => ({ meta: [{ title: 'Prontuário — NeuroFlux' }] }),
   component: PatientDetailPage,
   errorComponent: ({ error }) => (

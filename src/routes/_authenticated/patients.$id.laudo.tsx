@@ -15,9 +15,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 export const Route = createFileRoute('/_authenticated/patients/$id/laudo')({
-  beforeLoad: ({ context }) => {
-    if ((context as { role?: string }).role !== 'admin') throw redirect({ to: '/kanban' })
-  },
   head: () => ({ meta: [{ title: 'Laudo — NeuroFlux' }] }),
   component: LaudoPage,
 })

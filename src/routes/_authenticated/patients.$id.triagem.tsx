@@ -15,9 +15,6 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 export const Route = createFileRoute('/_authenticated/patients/$id/triagem')({
-  beforeLoad: ({ context }) => {
-    if ((context as { role?: string }).role !== 'admin') throw redirect({ to: '/kanban' })
-  },
   head: () => ({ meta: [{ title: 'Triagem — NeuroFlux' }] }),
   component: TriagemPage,
   errorComponent: ({ error }) => (
