@@ -45,7 +45,7 @@ export const listPatients = createServerFn({ method: 'GET' })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from('patients')
-      .select('id, name, birth_date, cpf, schooling, city, status, has_guardians, guardians, emergency_contact, created_at')
+      .select('id, name, sex, birth_date, cpf, schooling, city, phone, medications, professionals, status, has_guardians, guardians, emergency_contact, created_at')
       .order('created_at', { ascending: false })
     if (error) throw new Error(error.message)
     return data ?? []
