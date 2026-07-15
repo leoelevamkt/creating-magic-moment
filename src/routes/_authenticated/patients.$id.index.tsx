@@ -15,7 +15,11 @@ import {
   updatePatientPlanEntry,
   deletePatientPlanEntry,
 } from '@/lib/patient-plan.functions'
-import { getPatientDetail, updateTaskResult, generateEvaluationSynthesis, updatePatient, generatePatientOverallSynthesis } from '@/lib/patients.functions'
+import { getPatientDetail, updateTaskResult, generateEvaluationSynthesis, updatePatient, generatePatientOverallSynthesis, setPatientStatus, deletePatient } from '@/lib/patients.functions'
+import { DocumentsTab } from '@/components/patients/DocumentsTab'
+import { FinanceTab } from '@/components/patients/FinanceTab'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useRouter } from '@tanstack/react-router'
 import { createSession } from '@/lib/sessions.functions'
 import { createEvaluation } from '@/lib/evaluations.functions'
 import { listCatalog } from '@/lib/profile.functions'
