@@ -56,7 +56,9 @@ function PatientsPage() {
   })
 
   type CreatePayload = {
-    name: string; birthDate: string; cpf: string; schooling: string; city: string;
+    name: string;
+    sex: 'feminino' | 'masculino' | 'outro' | 'nao_informado' | null;
+    birthDate: string; cpf: string; schooling: string; city: string;
     hypotheses: string; notes: string;
     hasGuardians: boolean;
     guardians: { name: string; phone: string; relation: string }[];
@@ -82,8 +84,10 @@ function PatientsPage() {
       toast.error('Preencha ao menos um responsável ou desmarque "Possui responsável(eis)".')
       return
     }
+    const sexRaw = String(fd.get('sex') ?? '')
     mutation.mutate({
       name: String(fd.get('name') ?? ''),
+      sex: (sexRaw ? sexRaw : null) as CreatePayload['sex'],
       birthDate: String(fd.get('birthDate') ?? ''),
       cpf: String(fd.get('cpf') ?? ''),
       schooling: String(fd.get('schooling') ?? ''),
@@ -93,6 +97,7 @@ function PatientsPage() {
       ...contactPayload,
     })
   }
+
 
 
   return (
@@ -121,12 +126,26 @@ function PatientsPage() {
                 <DialogTitle className="font-serif text-2xl">Cadastrar paciente</DialogTitle>
               </DialogHeader>
               <form onSubmit={onSubmit} className="grid gap-5 py-2 sm:grid-cols-2">
-                <Field label="Nome completo" name="name" />
+                <Field label="Nome completo" name="name" required />
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="sex">Sexo<span className="ml-1 text-xs font-normal text-muted-foreground">(opcional)</span></Label>
+                  <select
+                    id="sex"
+                    name="sex"
+                    defaultValue=""
+                    className="h-10 rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="">Selecione…</option>
+                    <option value="feminino">Feminino</option>
+                    <option value="masculino">Masculino</option>
+                    <option value="outro">Outro</option>
+                    <option value="nao_informado">Prefere não informar</option>
+                  </select>
+                </div>
                 <Field label="Data de nascimento" name="birthDate" type="date" />
                 <Field label="CPF" name="cpf" placeholder="000.000.000-00" />
                 <Field label="Escolaridade" name="schooling" placeholder="Ex.: Ensino médio" />
                 <Field label="Cidade" name="city" />
-                <div />
                 <Area label="Hipóteses diagnósticas" name="hypotheses" />
                 <Area label="Observações clínicas" name="notes" />
                 <GuardiansEmergencyFields value={contact} onChange={setContact} />
@@ -173,9 +192,9 @@ function PatientsPage() {
                   onClick={() => router.navigate({ to: '/patients/$id', params: { id: p.id } })}
                 >
                   <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell>{format(new Date(p.birth_date), 'dd/MM/yyyy')}</TableCell>
-                  <TableCell>{p.city}</TableCell>
-                  <TableCell>{p.schooling}</TableCell>
+                  <TableCell>{p.birth_date ? format(new Date(p.birth_date), 'dd/MM/yyyy') : '—'}</TableCell>
+                  <TableCell>{p.city ?? '—'}</TableCell>
+                  <TableCell>{p.schooling ?? '—'}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{p.status}</Badge>
                   </TableCell>
@@ -232,16 +251,21 @@ function Field({
   name,
   type = 'text',
   placeholder,
+  required = false,
 }: {
   label: string
   name: string
   type?: string
   placeholder?: string
+  required?: boolean
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} type={type} placeholder={placeholder} required />
+      <Label htmlFor={name}>
+        {label}
+        {required ? null : <span className="ml-1 text-xs font-normal text-muted-foreground">(opcional)</span>}
+      </Label>
+      <Input id={name} name={name} type={type} placeholder={placeholder} required={required} />
     </div>
   )
 }

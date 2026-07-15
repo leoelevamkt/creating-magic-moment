@@ -130,8 +130,10 @@ function PatientDetailPage() {
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            {ageFromDate(patient.birth_date)} anos · {patient.schooling} · {patient.city} ·{' '}
-            <span className="font-medium">Nasc:</span> {patient.birth_date}
+            {patient.birth_date ? `${ageFromDate(patient.birth_date)} anos · ` : ''}
+            {patient.schooling ? `${patient.schooling} · ` : ''}
+            {patient.city ? `${patient.city} · ` : ''}
+            {patient.birth_date ? (<><span className="font-medium">Nasc:</span> {patient.birth_date}</>) : null}
           </p>
         </div>
 
@@ -173,9 +175,9 @@ function PatientDetailPage() {
             <section className="rounded-2xl border bg-card p-6 shadow-sm">
               <h2 className="font-serif text-lg font-semibold">Dados do paciente</h2>
               <dl className="mt-5 grid gap-5 text-sm">
-                <Info label="CPF" value={patient.cpf} />
-                <Info label="Escolaridade" value={patient.schooling} />
-                <Info label="Cidade" value={patient.city} />
+                <Info label="CPF" value={patient.cpf ?? '—'} />
+                <Info label="Escolaridade" value={patient.schooling ?? '—'} />
+                <Info label="Cidade" value={patient.city ?? '—'} />
                 <Info label="Hipóteses diagnósticas" value={patient.hypotheses ?? '—'} />
                 <Info label="Observações" value={patient.notes ?? 'Sem observações'} />
               </dl>
@@ -953,19 +955,19 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Nascimento</Label>
-            <Input type="date" name="birthDate" defaultValue={patient.birth_date} required />
+            <Input type="date" name="birthDate" defaultValue={patient.birth_date ?? ''} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>CPF</Label>
-            <Input name="cpf" defaultValue={patient.cpf} required />
+            <Input name="cpf" defaultValue={patient.cpf ?? ''} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Escolaridade</Label>
-            <Input name="schooling" defaultValue={patient.schooling} required />
+            <Input name="schooling" defaultValue={patient.schooling ?? ''} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Cidade</Label>
-            <Input name="city" defaultValue={patient.city} required />
+            <Input name="city" defaultValue={patient.city ?? ''} />
           </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>Hipóteses diagnósticas</Label>
