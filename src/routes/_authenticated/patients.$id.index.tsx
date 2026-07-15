@@ -193,6 +193,9 @@ function PatientDetailPage() {
               </div>
             )}
           </section>
+
+          <NotesBoard patientId={id} />
+          <EvaluationPlan patientId={id} />
         </main>
       </div>
     </div>
