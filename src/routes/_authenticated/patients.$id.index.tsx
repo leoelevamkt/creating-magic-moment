@@ -217,16 +217,22 @@ function PatientDetailPage() {
             />
 
             <section className="rounded-2xl border bg-card p-6 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
                   <h2 className="font-serif text-xl font-semibold">Testes e correções</h2>
                   <p className="text-sm text-muted-foreground">
                     Tudo o que foi aplicado, corrigido e aprovado.
                   </p>
                 </div>
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-                  {tasks.length}
-                </span>
+                <div className="flex items-center gap-2">
+                  <NewEvaluationDialog
+                    patientId={id}
+                    onDone={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })}
+                  />
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                    {tasks.length}
+                  </span>
+                </div>
               </div>
               {tasks.length === 0 ? (
                 <p className="mt-6 text-sm text-muted-foreground">
