@@ -1,9 +1,10 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Plus, Video, X } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Mic, Plus, Square, Video, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { transcribeAudio, saveSessionTranscript } from '@/lib/transcribe.functions'
 import {
   addDays,
   endOfWeek,
@@ -350,6 +351,10 @@ function AgendaPage() {
                         <Video size={12} /> Gerar Meet
                       </Button>
                     ) : null}
+                    <SessionTranscribeButton
+                      sessionId={s.id}
+                      existing={(s as { transcript?: string | null }).transcript ?? null}
+                    />
                     {s.status !== 'done' ? (
                       <Button
                         size="sm"
