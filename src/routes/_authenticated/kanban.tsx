@@ -385,7 +385,7 @@ function KanbanPage() {
                               <dd className="font-medium text-foreground">{fmtBR(t.created_at)}</dd>
                             </div>
                           ) : null}
-                          {t.scheduled_at ? (
+                          {t.scheduled_at && !t.created_at ? (
                             <div className="flex justify-between gap-2">
                               <dt>Agendada</dt>
                               <dd className="font-medium text-foreground">{fmtBR(t.scheduled_at)}</dd>
