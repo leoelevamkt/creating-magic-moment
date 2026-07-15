@@ -49,9 +49,7 @@ function Sidebar({ role }: { role: string }) {
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex h-20 items-center gap-3 border-b border-sidebar-border px-6">
-        <span className="flex size-10 items-center justify-center overflow-hidden rounded-xl bg-sidebar-primary-foreground">
-          <img src={logoAsset.url} alt="NeuroFlux" className="size-full object-contain" />
-        </span>
+        <img src={logoAsset.url} alt="NeuroFlux" className="size-10 object-contain" />
         <div>
           <p className="font-serif text-xl font-semibold">NeuroFlux</p>
           <p className="text-xs text-sidebar-foreground/55">Gestão clínica</p>
