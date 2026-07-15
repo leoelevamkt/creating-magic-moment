@@ -53,11 +53,14 @@ function FormulariosPage() {
   const [templateId, setTemplateId] = useState(formTemplates[0].id)
   const [expiresDays, setExpiresDays] = useState('14')
 
+  const selectedTpl = formTemplates.find((t) => t.id === templateId)
+  const isPreCadastro = !!selectedTpl?.createsPatient
+
   const createM = useMutation({
     mutationFn: () =>
       create({
         data: {
-          patientId,
+          patientId: isPreCadastro ? null : patientId,
           templateId,
           expiresInDays: expiresDays ? Number(expiresDays) : null,
         },
@@ -71,6 +74,13 @@ function FormulariosPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   })
+
+  const openPreCadastro = () => {
+    setTemplateId(PRE_CADASTRO_TEMPLATE_ID)
+    setPatientId('')
+    setExpiresDays('30')
+    setOpen(true)
+  }
 
   const archiveM = useMutation({
     mutationFn: (id: string) => archive({ data: { id } }),
