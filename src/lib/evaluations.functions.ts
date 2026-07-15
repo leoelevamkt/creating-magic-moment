@@ -89,9 +89,9 @@ export const listTasks = createServerFn({ method: 'GET' })
     const { data, error } = await context.supabase
       .from('test_tasks')
       .select(
-        'id, evaluation_id, patient_id, test_id, status, scheduled_at, started_at, completed_at, duration_minutes, correction_notes, raw_score, standard_score, classification, synthesis, admin_notes, approved_at, patients(name), test_catalog(acronym, name), evaluations(title, modality)',
+        'id, evaluation_id, patient_id, test_id, status, created_at, scheduled_at, started_at, completed_at, duration_minutes, correction_notes, raw_score, standard_score, classification, synthesis, admin_notes, approved_at, patients(name), test_catalog(acronym, name), evaluations(title, modality)',
       )
-      .order('scheduled_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false, nullsFirst: false })
     if (error) throw new Error(error.message)
     return data ?? []
   })
