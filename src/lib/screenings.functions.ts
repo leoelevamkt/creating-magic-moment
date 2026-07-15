@@ -8,6 +8,7 @@ const CriterionSchema = z.object({
   label: z.string(),
   present: z.boolean(),
   notes: z.string().optional().nullable(),
+  value: z.union([z.string(), z.number()]).optional().nullable(),
 })
 
 const SaveInput = z.object({
