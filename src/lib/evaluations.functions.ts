@@ -7,7 +7,17 @@ const CreateEvaluation = z.object({
   title: z.string().min(2),
   modality: z.enum(['presencial', 'online']),
   scheduledAt: z.string().optional().nullable(),
-  testIds: z.array(z.string().uuid()).min(1),
+  testIds: z.array(z.string().uuid()),
+  customTests: z
+    .array(
+      z.object({
+        name: z.string().min(2).max(200),
+        acronym: z.string().max(40).optional().nullable(),
+        category: z.string().max(80).optional().nullable(),
+      }),
+    )
+    .optional()
+    .default([]),
 })
 
 export const listEvaluations = createServerFn({ method: 'GET' })
@@ -25,7 +35,28 @@ export const createEvaluation = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => CreateEvaluation.parse(i))
   .handler(async ({ context, data }) => {
+    if (data.testIds.length === 0 && (data.customTests?.length ?? 0) === 0) {
+      throw new Error('Selecione ou adicione ao menos um teste.')
+    }
     const scheduled = data.scheduledAt ? new Date(data.scheduledAt).toISOString() : null
+
+    const customIds: string[] = []
+    if (data.customTests && data.customTests.length > 0) {
+      const rows = data.customTests.map((t) => ({
+        name: t.name.trim(),
+        acronym: (t.acronym?.trim() || t.name.trim().slice(0, 20)),
+        category: (t.category?.trim() || 'Outros'),
+        source: 'custom',
+        status: 'pending' as const,
+      }))
+      const { data: inserted, error: cErr } = await context.supabase
+        .from('test_catalog')
+        .insert(rows)
+        .select('id')
+      if (cErr) throw new Error(cErr.message)
+      for (const r of inserted ?? []) customIds.push(r.id)
+    }
+
     const { data: ev, error } = await context.supabase
       .from('evaluations')
       .insert({
@@ -39,7 +70,8 @@ export const createEvaluation = createServerFn({ method: 'POST' })
       .select('id')
       .single()
     if (error) throw new Error(error.message)
-    const tasks = data.testIds.map((testId) => ({
+    const allTestIds = [...data.testIds, ...customIds]
+    const tasks = allTestIds.map((testId) => ({
       evaluation_id: ev!.id,
       patient_id: data.patientId,
       test_id: testId,

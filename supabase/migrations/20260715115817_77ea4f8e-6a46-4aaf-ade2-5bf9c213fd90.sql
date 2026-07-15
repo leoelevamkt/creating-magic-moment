@@ -1,0 +1,1 @@
+CREATE POLICY "Authenticated can add custom pending tests" ON public.test_catalog FOR INSERT TO authenticated WITH CHECK (source = 'custom' AND status = 'pending');

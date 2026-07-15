@@ -639,24 +639,40 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
   const catalogFn = useServerFn(listCatalog)
   const catalog = useQuery({ queryKey: ['catalog'], queryFn: () => catalogFn(), enabled: open })
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [search, setSearch] = useState('')
+  const [customTests, setCustomTests] = useState<Array<{ name: string; acronym: string }>>([])
+  const [customName, setCustomName] = useState('')
+  const [customAcronym, setCustomAcronym] = useState('')
 
   const grouped = useMemo(() => {
+    const q = search.trim().toLowerCase()
     const map = new Map<string, Array<{ id: string; name: string; acronym: string | null }>>()
     for (const t of catalog.data ?? []) {
+      if (q) {
+        const hay = `${t.name} ${t.acronym ?? ''} ${t.category}`.toLowerCase()
+        if (!hay.includes(q)) continue
+      }
       const arr = map.get(t.category) ?? []
       arr.push({ id: t.id, name: t.name, acronym: t.acronym })
       map.set(t.category, arr)
     }
     return Array.from(map.entries())
-  }, [catalog.data])
+  }, [catalog.data, search])
 
   const mut = useMutation({
-    mutationFn: (v: { title: string; modality: 'presencial' | 'online'; scheduledAt: string | null; testIds: string[] }) =>
-      create({ data: { patientId, ...v } }),
+    mutationFn: (v: {
+      title: string
+      modality: 'presencial' | 'online'
+      scheduledAt: string | null
+      testIds: string[]
+      customTests: Array<{ name: string; acronym: string | null }>
+    }) => create({ data: { patientId, ...v } }),
     onSuccess: () => {
       toast.success('Avaliação planejada.')
       setOpen(false)
       setSelected(new Set())
+      setCustomTests([])
+      setSearch('')
       onDone()
     },
     onError: (e: Error) => toast.error(e.message),
@@ -670,17 +686,29 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
       return n
     })
   }
+  function addCustom() {
+    const name = customName.trim()
+    if (name.length < 2) return toast.error('Informe o nome do teste.')
+    setCustomTests((arr) => [...arr, { name, acronym: customAcronym.trim() }])
+    setCustomName('')
+    setCustomAcronym('')
+  }
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (selected.size === 0) return toast.error('Selecione ao menos um teste.')
+    if (selected.size === 0 && customTests.length === 0) {
+      return toast.error('Selecione ou adicione ao menos um teste.')
+    }
     const fd = new FormData(e.currentTarget)
     mut.mutate({
       title: String(fd.get('title') ?? 'Avaliação neuropsicológica'),
       modality: (String(fd.get('modality') ?? 'presencial') as 'presencial' | 'online'),
       scheduledAt: String(fd.get('scheduledAt') ?? '') || null,
       testIds: Array.from(selected),
+      customTests: customTests.map((t) => ({ name: t.name, acronym: t.acronym || null })),
     })
   }
+
+  const totalSel = selected.size + customTests.length
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -709,36 +737,97 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
             <Label>Data e horário</Label>
             <Input type="datetime-local" name="scheduledAt" />
           </div>
+
           <div className="flex flex-col gap-2">
-            <Label>Testes a aplicar ({selected.size})</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label>Testes a aplicar ({totalSel})</Label>
+            </div>
+            <Input
+              placeholder="Pesquisar por nome, sigla ou categoria…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
             {catalog.isLoading ? (
               <p className="text-sm text-muted-foreground">Carregando catálogo…</p>
             ) : (
               <div className="max-h-72 overflow-y-auto rounded-lg border p-3">
-                {grouped.map(([cat, items]) => (
-                  <div key={cat} className="mb-3">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">{cat}</p>
-                    <ul className="mt-1 grid gap-1 sm:grid-cols-2">
-                      {items.map((t) => (
-                        <li key={t.id}>
-                          <label className="flex cursor-pointer items-center gap-2 rounded p-1 text-sm hover:bg-muted/50">
-                            <Checkbox
-                              checked={selected.has(t.id)}
-                              onCheckedChange={() => toggle(t.id)}
-                            />
-                            <span>
-                              <span className="font-medium">{t.acronym ?? '—'}</span>{' '}
-                              <span className="text-muted-foreground">{t.name}</span>
-                            </span>
-                          </label>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+                {grouped.length === 0 ? (
+                  <p className="p-2 text-sm text-muted-foreground">
+                    Nenhum teste encontrado. Adicione um teste personalizado abaixo.
+                  </p>
+                ) : (
+                  grouped.map(([cat, items]) => (
+                    <div key={cat} className="mb-3">
+                      <p className="text-xs font-semibold uppercase text-muted-foreground">{cat}</p>
+                      <ul className="mt-1 grid gap-1 sm:grid-cols-2">
+                        {items.map((t) => (
+                          <li key={t.id}>
+                            <label className="flex cursor-pointer items-center gap-2 rounded p-1 text-sm hover:bg-muted/50">
+                              <Checkbox
+                                checked={selected.has(t.id)}
+                                onCheckedChange={() => toggle(t.id)}
+                              />
+                              <span>
+                                <span className="font-medium">{t.acronym ?? '—'}</span>{' '}
+                                <span className="text-muted-foreground">{t.name}</span>
+                              </span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>
+
+          <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+            <Label className="text-sm">Adicionar teste que não está na lista</Label>
+            <div className="grid gap-2 sm:grid-cols-[1fr_140px_auto]">
+              <Input
+                placeholder="Nome do teste"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addCustom()
+                  }
+                }}
+              />
+              <Input
+                placeholder="Sigla (opcional)"
+                value={customAcronym}
+                onChange={(e) => setCustomAcronym(e.target.value)}
+              />
+              <Button type="button" variant="outline" onClick={addCustom}>
+                <Plus /> Adicionar
+              </Button>
+            </div>
+            {customTests.length > 0 ? (
+              <ul className="mt-1 flex flex-wrap gap-2">
+                {customTests.map((t, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs"
+                  >
+                    <span className="font-medium">{t.acronym || '—'}</span>
+                    <span className="text-muted-foreground">{t.name}</span>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => setCustomTests((arr) => arr.filter((_, j) => j !== i))}
+                      aria-label="Remover"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+
           <div className="flex justify-end">
             <Button type="submit" disabled={mut.isPending}>
               {mut.isPending ? 'Planejando…' : 'Planejar avaliação'}
