@@ -330,7 +330,7 @@ export const updatePatient = createServerFn({ method: 'POST' })
       patch.guardians = data.guardians
     }
     if (data.emergencyContact !== undefined) patch.emergency_contact = data.emergencyContact
-    const { error } = await context.supabase.from('patients').update(patch).eq('id', data.id)
+    const { error } = await context.supabase.from('patients').update(patch as never).eq('id', data.id)
     if (error) throw new Error(error.message)
     return { ok: true }
   })
