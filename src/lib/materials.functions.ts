@@ -77,10 +77,16 @@ export const listMovements = createServerFn({ method: 'GET' })
   .handler(async ({ context, data }) => {
     const { data: rows, error } = await context.supabase
       .from('material_movements')
-      .select('id, kind, quantity, reason, created_at, profiles!material_movements_author_id_fkey(name)')
+      .select('id, kind, quantity, reason, created_at, author_id')
       .eq('material_id', data.materialId)
       .order('created_at', { ascending: false })
       .limit(50)
     if (error) throw new Error(error.message)
-    return rows ?? []
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.author_id)))
+    const authors: Record<string, string> = {}
+    if (ids.length) {
+      const { data: profs } = await context.supabase.from('profiles').select('id, name').in('id', ids)
+      for (const p of profs ?? []) authors[p.id] = p.name
+    }
+    return (rows ?? []).map((r) => ({ ...r, author_name: authors[r.author_id] ?? '—' }))
   })
