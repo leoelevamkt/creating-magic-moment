@@ -419,7 +419,15 @@ function KanbanPage() {
   )
 }
 
-function TestPicker({ tests }: { tests: Array<{ id: string; acronym: string | null; name: string; category: string; estimated_minutes: number | null }> }) {
+function TestPicker({
+  tests,
+  selected,
+  onToggle,
+}: {
+  tests: Array<{ id: string; acronym: string | null; name: string; category: string; estimated_minutes: number | null }>
+  selected: Set<string>
+  onToggle: (id: string) => void
+}) {
   const byCat = useMemo(() => {
     const m = new Map<string, typeof tests>()
     for (const t of tests) {
@@ -429,6 +437,13 @@ function TestPicker({ tests }: { tests: Array<{ id: string; acronym: string | nu
     }
     return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]))
   }, [tests])
+  if (byCat.length === 0) {
+    return (
+      <div className="rounded-lg border p-4 text-center text-xs text-muted-foreground">
+        Nenhum teste encontrado.
+      </div>
+    )
+  }
   return (
     <div className="max-h-72 overflow-y-auto rounded-lg border p-3">
       {byCat.map(([cat, items]) => (
@@ -439,7 +454,11 @@ function TestPicker({ tests }: { tests: Array<{ id: string; acronym: string | nu
           <div className="grid gap-2 sm:grid-cols-2">
             {items.map((t) => (
               <label key={t.id} className="flex items-start gap-2 text-sm">
-                <Checkbox name="testId" value={t.id} className="mt-0.5" />
+                <Checkbox
+                  checked={selected.has(t.id)}
+                  onCheckedChange={() => onToggle(t.id)}
+                  className="mt-0.5"
+                />
                 <span>
                   <span className="font-medium">{t.acronym ?? t.name}</span>
                   <span className="block text-xs text-muted-foreground">
