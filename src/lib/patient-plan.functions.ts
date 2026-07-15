@@ -133,11 +133,22 @@ export const updatePatientPlanEntry = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => PlanUpdate.parse(i))
   .handler(async ({ context, data }) => {
-    const { id, sessionNumber, sessionDate, startTime, ...rest } = data
-    const patch: Record<string, unknown> = { ...rest }
+    const { id, sessionNumber, sessionDate, startTime, checklist, ...rest } = data
+    const patch: {
+      title?: string
+      modality?: 'presencial' | 'online'
+      objectives?: string | null
+      notes?: string | null
+      status?: 'scheduled' | 'done' | 'cancelled'
+      session_number?: number | null
+      session_date?: string
+      start_time?: string | null
+      checklist?: Array<{ label: string; done: boolean }>
+    } = { ...rest }
     if (sessionNumber !== undefined) patch.session_number = sessionNumber
     if (sessionDate !== undefined) patch.session_date = sessionDate
     if (startTime !== undefined) patch.start_time = startTime || null
+    if (checklist !== undefined) patch.checklist = checklist
     const { error } = await context.supabase.from('sessions_plan').update(patch).eq('id', id)
     if (error) throw new Error(error.message)
     return { ok: true }
