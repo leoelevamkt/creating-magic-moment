@@ -1,11 +1,14 @@
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import {
   BrainCircuit,
+  Boxes,
   CalendarDays,
   ClipboardList,
   LayoutDashboard,
   Library,
+  ListTodo,
   LogOut,
+  MessagesSquare,
   PanelLeft,
   Settings,
   Users,
@@ -16,13 +19,24 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { useQueryClient } from '@tanstack/react-query'
 
-const nav = [
+const adminNav = [
   { to: '/dashboard', label: 'Visão geral', icon: LayoutDashboard },
   { to: '/agenda', label: 'Agenda', icon: CalendarDays },
   { to: '/kanban', label: 'Quadro clínico', icon: ClipboardList },
   { to: '/patients', label: 'Pacientes', icon: Users },
+  { to: '/tasks', label: 'Tarefas', icon: ListTodo },
+  { to: '/supervision', label: 'Supervisão', icon: MessagesSquare },
+  { to: '/materials', label: 'Materiais', icon: Boxes },
   { to: '/catalog', label: 'Catálogo de testes', icon: Library },
 ] as const
+
+const staffNav = [
+  { to: '/kanban', label: 'Correções', icon: ClipboardList },
+  { to: '/tasks', label: 'Tarefas', icon: ListTodo },
+  { to: '/supervision', label: 'Supervisão', icon: MessagesSquare },
+  { to: '/materials', label: 'Materiais', icon: Boxes },
+] as const
+
 
 function Sidebar({ role }: { role: string }) {
   const pathname = useLocation({ select: (l) => l.pathname })
@@ -38,7 +52,7 @@ function Sidebar({ role }: { role: string }) {
         </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-4">
-        {nav.map((item) => {
+        {(role === 'admin' ? adminNav : staffNav).map((item) => {
           const Icon = item.icon
           const active = pathname === item.to || pathname.startsWith(item.to + '/')
           return (

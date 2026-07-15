@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
@@ -24,6 +24,9 @@ import {
 } from '@/components/ui/dialog'
 
 export const Route = createFileRoute('/_authenticated/patients/$id')({
+  beforeLoad: ({ context }) => {
+    if ((context as { role?: string }).role !== 'admin') throw redirect({ to: '/kanban' })
+  },
   head: () => ({ meta: [{ title: 'Prontuário — NeuroFlux' }] }),
   component: PatientDetailPage,
   errorComponent: ({ error }) => (
