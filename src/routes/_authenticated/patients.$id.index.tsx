@@ -774,7 +774,7 @@ function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
   const upd = useServerFn(updatePatientNote)
   const del = useServerFn(deletePatientNote)
   const updMut = useMutation({
-    mutationFn: (v: Partial<{ title: string; content: string; color: string; pinned: boolean; checklist: ChecklistItem[] }>) =>
+    mutationFn: (v: Partial<NoteFormValues & { pinned: boolean }>) =>
       upd({ data: { id: note.id, ...v } }),
     onSuccess: onChanged,
     onError: (e: Error) => toast.error(e.message),
@@ -790,16 +790,36 @@ function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
 
   const checklist = toChecklist(note.checklist)
   const doneCount = checklist.filter((c) => c.done).length
+  const n = note as Note & {
+    session_number?: number | null
+    session_dates?: string[] | null
+    planned_tests?: string | null
+  }
+  const sessionDates = Array.isArray(n.session_dates) ? n.session_dates : []
+  const plannedTests = n.planned_tests ?? ''
 
   function toggleItem(idx: number) {
     const next = checklist.map((c, i) => (i === idx ? { ...c, done: !c.done } : c))
     updMut.mutate({ checklist: next })
   }
 
+  function fmtDate(d: string) {
+    try {
+      return format(new Date(d.length <= 10 ? d + 'T00:00:00' : d), 'dd/MM/yyyy')
+    } catch {
+      return d
+    }
+  }
+
   return (
     <div className={`flex flex-col gap-2 rounded-xl border p-3 ${NOTE_COLORS[note.color] ?? NOTE_COLORS.default}`}>
       <div className="flex items-start justify-between gap-2">
-        <p className="font-semibold text-sm">{note.title || 'Sem título'}</p>
+        <div className="min-w-0">
+          <p className="font-semibold text-sm">{note.title || 'Sem título'}</p>
+          {n.session_number ? (
+            <p className="text-[11px] font-medium text-primary">Sessão nº {n.session_number}</p>
+          ) : null}
+        </div>
         <div className="flex gap-1">
           <Button size="icon" variant="ghost" className="size-7" onClick={() => updMut.mutate({ pinned: !note.pinned })} title={note.pinned ? 'Desfixar' : 'Fixar'}>
             {note.pinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
@@ -810,7 +830,15 @@ function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
                 <Pencil className="size-3.5" />
               </Button>
             }
-            initial={{ title: note.title, content: note.content, color: note.color, checklist }}
+            initial={{
+              title: note.title,
+              content: note.content,
+              color: note.color,
+              checklist,
+              sessionNumber: n.session_number ?? null,
+              sessionDates,
+              plannedTests,
+            }}
             onSubmit={(v) => updMut.mutate(v)}
             isPending={updMut.isPending}
           />
@@ -827,8 +855,26 @@ function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
           </Button>
         </div>
       </div>
+      {sessionDates.length > 0 ? (
+        <div className="flex flex-wrap gap-1">
+          {sessionDates.map((d, i) => (
+            <span key={i} className="rounded-full border bg-background/60 px-2 py-0.5 text-[11px]">
+              {fmtDate(d)}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {plannedTests ? (
+        <div className="rounded-md bg-background/60 p-2 text-xs">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">O que será aplicado</p>
+          <p className="mt-0.5 whitespace-pre-wrap">{plannedTests}</p>
+        </div>
+      ) : null}
       {note.content ? (
-        <p className="whitespace-pre-wrap text-sm text-foreground/90">{note.content}</p>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Observações</p>
+          <p className="mt-0.5 whitespace-pre-wrap text-sm text-foreground/90">{note.content}</p>
+        </div>
       ) : null}
       {checklist.length > 0 ? (
         <div className="mt-1 flex flex-col gap-1.5 border-t pt-2">
