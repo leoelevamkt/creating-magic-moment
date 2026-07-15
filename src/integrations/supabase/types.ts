@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_user_connections: {
+        Row: {
+          account_email: string | null
+          connection_key_ciphertext: string
+          connector_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_email?: string | null
+          connection_key_ciphertext: string
+          connector_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_email?: string | null
+          connection_key_ciphertext?: string
+          connector_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -236,10 +266,13 @@ export type Database = {
       }
       sessions_plan: {
         Row: {
+          create_meet: boolean
           created_at: string
           created_by: string
           end_time: string | null
+          google_event_id: string | null
           id: string
+          meet_url: string | null
           modality: string
           notes: string | null
           objectives: string | null
@@ -252,10 +285,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          create_meet?: boolean
           created_at?: string
           created_by: string
           end_time?: string | null
+          google_event_id?: string | null
           id?: string
+          meet_url?: string | null
           modality?: string
           notes?: string | null
           objectives?: string | null
@@ -268,10 +304,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          create_meet?: boolean
           created_at?: string
           created_by?: string
           end_time?: string | null
+          google_event_id?: string | null
           id?: string
+          meet_url?: string | null
           modality?: string
           notes?: string | null
           objectives?: string | null

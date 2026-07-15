@@ -21,7 +21,7 @@ export const listSessions = createServerFn({ method: 'GET' })
     const { data: rows, error } = await context.supabase
       .from('sessions_plan')
       .select(
-        'id, patient_id, title, session_date, start_time, end_time, modality, planned_test_ids, objectives, notes, status, patients(name)',
+        'id, patient_id, title, session_date, start_time, end_time, modality, planned_test_ids, objectives, notes, status, meet_url, google_event_id, create_meet, patients(name)',
       )
       .gte('session_date', data.from)
       .lte('session_date', data.to)
@@ -34,21 +34,25 @@ export const createSession = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => CreateSession.parse(i))
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase.from('sessions_plan').insert({
-      created_by: context.userId,
-      patient_id: data.patientId,
-      title: data.title,
-      modality: data.modality,
-      session_date: data.sessionDate,
-      start_time: data.startTime || null,
-      end_time: data.endTime || null,
-      objectives: data.objectives || null,
-      notes: data.notes || null,
-      planned_test_ids: data.plannedTestIds,
-      status: 'scheduled',
-    })
+    const { data: row, error } = await context.supabase
+      .from('sessions_plan')
+      .insert({
+        created_by: context.userId,
+        patient_id: data.patientId,
+        title: data.title,
+        modality: data.modality,
+        session_date: data.sessionDate,
+        start_time: data.startTime || null,
+        end_time: data.endTime || null,
+        objectives: data.objectives || null,
+        notes: data.notes || null,
+        planned_test_ids: data.plannedTestIds,
+        status: 'scheduled',
+      })
+      .select('id')
+      .single()
     if (error) throw new Error(error.message)
-    return { ok: true }
+    return { ok: true, id: row.id }
   })
 
 export const updateSessionStatus = createServerFn({ method: 'POST' })

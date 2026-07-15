@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Plus, X } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Plus, Video, X } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   addDays,
@@ -19,6 +19,7 @@ import {
   listSessions,
   updateSessionStatus,
 } from '@/lib/sessions.functions'
+import { createMeetForSession, getGoogleConnectionStatus } from '@/lib/googleCalendar.functions'
 import { listPatients } from '@/lib/patients.functions'
 import { listCatalog } from '@/lib/profile.functions'
 import { Button } from '@/components/ui/button'
@@ -50,6 +51,8 @@ function AgendaPage() {
   const create = useServerFn(createSession)
   const remove = useServerFn(deleteSession)
   const setStatus = useServerFn(updateSessionStatus)
+  const meetFn = useServerFn(createMeetForSession)
+  const googleStatus = useServerFn(getGoogleConnectionStatus)
 
   const weekStart = startOfWeek(anchor, { weekStartsOn: 1 })
   const weekEnd = endOfWeek(anchor, { weekStartsOn: 1 })
@@ -62,6 +65,7 @@ function AgendaPage() {
   })
   const patients = useQuery({ queryKey: ['patients'], queryFn: () => useServerFnSafe(listPatients)() })
   const catalog = useQuery({ queryKey: ['catalog'], queryFn: () => useServerFnSafe(listCatalog)() })
+  const gStatus = useQuery({ queryKey: ['google-status'], queryFn: () => googleStatus() })
 
   const removeMut = useMutation({
     mutationFn: (id: string) => remove({ data: { id } }),
@@ -75,8 +79,17 @@ function AgendaPage() {
     mutationFn: (v: { id: string; status: 'done' }) => setStatus({ data: v }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
   })
+  const meetMut = useMutation({
+    mutationFn: (sessionId: string) => meetFn({ data: { sessionId } }),
+    onSuccess: (r) => {
+      toast.success('Meet criado.')
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+      if (r?.meetUrl) window.open(r.meetUrl, '_blank', 'noopener')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
   const createMut = useMutation({
-    mutationFn: (v: {
+    mutationFn: async (v: {
       patientId: string
       title: string
       modality: 'presencial' | 'online'
@@ -86,7 +99,19 @@ function AgendaPage() {
       objectives: string | null
       notes: string | null
       plannedTestIds: string[]
-    }) => create({ data: v }),
+      createMeet: boolean
+    }) => {
+      const { createMeet, ...rest } = v
+      const res = await create({ data: rest })
+      if (createMeet && res.id) {
+        try {
+          await meetFn({ data: { sessionId: res.id } })
+        } catch (e) {
+          toast.error(`Sessão criada, mas Meet falhou: ${(e as Error).message}`)
+        }
+      }
+      return res
+    },
     onSuccess: () => {
       toast.success('Sessão agendada.')
       setOpen(false)
@@ -114,6 +139,7 @@ function AgendaPage() {
       objectives: String(fd.get('objectives') ?? '') || null,
       notes: String(fd.get('notes') ?? '') || null,
       plannedTestIds: testIds,
+      createMeet: fd.get('createMeet') === 'on',
     })
   }
 
@@ -205,6 +231,23 @@ function AgendaPage() {
                 <Label>Observações</Label>
                 <Textarea name="notes" rows={2} />
               </div>
+              <label className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-sm">
+                <input
+                  type="checkbox"
+                  name="createMeet"
+                  defaultChecked={gStatus.data?.connected ?? false}
+                  disabled={!gStatus.data?.connected}
+                  className="mt-1"
+                />
+                <span>
+                  <span className="font-medium">Gerar link do Google Meet</span>
+                  <span className="ml-1 text-muted-foreground">
+                    {gStatus.data?.connected
+                      ? '(cria evento no seu Google Calendar)'
+                      : '(conecte o Google Calendar em Configurações)'}
+                  </span>
+                </span>
+              </label>
               <div className="flex justify-end">
                 <Button type="submit" disabled={createMut.isPending}>
                   {createMut.isPending ? 'Agendando…' : 'Agendar sessão'}
@@ -286,6 +329,26 @@ function AgendaPage() {
                     </p>
                     {s.objectives ? (
                       <p className="line-clamp-3 text-muted-foreground">{s.objectives}</p>
+                    ) : null}
+                    {s.meet_url ? (
+                      <a
+                        href={s.meet_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-blue-700 hover:bg-blue-100"
+                      >
+                        <Video size={12} /> Entrar no Meet
+                      </a>
+                    ) : gStatus.data?.connected && s.modality === 'online' ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-1"
+                        onClick={() => meetMut.mutate(s.id)}
+                        disabled={meetMut.isPending}
+                      >
+                        <Video size={12} /> Gerar Meet
+                      </Button>
                     ) : null}
                     {s.status !== 'done' ? (
                       <Button
