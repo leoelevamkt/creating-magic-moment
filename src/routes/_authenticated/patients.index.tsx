@@ -48,7 +48,6 @@ export const Route = createFileRoute('/_authenticated/patients/')({
   component: PatientsPage,
 })
 
-type PatientRow = Awaited<ReturnType<typeof listPatients>>[number]
 
 function PatientsPage() {
   const list = useServerFn(listPatients)
