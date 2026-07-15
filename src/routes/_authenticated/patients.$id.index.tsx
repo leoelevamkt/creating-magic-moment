@@ -136,6 +136,7 @@ function PatientDetailPage() {
           </div>
           <p className="text-sm text-muted-foreground">
             {patient.birth_date ? `${ageFromDate(patient.birth_date)} anos · ` : ''}
+            {sexLabel((patient as { sex?: string | null }).sex) ? `${sexLabel((patient as { sex?: string | null }).sex)} · ` : ''}
             {patient.schooling ? `${patient.schooling} · ` : ''}
             {patient.city ? `${patient.city} · ` : ''}
             {patient.birth_date ? (<><span className="font-medium">Nasc:</span> {patient.birth_date}</>) : null}
