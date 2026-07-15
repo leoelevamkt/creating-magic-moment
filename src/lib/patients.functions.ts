@@ -3,6 +3,19 @@ import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { RATE_LIMITS, enforceRateLimit } from '@/lib/rate-limit.server'
 
+const GuardianSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  phone: z.string().trim().min(4).max(40),
+  relation: z.string().trim().min(1).max(60),
+})
+const EmergencyContactSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  phone: z.string().trim().min(4).max(40),
+  relation: z.string().trim().min(1).max(60),
+})
+export type Guardian = z.infer<typeof GuardianSchema>
+export type EmergencyContact = z.infer<typeof EmergencyContactSchema>
+
 const CreateInput = z.object({
   name: z.string().min(2),
   birthDate: z.string().min(4),
@@ -11,6 +24,9 @@ const CreateInput = z.object({
   city: z.string().min(1),
   hypotheses: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  hasGuardians: z.boolean().optional().default(false),
+  guardians: z.array(GuardianSchema).max(10).optional().default([]),
+  emergencyContact: EmergencyContactSchema.nullable().optional(),
 })
 
 export const listPatients = createServerFn({ method: 'GET' })
