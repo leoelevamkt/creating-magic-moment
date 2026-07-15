@@ -137,7 +137,11 @@ function PatientsPage() {
             </TableHeader>
             <TableBody>
               {data.map((p) => (
-                <TableRow key={p.id}>
+                <TableRow
+                  key={p.id}
+                  className="cursor-pointer"
+                  onClick={() => router.navigate({ to: '/patients/$id', params: { id: p.id } })}
+                >
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell>{format(new Date(p.birth_date), 'dd/MM/yyyy')}</TableCell>
                   <TableCell>{p.city}</TableCell>
