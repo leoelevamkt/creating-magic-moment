@@ -99,7 +99,6 @@ function buildPatientFromResponses(
     guardians: guardians as unknown,
     has_guardians: guardians.length > 0,
     notes: notesBlocks.join('\n'),
-    status: 'triagem',
     created_by: createdBy,
   }
 }
