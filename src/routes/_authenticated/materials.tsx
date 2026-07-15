@@ -282,7 +282,7 @@ function MovementPanel({
                   <span className="text-muted-foreground">{format(new Date(m.created_at), 'dd/MM HH:mm')}</span>
                 </div>
                 {m.reason ? <p className="text-muted-foreground">{m.reason}</p> : null}
-                <p className="text-muted-foreground">por {(m.profiles as { name: string } | null)?.name ?? '—'}</p>
+                <p className="text-muted-foreground">por {m.author_name}</p>
               </div>
             ))}
           </div>

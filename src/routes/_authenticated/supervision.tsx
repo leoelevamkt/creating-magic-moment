@@ -196,7 +196,7 @@ function NotesPanel({ caseId }: { caseId: string | null }) {
         ) : (
           (notes.data ?? []).map((n) => (
             <div key={n.id} className="rounded-lg border bg-background p-3">
-              <p className="text-xs font-medium">{(n.profiles as { name: string } | null)?.name ?? '—'}</p>
+              <p className="text-xs font-medium">{n.author_name}</p>
               <p className="text-xs text-muted-foreground">{format(new Date(n.created_at), 'dd/MM/yyyy HH:mm')}</p>
               <p className="mt-1 whitespace-pre-wrap text-sm">{n.body}</p>
             </div>
