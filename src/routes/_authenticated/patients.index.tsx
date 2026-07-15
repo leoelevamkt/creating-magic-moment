@@ -46,6 +46,9 @@ function PatientsPage() {
   const qc = useQueryClient()
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [contact, setContact] = useState<GuardiansEmergencyValue>({
+    hasGuardians: false, guardians: [], emergencyContact: { ...EMPTY_EMERGENCY },
+  })
 
   const { data, isLoading } = useQuery({
     queryKey: ['patients'],
