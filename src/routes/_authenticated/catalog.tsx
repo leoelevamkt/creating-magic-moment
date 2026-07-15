@@ -233,12 +233,31 @@ function CatalogPage() {
         ) : null}
       </div>
 
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Input
+          placeholder="Pesquisar por nome, sigla ou categoria…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="sm:max-w-md"
+        />
+        {search ? (
+          <p className="text-xs text-muted-foreground">
+            {grouped.reduce((acc, [, list]) => acc + list.length, 0)} resultado(s)
+          </p>
+        ) : null}
+      </div>
+
       {catalogQ.isLoading ? (
         <p className="p-8 text-sm text-muted-foreground">Carregando catálogo…</p>
       ) : !catalogQ.data || catalogQ.data.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border bg-card p-12 text-center">
           <Library className="text-muted-foreground" />
           <p className="text-sm text-muted-foreground">Nenhum teste cadastrado.</p>
+        </div>
+      ) : grouped.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border bg-card p-12 text-center">
+          <Library className="text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Nenhum teste encontrado para “{search}”.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-6">
