@@ -154,11 +154,14 @@ function CatalogPage() {
         </div>
         {isAdmin ? (
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openNew}>
-                <Plus className="mr-2 h-4 w-4" /> Novo teste
-              </Button>
-            </DialogTrigger>
+            <DialogTrigger
+              render={
+                <Button onClick={openNew}>
+                  <Plus className="mr-2 h-4 w-4" /> Novo teste
+                </Button>
+              }
+            />
+
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>{form.id ? 'Editar teste' : 'Novo teste'}</DialogTitle>
