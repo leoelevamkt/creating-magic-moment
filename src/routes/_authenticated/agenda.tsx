@@ -425,9 +425,9 @@ function SessionTranscribeButton({ sessionId, existing }: { sessionId: string; e
   const [open, setOpen] = useState(false)
   const [recording, setRecording] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState('')
   const [text, setText] = useState(existing ?? '')
-  const mediaRef = useRef<MediaRecorder | null>(null)
-  const chunksRef = useRef<Blob[]>([])
+  const recorderRef = useRef<SegmentedRecorder | null>(null)
   const transcribe = useServerFn(transcribeAudio)
   const save = useServerFn(saveSessionTranscript)
 
@@ -437,52 +437,61 @@ function SessionTranscribeButton({ sessionId, existing }: { sessionId: string; e
     onError: (e: Error) => toast.error(e.message),
   })
 
+  async function sendOne(blob: Blob, mimeType: string, durationSec?: number) {
+    const b64 = await blobToBase64(blob)
+    const r = await transcribe({ data: { audioBase64: b64, mimeType, language: 'pt', durationSeconds: durationSec } })
+    if (r.text) setText((cur) => (cur ? cur + '\n\n' : '') + r.text)
+  }
+
   async function start() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '' })
-      chunksRef.current = []
-      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
-      mr.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop())
-        const blob = new Blob(chunksRef.current, { type: mr.mimeType || 'audio/webm' })
-        await sendBlob(blob, mr.mimeType || 'audio/webm')
-      }
-      mediaRef.current = mr
-      mr.start()
+      const rec = new SegmentedRecorder({
+        segmentMs: 4 * 60_000,
+        onSegment: async (blob, mime, dur) => {
+          setBusy(true)
+          try { await sendOne(blob, mime, dur); setProgress('Trecho transcrito.') }
+          catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao transcrever trecho') }
+          finally { setBusy(false) }
+        },
+        onError: (e) => toast.error(e.message),
+      })
+      await rec.start()
+      recorderRef.current = rec
       setRecording(true)
+      setProgress('Gravando… (até 2h, transcrito em blocos de 4 min)')
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Sem acesso ao microfone.')
     }
   }
-  function stop() { mediaRef.current?.stop(); setRecording(false) }
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function stop() {
+    await recorderRef.current?.stop()
+    recorderRef.current = null
+    setRecording(false)
+  }
+  async function onFile(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (!f) return
-    await sendBlob(f, f.type || 'audio/webm')
     e.target.value = ''
-  }
-  async function sendBlob(blob: Blob, mimeType: string) {
     setBusy(true)
     try {
-      const b64 = await new Promise<string>((resolve, reject) => {
-        const r = new FileReader()
-        r.onerror = () => reject(new Error('Falha ao ler áudio'))
-        r.onload = () => {
-          const s = String(r.result ?? '')
-          const i = s.indexOf(',')
-          resolve(i >= 0 ? s.slice(i + 1) : s)
+      if (f.size <= 20 * 1024 * 1024) {
+        setProgress('Transcrevendo…')
+        await sendOne(f, f.type || 'audio/webm')
+      } else {
+        setProgress('Preparando áudio longo…')
+        const chunks = await chunkAudioFile(f, 240)
+        for (let i = 0; i < chunks.length; i++) {
+          setProgress(`Transcrevendo ${i + 1}/${chunks.length}…`)
+          await sendOne(chunks[i], 'audio/wav', 240)
         }
-        r.readAsDataURL(blob)
-      })
-      const r = await transcribe({ data: { audioBase64: b64, mimeType, language: 'pt' } })
-      setText((cur) => (cur ? cur + '\n\n' : '') + r.text)
+      }
+      toast.success('Áudio transcrito.')
+      setProgress('')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Falha na transcrição')
-    } finally {
-      setBusy(false)
-    }
+    } finally { setBusy(false) }
   }
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
