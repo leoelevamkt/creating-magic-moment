@@ -3,6 +3,19 @@ import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { RATE_LIMITS, enforceRateLimit } from '@/lib/rate-limit.server'
 
+const GuardianSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  phone: z.string().trim().min(4).max(40),
+  relation: z.string().trim().min(1).max(60),
+})
+const EmergencyContactSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  phone: z.string().trim().min(4).max(40),
+  relation: z.string().trim().min(1).max(60),
+})
+export type Guardian = z.infer<typeof GuardianSchema>
+export type EmergencyContact = z.infer<typeof EmergencyContactSchema>
+
 const CreateInput = z.object({
   name: z.string().min(2),
   birthDate: z.string().min(4),
@@ -11,6 +24,9 @@ const CreateInput = z.object({
   city: z.string().min(1),
   hypotheses: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  hasGuardians: z.boolean().optional().default(false),
+  guardians: z.array(GuardianSchema).max(10).optional().default([]),
+  emergencyContact: EmergencyContactSchema.nullable().optional(),
 })
 
 export const listPatients = createServerFn({ method: 'GET' })
@@ -18,7 +34,7 @@ export const listPatients = createServerFn({ method: 'GET' })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from('patients')
-      .select('id, name, birth_date, cpf, schooling, city, status, created_at')
+      .select('id, name, birth_date, cpf, schooling, city, status, has_guardians, guardians, emergency_contact, created_at')
       .order('created_at', { ascending: false })
     if (error) throw new Error(error.message)
     return data ?? []
@@ -28,6 +44,7 @@ export const createPatient = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => CreateInput.parse(input))
   .handler(async ({ context, data }) => {
+    const guardians = data.hasGuardians ? (data.guardians ?? []) : []
     const { error, data: row } = await context.supabase
       .from('patients')
       .insert({
@@ -39,6 +56,9 @@ export const createPatient = createServerFn({ method: 'POST' })
         city: data.city,
         hypotheses: data.hypotheses || null,
         notes: data.notes || null,
+        has_guardians: !!data.hasGuardians,
+        guardians,
+        emergency_contact: data.emergencyContact ?? null,
         status: 'active',
       })
       .select('id')
@@ -95,7 +115,7 @@ export const getPatientDetail = createServerFn({ method: 'GET' })
   .handler(async ({ context, data }) => {
     const { data: patient, error } = await context.supabase
       .from('patients')
-      .select('id, name, birth_date, cpf, schooling, city, hypotheses, notes, overall_synthesis, status, created_at')
+      .select('id, name, birth_date, cpf, schooling, city, hypotheses, notes, overall_synthesis, status, has_guardians, guardians, emergency_contact, created_at')
       .eq('id', data.id)
       .maybeSingle()
     if (error) throw new Error(error.message)
@@ -279,25 +299,38 @@ const UpdatePatientInput = z.object({
   hypotheses: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   status: z.enum(['active', 'archived', 'discharged']).optional(),
+  hasGuardians: z.boolean().optional(),
+  guardians: z.array(GuardianSchema).max(10).optional(),
+  emergencyContact: EmergencyContactSchema.nullable().optional(),
 })
 
 export const updatePatient = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => UpdatePatientInput.parse(i))
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase
-      .from('patients')
-      .update({
-        name: data.name,
-        birth_date: data.birthDate,
-        cpf: data.cpf,
-        schooling: data.schooling,
-        city: data.city,
-        hypotheses: data.hypotheses || null,
-        notes: data.notes || null,
-        ...(data.status ? { status: data.status } : {}),
-      })
-      .eq('id', data.id)
+    const patch: {
+      name: string; birth_date: string; cpf: string; schooling: string; city: string;
+      hypotheses: string | null; notes: string | null;
+      status?: 'active' | 'archived' | 'discharged';
+      has_guardians?: boolean; guardians?: unknown; emergency_contact?: unknown;
+    } = {
+      name: data.name,
+      birth_date: data.birthDate,
+      cpf: data.cpf,
+      schooling: data.schooling,
+      city: data.city,
+      hypotheses: data.hypotheses || null,
+      notes: data.notes || null,
+    }
+    if (data.status) patch.status = data.status
+    if (typeof data.hasGuardians === 'boolean') {
+      patch.has_guardians = data.hasGuardians
+      patch.guardians = data.hasGuardians ? (data.guardians ?? []) : []
+    } else if (data.guardians) {
+      patch.guardians = data.guardians
+    }
+    if (data.emergencyContact !== undefined) patch.emergency_contact = data.emergencyContact
+    const { error } = await context.supabase.from('patients').update(patch as never).eq('id', data.id)
     if (error) throw new Error(error.message)
     return { ok: true }
   })

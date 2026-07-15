@@ -7,6 +7,12 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import * as XLSX from 'xlsx'
 import { bulkCreatePatients, createPatient, listPatients } from '@/lib/patients.functions'
+import {
+  GuardiansEmergencyFields,
+  EMPTY_EMERGENCY,
+  toPatientContactPayload,
+  type GuardiansEmergencyValue,
+} from '@/components/patients/GuardiansEmergencyFields'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -40,25 +46,28 @@ function PatientsPage() {
   const qc = useQueryClient()
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [contact, setContact] = useState<GuardiansEmergencyValue>({
+    hasGuardians: false, guardians: [], emergencyContact: { ...EMPTY_EMERGENCY },
+  })
 
   const { data, isLoading } = useQuery({
     queryKey: ['patients'],
     queryFn: () => list(),
   })
 
+  type CreatePayload = {
+    name: string; birthDate: string; cpf: string; schooling: string; city: string;
+    hypotheses: string; notes: string;
+    hasGuardians: boolean;
+    guardians: { name: string; phone: string; relation: string }[];
+    emergencyContact: { name: string; phone: string; relation: string } | null;
+  }
   const mutation = useMutation({
-    mutationFn: (payload: {
-      name: string
-      birthDate: string
-      cpf: string
-      schooling: string
-      city: string
-      hypotheses: string
-      notes: string
-    }) => create({ data: payload }),
+    mutationFn: (payload: CreatePayload) => create({ data: payload }),
     onSuccess: () => {
       toast.success('Paciente cadastrado.')
       setOpen(false)
+      setContact({ hasGuardians: false, guardians: [], emergencyContact: { ...EMPTY_EMERGENCY } })
       qc.invalidateQueries({ queryKey: ['patients'] })
       router.invalidate()
     },
@@ -68,6 +77,11 @@ function PatientsPage() {
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const fd = new FormData(event.currentTarget)
+    const contactPayload = toPatientContactPayload(contact)
+    if (contact.hasGuardians && contactPayload.guardians.length === 0) {
+      toast.error('Preencha ao menos um responsável ou desmarque "Possui responsável(eis)".')
+      return
+    }
     mutation.mutate({
       name: String(fd.get('name') ?? ''),
       birthDate: String(fd.get('birthDate') ?? ''),
@@ -76,8 +90,10 @@ function PatientsPage() {
       city: String(fd.get('city') ?? ''),
       hypotheses: String(fd.get('hypotheses') ?? ''),
       notes: String(fd.get('notes') ?? ''),
+      ...contactPayload,
     })
   }
+
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -113,6 +129,7 @@ function PatientsPage() {
                 <div />
                 <Area label="Hipóteses diagnósticas" name="hypotheses" />
                 <Area label="Observações clínicas" name="notes" />
+                <GuardiansEmergencyFields value={contact} onChange={setContact} />
                 <div className="flex justify-end sm:col-span-2">
                   <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending ? 'Salvando…' : 'Salvar paciente'}
@@ -124,6 +141,8 @@ function PatientsPage() {
         </div>
 
       </header>
+
+      <PatientsReportCards data={data ?? []} />
 
       <div className="rounded-2xl border bg-card">
         {isLoading ? (
@@ -167,6 +186,44 @@ function PatientsPage() {
         )}
       </div>
     </div>
+  )
+}
+
+type PatientRow = Awaited<ReturnType<typeof listPatients>>[number]
+
+function PatientsReportCards({ data }: { data: PatientRow[] }) {
+  const total = data.length
+  const active = data.filter((p) => p.status === 'active').length
+  const archived = data.filter((p) => p.status === 'archived').length
+  const discharged = data.filter((p) => p.status === 'discharged').length
+  const minors = data.filter((p) => p.has_guardians).length
+  const withEmergency = data.filter((p) => {
+    const ec = p.emergency_contact as { name?: string } | null
+    return !!ec && !!ec.name
+  }).length
+  const cards = [
+    { label: 'Total', value: total },
+    { label: 'Ativos', value: active },
+    { label: 'Alta', value: discharged },
+    { label: 'Arquivados', value: archived },
+    { label: 'Com responsável', value: minors },
+    { label: 'Contato de emergência', value: withEmergency },
+  ]
+  return (
+    <section className="rounded-2xl border bg-card p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-serif text-lg font-semibold">Relatório de pacientes</h2>
+        <span className="text-xs text-muted-foreground">Visão geral atual</span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {cards.map((c) => (
+          <div key={c.label} className="rounded-xl border bg-background p-3">
+            <p className="text-xs text-muted-foreground">{c.label}</p>
+            <p className="mt-1 font-serif text-2xl font-semibold">{c.value}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 
