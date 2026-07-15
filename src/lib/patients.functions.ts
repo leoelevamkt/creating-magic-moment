@@ -34,7 +34,7 @@ export const listPatients = createServerFn({ method: 'GET' })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from('patients')
-      .select('id, name, birth_date, cpf, schooling, city, status, created_at')
+      .select('id, name, birth_date, cpf, schooling, city, status, has_guardians, guardians, emergency_contact, created_at')
       .order('created_at', { ascending: false })
     if (error) throw new Error(error.message)
     return data ?? []
@@ -44,9 +44,21 @@ export const createPatient = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => CreateInput.parse(input))
   .handler(async ({ context, data }) => {
+    const guardians = data.hasGuardians ? (data.guardians ?? []) : []
     const { error, data: row } = await context.supabase
       .from('patients')
       .insert({
+        created_by: context.userId,
+        name: data.name,
+        birth_date: data.birthDate,
+        cpf: data.cpf,
+        schooling: data.schooling,
+        city: data.city,
+        hypotheses: data.hypotheses || null,
+        notes: data.notes || null,
+        has_guardians: !!data.hasGuardians,
+        guardians,
+        emergency_contact: data.emergencyContact ?? null,
         created_by: context.userId,
         name: data.name,
         birth_date: data.birthDate,
