@@ -59,8 +59,21 @@ function WaitlistPage() {
     queryFn: () => useServerFnSafe(listPatients)(),
   })
 
+  type WaitlistPayload = {
+    patientId: string | null
+    patientName: string | null
+    contactPhone: string | null
+    contactEmail: string | null
+    sessionType: string | null
+    preferredWeekdays: number[]
+    preferredStartTime: string | null
+    preferredEndTime: string | null
+    modality: 'presencial' | 'online' | 'any'
+    priority: number
+    notes: string | null
+  }
   const createMut = useMutation({
-    mutationFn: (v: Parameters<typeof createFn>[0]['data']) => createFn({ data: v }),
+    mutationFn: (v: WaitlistPayload) => createFn({ data: v }),
     onSuccess: () => {
       toast.success('Adicionado à lista de espera.')
       qc.invalidateQueries({ queryKey: ['waitlist'] })
@@ -68,6 +81,7 @@ function WaitlistPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   })
+
   const statusMut = useMutation({
     mutationFn: (v: { id: string; status: 'active' | 'scheduled' | 'archived' }) =>
       setStatusFn({ data: v }),
