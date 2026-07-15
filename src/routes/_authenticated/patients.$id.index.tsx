@@ -988,6 +988,36 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
             <Label>Cidade</Label>
             <Input name="city" defaultValue={patient.city ?? ''} />
           </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Sexo</Label>
+            <select
+              name="sex"
+              defaultValue={(patient as { sex?: string | null }).sex ?? ''}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">Não informado</option>
+              <option value="feminino">Feminino</option>
+              <option value="masculino">Masculino</option>
+              <option value="outro">Outro</option>
+              <option value="nao_informado">Prefere não informar</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Telefone</Label>
+            <Input
+              name="phone"
+              defaultValue={(patient as { phone?: string | null }).phone ?? ''}
+              placeholder="(11) 90000-0000"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label>Medicações em uso</Label>
+            <Textarea
+              name="medications"
+              rows={2}
+              defaultValue={(patient as { medications?: string | null }).medications ?? ''}
+            />
+          </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>Hipóteses diagnósticas</Label>
             <Textarea name="hypotheses" rows={3} defaultValue={patient.hypotheses ?? ''} placeholder="Ex.: TDAH combinado; investigar comorbidade ansiosa." />
@@ -996,6 +1026,7 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
             <Label>Observações clínicas</Label>
             <Textarea name="notes" rows={3} defaultValue={patient.notes ?? ''} />
           </div>
+          <ProfessionalsField value={professionals} onChange={setProfessionals} />
           <GuardiansEmergencyFields value={contact} onChange={setContact} />
           <div className="flex justify-end sm:col-span-2">
             <Button type="submit" disabled={mut.isPending}>
