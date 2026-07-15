@@ -4,7 +4,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { CalendarPlus, Pencil, Plus, Sparkles } from 'lucide-react'
+import { CalendarPlus, Pencil, Pin, PinOff, Plus, Sparkles, Trash2 } from 'lucide-react'
+import {
+  listPatientNotes,
+  createPatientNote,
+  updatePatientNote,
+  deletePatientNote,
+  listPatientPlan,
+  createPatientPlanEntry,
+  updatePatientPlanEntry,
+  deletePatientPlanEntry,
+} from '@/lib/patient-plan.functions'
 import { getPatientDetail, updateTaskResult, generateEvaluationSynthesis, updatePatient, generatePatientOverallSynthesis } from '@/lib/patients.functions'
 import { createSession } from '@/lib/sessions.functions'
 import { createEvaluation } from '@/lib/evaluations.functions'
@@ -193,6 +203,9 @@ function PatientDetailPage() {
               </div>
             )}
           </section>
+
+          <NotesBoard patientId={id} />
+          <EvaluationPlan patientId={id} />
         </main>
       </div>
     </div>
@@ -681,5 +694,578 @@ function OverallSynthesisCard({ patientId, synthesis, onSaved }: { patientId: st
         </p>
       )}
     </section>
+  )
+}
+
+// ============ Notes Board ============
+const NOTE_COLORS: Record<string, string> = {
+  default: 'bg-card',
+  yellow: 'bg-yellow-100 dark:bg-yellow-950/40',
+  blue: 'bg-blue-100 dark:bg-blue-950/40',
+  green: 'bg-green-100 dark:bg-green-950/40',
+  pink: 'bg-pink-100 dark:bg-pink-950/40',
+}
+
+function NotesBoard({ patientId }: { patientId: string }) {
+  const qc = useQueryClient()
+  const listFn = useServerFn(listPatientNotes)
+  const createFn = useServerFn(createPatientNote)
+  const q = useQuery({
+    queryKey: ['patient-notes', patientId],
+    queryFn: () => listFn({ data: { patientId } }),
+  })
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['patient-notes', patientId] })
+  const createMut = useMutation({
+    mutationFn: (v: { title: string; content: string; color: string }) =>
+      createFn({ data: { patientId, ...v, pinned: false } }),
+    onSuccess: () => {
+      toast.success('Anotação criada.')
+      invalidate()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const notes = q.data ?? []
+
+  return (
+    <section className="rounded-2xl border bg-card p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-serif text-2xl font-semibold">Quadro de anotações</h2>
+          <p className="text-sm text-muted-foreground">
+            Notas rápidas sobre o paciente. Fixe as mais importantes.
+          </p>
+        </div>
+        <NoteDialog
+          trigger={
+            <Button size="sm" variant="outline">
+              <Plus /> Nova anotação
+            </Button>
+          }
+          onSubmit={(v) => createMut.mutate(v)}
+          isPending={createMut.isPending}
+        />
+      </div>
+
+      {notes.length === 0 ? (
+        <p className="mt-6 text-sm text-muted-foreground">Nenhuma anotação ainda.</p>
+      ) : (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {notes.map((n) => (
+            <NoteCard key={n.id} note={n} onChanged={invalidate} />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+type Note = Awaited<ReturnType<typeof listPatientNotes>>[number]
+
+function NoteCard({ note, onChanged }: { note: Note; onChanged: () => void }) {
+  const upd = useServerFn(updatePatientNote)
+  const del = useServerFn(deletePatientNote)
+  const updMut = useMutation({
+    mutationFn: (v: Partial<{ title: string; content: string; color: string; pinned: boolean }>) =>
+      upd({ data: { id: note.id, ...v } }),
+    onSuccess: onChanged,
+    onError: (e: Error) => toast.error(e.message),
+  })
+  const delMut = useMutation({
+    mutationFn: () => del({ data: { id: note.id } }),
+    onSuccess: () => {
+      toast.success('Anotação removida.')
+      onChanged()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  return (
+    <div className={`flex flex-col gap-2 rounded-xl border p-3 ${NOTE_COLORS[note.color] ?? NOTE_COLORS.default}`}>
+      <div className="flex items-start justify-between gap-2">
+        <p className="font-semibold text-sm">{note.title || 'Sem título'}</p>
+        <div className="flex gap-1">
+          <Button size="icon" variant="ghost" className="size-7" onClick={() => updMut.mutate({ pinned: !note.pinned })} title={note.pinned ? 'Desfixar' : 'Fixar'}>
+            {note.pinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
+          </Button>
+          <NoteDialog
+            trigger={
+              <Button size="icon" variant="ghost" className="size-7" title="Editar">
+                <Pencil className="size-3.5" />
+              </Button>
+            }
+            initial={{ title: note.title, content: note.content, color: note.color }}
+            onSubmit={(v) => updMut.mutate(v)}
+            isPending={updMut.isPending}
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-7 text-destructive"
+            onClick={() => {
+              if (confirm('Remover esta anotação?')) delMut.mutate()
+            }}
+            title="Excluir"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
+      </div>
+      {note.content ? (
+        <p className="whitespace-pre-wrap text-sm text-foreground/90">{note.content}</p>
+      ) : null}
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        {format(new Date(note.updated_at), "dd/MM/yyyy 'às' HH:mm")}
+      </p>
+    </div>
+  )
+}
+
+function NoteDialog({
+  trigger,
+  initial,
+  onSubmit,
+  isPending,
+}: {
+  trigger: React.ReactNode
+  initial?: { title: string; content: string; color: string }
+  onSubmit: (v: { title: string; content: string; color: string }) => void
+  isPending: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    onSubmit({
+      title: String(fd.get('title') ?? ''),
+      content: String(fd.get('content') ?? ''),
+      color: String(fd.get('color') ?? 'default'),
+    })
+    setOpen(false)
+  }
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={trigger as React.ReactElement} />
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl">
+            {initial ? 'Editar anotação' : 'Nova anotação'}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={submit} className="grid gap-3 pt-2">
+          <div className="flex flex-col gap-1.5">
+            <Label>Título</Label>
+            <Input name="title" defaultValue={initial?.title ?? ''} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Conteúdo</Label>
+            <Textarea name="content" rows={5} defaultValue={initial?.content ?? ''} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Cor</Label>
+            <select
+              name="color"
+              defaultValue={initial?.color ?? 'default'}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="default">Padrão</option>
+              <option value="yellow">Amarelo</option>
+              <option value="blue">Azul</option>
+              <option value="green">Verde</option>
+              <option value="pink">Rosa</option>
+            </select>
+          </div>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Salvando…' : 'Salvar'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ============ Evaluation Plan ============
+type PlanEntry = Awaited<ReturnType<typeof listPatientPlan>>[number]
+type ChecklistItem = { label: string; done: boolean }
+
+function toChecklist(v: unknown): ChecklistItem[] {
+  if (!Array.isArray(v)) return []
+  return v
+    .filter((it): it is Record<string, unknown> => typeof it === 'object' && it !== null)
+    .map((it) => ({ label: String(it.label ?? ''), done: Boolean(it.done) }))
+}
+
+function EvaluationPlan({ patientId }: { patientId: string }) {
+  const qc = useQueryClient()
+  const listFn = useServerFn(listPatientPlan)
+  const createFn = useServerFn(createPatientPlanEntry)
+  const q = useQuery({
+    queryKey: ['patient-plan', patientId],
+    queryFn: () => listFn({ data: { patientId } }),
+  })
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['patient-plan', patientId] })
+  const createMut = useMutation({
+    mutationFn: (v: {
+      title: string
+      sessionNumber: number | null
+      sessionDate: string
+      startTime: string
+      modality: 'presencial' | 'online'
+      objectives: string
+      notes: string
+      checklist: ChecklistItem[]
+    }) => createFn({ data: { patientId, ...v } }),
+    onSuccess: () => {
+      toast.success('Sessão adicionada ao plano.')
+      invalidate()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const entries = q.data ?? []
+
+  return (
+    <section className="rounded-2xl border bg-card p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-serif text-2xl font-semibold">Plano de avaliação</h2>
+          <p className="text-sm text-muted-foreground">
+            Programe as sessões, o que será aplicado, use o checklist e registre observações.
+          </p>
+        </div>
+        <PlanDialog
+          trigger={
+            <Button size="sm" variant="outline">
+              <Plus /> Nova sessão do plano
+            </Button>
+          }
+          onSubmit={(v) => createMut.mutate(v)}
+          isPending={createMut.isPending}
+        />
+      </div>
+
+      {entries.length === 0 ? (
+        <p className="mt-6 text-sm text-muted-foreground">
+          Nenhuma sessão planejada. Adicione a primeira acima.
+        </p>
+      ) : (
+        <div className="mt-4 flex flex-col gap-3">
+          {entries.map((e) => (
+            <PlanRow key={e.id} entry={e} onChanged={invalidate} />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function PlanRow({ entry, onChanged }: { entry: PlanEntry; onChanged: () => void }) {
+  const upd = useServerFn(updatePatientPlanEntry)
+  const del = useServerFn(deletePatientPlanEntry)
+  const checklist = toChecklist(entry.checklist)
+  const done = checklist.filter((c) => c.done).length
+  const updMut = useMutation({
+    mutationFn: (v: {
+      id: string
+      title?: string
+      sessionNumber?: number | null
+      sessionDate?: string
+      startTime?: string | null
+      modality?: 'presencial' | 'online'
+      objectives?: string | null
+      notes?: string | null
+      status?: 'scheduled' | 'done' | 'cancelled'
+      checklist?: ChecklistItem[]
+    }) => upd({ data: v }),
+    onSuccess: onChanged,
+    onError: (e: Error) => toast.error(e.message),
+  })
+  const delMut = useMutation({
+    mutationFn: () => del({ data: { id: entry.id } }),
+    onSuccess: () => {
+      toast.success('Removida.')
+      onChanged()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  function toggle(idx: number) {
+    const next = checklist.map((c, i) => (i === idx ? { ...c, done: !c.done } : c))
+    updMut.mutate({ id: entry.id, checklist: next })
+  }
+
+  const statusColor =
+    entry.status === 'done'
+      ? 'default'
+      : entry.status === 'cancelled'
+        ? 'destructive'
+        : 'outline'
+  const statusLabel =
+    entry.status === 'done' ? 'Realizada' : entry.status === 'cancelled' ? 'Cancelada' : 'Agendada'
+
+  return (
+    <div className="rounded-xl border p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold">
+            {entry.session_number ? `Sessão ${entry.session_number} · ` : ''}
+            {entry.title}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {entry.session_date}
+            {entry.start_time ? ` · ${entry.start_time}` : ''} · {entry.modality}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant={statusColor as 'default' | 'destructive' | 'outline'}>{statusLabel}</Badge>
+          <select
+            className="h-8 rounded-md border bg-background px-2 text-xs"
+            value={entry.status}
+            onChange={(ev) =>
+              updMut.mutate({
+                id: entry.id,
+                status: ev.target.value as 'scheduled' | 'done' | 'cancelled',
+              })
+            }
+          >
+            <option value="scheduled">Agendada</option>
+            <option value="done">Realizada</option>
+            <option value="cancelled">Cancelada</option>
+          </select>
+          <PlanDialog
+            trigger={
+              <Button size="icon" variant="ghost" className="size-8" title="Editar">
+                <Pencil className="size-3.5" />
+              </Button>
+            }
+            initial={{
+              title: entry.title,
+              sessionNumber: entry.session_number,
+              sessionDate: entry.session_date,
+              startTime: entry.start_time ?? '',
+              modality: entry.modality as 'presencial' | 'online',
+              objectives: entry.objectives ?? '',
+              notes: entry.notes ?? '',
+              checklist,
+            }}
+            onSubmit={(v) =>
+              updMut.mutate({
+                id: entry.id,
+                title: v.title,
+                sessionNumber: v.sessionNumber,
+                sessionDate: v.sessionDate,
+                startTime: v.startTime,
+                modality: v.modality,
+                objectives: v.objectives,
+                notes: v.notes,
+                checklist: v.checklist,
+              })
+            }
+            isPending={updMut.isPending}
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-8 text-destructive"
+            onClick={() => {
+              if (confirm('Remover esta sessão do plano?')) delMut.mutate()
+            }}
+            title="Excluir"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {entry.objectives ? (
+        <p className="mt-2 text-sm text-foreground/90">
+          <span className="text-muted-foreground">Objetivos: </span>
+          {entry.objectives}
+        </p>
+      ) : null}
+
+      {checklist.length > 0 ? (
+        <div className="mt-3">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Checklist · {done}/{checklist.length}
+          </p>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {checklist.map((c, i) => (
+              <li key={i} className="flex items-center gap-2 text-sm">
+                <Checkbox checked={c.done} onCheckedChange={() => toggle(i)} />
+                <span className={c.done ? 'text-muted-foreground line-through' : ''}>{c.label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {entry.notes ? (
+        <p className="mt-3 whitespace-pre-wrap rounded-lg bg-muted/40 p-2 text-sm">
+          {entry.notes}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function PlanDialog({
+  trigger,
+  initial,
+  onSubmit,
+  isPending,
+}: {
+  trigger: React.ReactNode
+  initial?: {
+    title: string
+    sessionNumber: number | null
+    sessionDate: string
+    startTime: string
+    modality: 'presencial' | 'online'
+    objectives: string
+    notes: string
+    checklist: ChecklistItem[]
+  }
+  onSubmit: (v: {
+    title: string
+    sessionNumber: number | null
+    sessionDate: string
+    startTime: string
+    modality: 'presencial' | 'online'
+    objectives: string
+    notes: string
+    checklist: ChecklistItem[]
+  }) => void
+  isPending: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const [items, setItems] = useState<ChecklistItem[]>(initial?.checklist ?? [])
+  const [newItem, setNewItem] = useState('')
+
+  function addItem() {
+    const t = newItem.trim()
+    if (!t) return
+    setItems((s) => [...s, { label: t, done: false }])
+    setNewItem('')
+  }
+
+  function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const num = String(fd.get('sessionNumber') ?? '').trim()
+    onSubmit({
+      title: String(fd.get('title') ?? ''),
+      sessionNumber: num ? Number(num) : null,
+      sessionDate: String(fd.get('sessionDate') ?? ''),
+      startTime: String(fd.get('startTime') ?? ''),
+      modality: String(fd.get('modality') ?? 'presencial') as 'presencial' | 'online',
+      objectives: String(fd.get('objectives') ?? ''),
+      notes: String(fd.get('notes') ?? ''),
+      checklist: items,
+    })
+    setOpen(false)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={trigger as React.ReactElement} />
+      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl">
+            {initial ? 'Editar sessão do plano' : 'Nova sessão do plano'}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={submit} className="grid gap-3 pt-2 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label>Título / o que será aplicado</Label>
+            <Input name="title" defaultValue={initial?.title ?? ''} placeholder="Ex.: Sessão 2 — WAIS-IV" required />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Número da sessão</Label>
+            <Input name="sessionNumber" type="number" min={1} defaultValue={initial?.sessionNumber ?? ''} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Data prevista</Label>
+            <Input name="sessionDate" type="date" defaultValue={initial?.sessionDate ?? ''} required />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Horário</Label>
+            <Input name="startTime" type="time" defaultValue={initial?.startTime ?? ''} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Modalidade</Label>
+            <select
+              name="modality"
+              defaultValue={initial?.modality ?? 'presencial'}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="presencial">Presencial</option>
+              <option value="online">Online</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label>Objetivos</Label>
+            <Textarea name="objectives" rows={2} defaultValue={initial?.objectives ?? ''} />
+          </div>
+
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label>Checklist do que será feito</Label>
+            <div className="flex flex-col gap-1.5">
+              {items.map((it, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={it.done}
+                    onCheckedChange={() =>
+                      setItems((s) => s.map((c, idx) => (idx === i ? { ...c, done: !c.done } : c)))
+                    }
+                  />
+                  <span className={`flex-1 ${it.done ? 'text-muted-foreground line-through' : ''}`}>
+                    {it.label}
+                  </span>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="size-7 text-destructive"
+                    onClick={() => setItems((s) => s.filter((_, idx) => idx !== i))}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <Input
+                  value={newItem}
+                  onChange={(e) => setNewItem(e.target.value)}
+                  placeholder="Ex.: Aplicar subteste Vocabulário"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addItem()
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" onClick={addItem}>
+                  Adicionar
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label>Observações</Label>
+            <Textarea name="notes" rows={3} defaultValue={initial?.notes ?? ''} />
+          </div>
+
+          <div className="flex justify-end sm:col-span-2">
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Salvando…' : 'Salvar'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
