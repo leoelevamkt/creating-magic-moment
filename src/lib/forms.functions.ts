@@ -14,7 +14,7 @@ export const listForms = createServerFn({ method: 'GET' })
   .handler(async ({ context }) => {
     const { data, error } = await (context.supabase as any)
       .from('patient_forms')
-      .select('id, patient_id, title, description, token, status, submitted_at, expires_at, created_at, patients(name)')
+      .select('id, patient_id, title, description, token, status, submitted_at, expires_at, created_at, first_opened_at, last_opened_at, open_count, referrer, user_agent, patients(name)')
       .order('created_at', { ascending: false })
     if (error) throw new Error(error.message)
     return (data ?? []) as Array<{
@@ -27,6 +27,11 @@ export const listForms = createServerFn({ method: 'GET' })
       submitted_at: string | null
       expires_at: string | null
       created_at: string
+      first_opened_at: string | null
+      last_opened_at: string | null
+      open_count: number
+      referrer: string | null
+      user_agent: string | null
       patients: { name: string } | null
     }>
   })

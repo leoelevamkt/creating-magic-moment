@@ -31,6 +31,15 @@ export const Route = createFileRoute('/_authenticated/formularios')({
   component: FormulariosPage,
 })
 
+function shortReferrer(ref: string): string {
+  try {
+    const u = new URL(ref)
+    return u.hostname.replace(/^www\./, '')
+  } catch {
+    return ref.slice(0, 40)
+  }
+}
+
 function FormulariosPage() {
   const qc = useQueryClient()
   const list = useServerFn(listForms)
@@ -211,10 +220,33 @@ function FormulariosPage() {
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${
                     f.status === 'submitted' ? 'bg-emerald-100 text-emerald-800' :
                     f.status === 'archived' ? 'bg-muted text-muted-foreground' :
+                    f.open_count > 0 ? 'bg-sky-100 text-sky-800' :
                     'bg-amber-100 text-amber-800'
                   }`}>
-                    {f.status === 'submitted' ? 'Respondido' : f.status === 'archived' ? 'Arquivado' : 'Pendente'}
+                    {f.status === 'submitted'
+                      ? 'Respondido'
+                      : f.status === 'archived'
+                      ? 'Arquivado'
+                      : f.open_count > 0
+                      ? `Aberto ${f.open_count}×`
+                      : 'Não aberto'}
                   </span>
+                  {f.status === 'pending' && f.last_opened_at && (
+                    <div
+                      className="mt-1 text-[11px] text-muted-foreground"
+                      title={f.referrer ? `Origem: ${f.referrer}` : undefined}
+                    >
+                      Última abertura: {new Date(f.last_opened_at).toLocaleString('pt-BR')}
+                      {f.referrer && (
+                        <> · <span className="italic">{shortReferrer(f.referrer)}</span></>
+                      )}
+                    </div>
+                  )}
+                  {f.status === 'submitted' && f.submitted_at && (
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      Enviado: {new Date(f.submitted_at).toLocaleString('pt-BR')}
+                    </div>
+                  )}
                 </td>
                 <td className="p-3 text-muted-foreground">
                   {new Date(f.created_at).toLocaleDateString('pt-BR')}
