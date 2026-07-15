@@ -895,6 +895,31 @@ type PatientData = NonNullable<Awaited<ReturnType<typeof getPatientDetail>>['pat
 type GuardianRec = { name: string; phone: string; relation: string }
 type EmergencyRec = { name: string; phone: string; relation: string }
 
+function ProfessionalsCard({
+  list,
+}: {
+  list: Array<{ name: string; role?: string | null; contact?: string | null }>
+}) {
+  return (
+    <section className="rounded-2xl border bg-card p-6 shadow-sm">
+      <h2 className="font-serif text-lg font-semibold">Profissionais que acompanham</h2>
+      {list.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">Nenhum profissional cadastrado.</p>
+      ) : (
+        <ul className="mt-4 flex flex-col gap-3 text-sm">
+          {list.map((p, i) => (
+            <li key={i} className="rounded-lg border bg-muted/30 p-3">
+              <p className="font-medium text-foreground">{p.name}</p>
+              {p.role ? <p className="text-xs text-muted-foreground">{p.role}</p> : null}
+              {p.contact ? <p className="text-xs text-muted-foreground">{p.contact}</p> : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
 function ContactsCard({
   hasGuardians,
   guardians,
