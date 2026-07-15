@@ -69,7 +69,7 @@ function AuthPage() {
             password,
             options: {
               data: { name },
-              emailRedirectTo: `${window.location.origin}/dashboard`,
+              emailRedirectTo: `${window.location.origin}${target}`,
             },
           })
         : await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
@@ -82,7 +82,7 @@ function AuthPage() {
       if (mode === 'sign-in') {
         resetLimit({ data: { email: normalizedEmail } }).catch(() => {})
       }
-      navigate({ to: '/dashboard', replace: true })
+      window.location.replace(target)
     } else {
       toast.success('Verifique seu e-mail para confirmar o acesso.')
     }
