@@ -76,6 +76,17 @@ function ageFromDate(d: string) {
   return age
 }
 
+const SEX_LABELS: Record<string, string> = {
+  feminino: 'Feminino',
+  masculino: 'Masculino',
+  outro: 'Outro',
+  nao_informado: 'Não informado',
+}
+function sexLabel(v: string | null | undefined): string {
+  if (!v) return ''
+  return SEX_LABELS[v] ?? ''
+}
+
 const statusLabels: Record<string, string> = {
   todo: 'A fazer',
   correcting: 'Em correção',
