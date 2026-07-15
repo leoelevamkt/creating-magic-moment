@@ -76,6 +76,7 @@ function CatalogPage() {
 
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<FormState>(emptyForm)
+  const [search, setSearch] = useState('')
 
   const openNew = () => {
     setForm(emptyForm)
