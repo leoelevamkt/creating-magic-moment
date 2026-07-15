@@ -2,10 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { CalendarCheck, Pencil, ShieldCheck, Trash2, UserCog, UserPlus, Users, Video } from 'lucide-react'
+import { CalendarCheck, Clock, Pencil, ShieldCheck, Trash2, UserCog, UserPlus, Users, Video } from 'lucide-react'
 import { toast } from 'sonner'
 import { getMyProfile } from '@/lib/profile.functions'
 import { createStaff, deleteStaff, listTeam, updateStaff } from '@/lib/staff.functions'
+import { listMyWorkSessions, listTeamWorkSessions, type WorkSession } from '@/lib/work-sessions.functions'
 import {
   disconnectGoogle,
   getGoogleConnectionStatus,
