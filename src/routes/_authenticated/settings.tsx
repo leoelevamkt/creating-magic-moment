@@ -277,3 +277,130 @@ function GoogleCalendarSection() {
     </section>
   )
 }
+
+function EditStaffDialog({
+  member,
+  isSelf,
+  onDone,
+}: {
+  member: { id: string; name: string; email: string; role: 'admin' | 'staff' }
+  isSelf: boolean
+  onDone: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const update = useServerFn(updateStaff)
+  const del = useServerFn(deleteStaff)
+  const qc = useQueryClient()
+
+  const updateMut = useMutation({
+    mutationFn: (v: { name: string; email: string; password: string; role: 'admin' | 'staff' }) =>
+      update({
+        data: {
+          userId: member.id,
+          name: v.name,
+          email: v.email,
+          password: v.password || undefined,
+          role: v.role,
+        },
+      }),
+    onSuccess: () => {
+      toast.success('Perfil atualizado.')
+      setOpen(false)
+      onDone()
+      if (isSelf) qc.invalidateQueries({ queryKey: ['profile'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const deleteMut = useMutation({
+    mutationFn: () => del({ data: { userId: member.id } }),
+    onSuccess: () => {
+      toast.success('Acesso removido.')
+      setOpen(false)
+      onDone()
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    updateMut.mutate({
+      name: String(fd.get('name') ?? '').trim(),
+      email: String(fd.get('email') ?? '').trim(),
+      password: String(fd.get('password') ?? ''),
+      role: (String(fd.get('role') ?? member.role) as 'admin' | 'staff'),
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button size="sm" variant="outline" />}>
+        <Pencil /> Editar
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl">Editar acesso</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="flex flex-col gap-4 pt-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={`edit-name-${member.id}`}>Nome</Label>
+            <Input id={`edit-name-${member.id}`} name="name" defaultValue={member.name} required />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={`edit-email-${member.id}`}>E-mail</Label>
+            <Input id={`edit-email-${member.id}`} name="email" type="email" defaultValue={member.email} required />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={`edit-password-${member.id}`}>Nova senha</Label>
+            <Input
+              id={`edit-password-${member.id}`}
+              name="password"
+              type="text"
+              minLength={8}
+              placeholder="Deixe em branco para manter"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label>Permissão</Label>
+            <select
+              name="role"
+              defaultValue={member.role}
+              disabled={isSelf}
+              className="h-10 rounded-md border bg-background px-3 text-sm disabled:opacity-60"
+            >
+              <option value="staff">Funcionária</option>
+              <option value="admin">Administradora</option>
+            </select>
+            {isSelf ? (
+              <p className="text-xs text-muted-foreground">Você não pode alterar sua própria permissão.</p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+            {isSelf ? (
+              <div />
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive"
+                onClick={() => {
+                  if (confirm(`Remover o acesso de ${member.name}? Esta ação não pode ser desfeita.`)) {
+                    deleteMut.mutate()
+                  }
+                }}
+                disabled={deleteMut.isPending}
+              >
+                <Trash2 /> {deleteMut.isPending ? 'Removendo…' : 'Excluir acesso'}
+              </Button>
+            )}
+            <Button type="submit" disabled={updateMut.isPending}>
+              {updateMut.isPending ? 'Salvando…' : 'Salvar alterações'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
