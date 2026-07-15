@@ -105,6 +105,8 @@ function SettingsPage() {
           </ul>
         </section>
 
+        <GoogleCalendarSection />
+
         {isAdmin ? (
           <section className="rounded-2xl border bg-card p-6">
             <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
