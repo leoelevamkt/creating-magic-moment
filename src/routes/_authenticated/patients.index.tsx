@@ -237,16 +237,21 @@ function Field({
   name,
   type = 'text',
   placeholder,
+  required = false,
 }: {
   label: string
   name: string
   type?: string
   placeholder?: string
+  required?: boolean
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} type={type} placeholder={placeholder} required />
+      <Label htmlFor={name}>
+        {label}
+        {required ? null : <span className="ml-1 text-xs font-normal text-muted-foreground">(opcional)</span>}
+      </Label>
+      <Input id={name} name={name} type={type} placeholder={placeholder} required={required} />
     </div>
   )
 }
