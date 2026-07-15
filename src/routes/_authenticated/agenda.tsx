@@ -324,7 +324,9 @@ function AgendaPage() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </header>
+
 
       <div className="flex items-center justify-between rounded-2xl border bg-card px-4 py-3">
         <div className="flex items-center gap-2">
