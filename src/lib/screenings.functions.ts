@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { RATE_LIMITS, enforceRateLimit } from '@/lib/rate-limit.server'
+import { SALARIO_MINIMO_BRL, faixaTarifa, FAIXA_LABELS } from '@/lib/social-triagem-catalog'
 
 const CriterionSchema = z.object({
   code: z.string(),
