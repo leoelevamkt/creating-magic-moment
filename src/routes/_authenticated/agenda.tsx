@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Plus, X } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin, Plus, Video, X } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   addDays,
@@ -19,6 +19,7 @@ import {
   listSessions,
   updateSessionStatus,
 } from '@/lib/sessions.functions'
+import { createMeetForSession, getGoogleConnectionStatus } from '@/lib/googleCalendar.functions'
 import { listPatients } from '@/lib/patients.functions'
 import { listCatalog } from '@/lib/profile.functions'
 import { Button } from '@/components/ui/button'
