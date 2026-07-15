@@ -82,6 +82,7 @@ function PatientDetailPage() {
   const { id } = Route.useParams()
   const qc = useQueryClient()
   const fetchDetail = useServerFn(getPatientDetail)
+  const [view, setView] = useState<'chart' | 'documents' | 'finance'>('chart')
   const detailQ = useQuery({
     queryKey: ['patient-detail', id],
     queryFn: () => fetchDetail({ data: { id } }),
