@@ -50,6 +50,11 @@ import {
   toPatientContactPayload,
   type GuardiansEmergencyValue,
 } from '@/components/patients/GuardiansEmergencyFields'
+import {
+  ProfessionalsField,
+  normalizeProfessionals,
+  type Professional,
+} from '@/components/patients/ProfessionalsField'
 
 export const Route = createFileRoute('/_authenticated/patients/$id/')({
   head: () => ({ meta: [{ title: 'Prontuário — NeuroFlux' }] }),
