@@ -24,27 +24,31 @@ export const transcribeAudio = createServerFn({ method: 'POST' })
     if (bin.byteLength > 20 * 1024 * 1024) {
       throw new Error('Áudio muito grande (máx. 20 MB). Grave trechos menores.')
     }
-    const ext = data.mimeType.includes('mp4') ? 'mp4'
-      : data.mimeType.includes('mpeg') ? 'mp3'
-      : data.mimeType.includes('wav') ? 'wav'
+    const baseMime = data.mimeType.split(';')[0].trim() || 'audio/webm'
+    const ext = baseMime.includes('mp4') ? 'mp4'
+      : baseMime.includes('mpeg') || baseMime.includes('mp3') ? 'mp3'
+      : baseMime.includes('wav') ? 'wav'
+      : baseMime.includes('ogg') ? 'ogg'
+      : baseMime.includes('m4a') ? 'm4a'
       : 'webm'
 
     const form = new FormData()
-    form.append('file', new Blob([bin], { type: data.mimeType }), `audio.${ext}`)
-    form.append('model', 'gpt-4o-mini-transcribe')
-    form.append('language', data.language)
+    form.append('file', new Blob([bin], { type: baseMime }), `audio.${ext}`)
+    form.append('model', 'openai/gpt-4o-mini-transcribe')
+    if (data.language) form.append('language', data.language)
     form.append('response_format', 'json')
 
     const res = await fetch('https://ai.gateway.lovable.dev/v1/audio/transcriptions', {
       method: 'POST',
-      headers: { 'Lovable-API-Key': key },
+      headers: { Authorization: `Bearer ${key}` },
       body: form,
     })
     if (res.status === 429) throw new Error('Limite de uso da IA. Tente novamente em instantes.')
     if (res.status === 402) throw new Error('Créditos de IA esgotados.')
     if (!res.ok) {
-      const t = await res.text()
-      throw new Error(`Falha na transcrição (${res.status}): ${t.slice(0, 200)}`)
+      const t = await res.text().catch(() => '')
+      console.error('[transcribe] gateway error', res.status, t)
+      throw new Error(`Falha na transcrição (${res.status}): ${t.slice(0, 300)}`)
     }
     const json = (await res.json()) as { text?: string }
     const text = json.text?.trim() ?? ''
