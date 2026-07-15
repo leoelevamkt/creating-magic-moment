@@ -295,10 +295,11 @@ ${withResults
 const UpdatePatientInput = z.object({
   id: z.string().uuid(),
   name: z.string().min(2),
-  birthDate: z.string().min(4),
-  cpf: z.string().min(1),
-  schooling: z.string().min(1),
-  city: z.string().min(1),
+  sex: z.enum(['feminino', 'masculino', 'outro', 'nao_informado']).optional().nullable(),
+  birthDate: z.string().optional().nullable(),
+  cpf: z.string().optional().nullable(),
+  schooling: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
   hypotheses: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   status: z.enum(['active', 'archived', 'discharged']).optional(),
@@ -312,16 +313,17 @@ export const updatePatient = createServerFn({ method: 'POST' })
   .inputValidator((i: unknown) => UpdatePatientInput.parse(i))
   .handler(async ({ context, data }) => {
     const patch: {
-      name: string; birth_date: string; cpf: string; schooling: string; city: string;
+      name: string; sex: string | null; birth_date: string | null; cpf: string | null; schooling: string | null; city: string | null;
       hypotheses: string | null; notes: string | null;
       status?: 'active' | 'archived' | 'discharged';
       has_guardians?: boolean; guardians?: unknown; emergency_contact?: unknown;
     } = {
       name: data.name,
-      birth_date: data.birthDate,
-      cpf: data.cpf,
-      schooling: data.schooling,
-      city: data.city,
+      sex: data.sex ?? null,
+      birth_date: data.birthDate || null,
+      cpf: data.cpf || null,
+      schooling: data.schooling || null,
+      city: data.city || null,
       hypotheses: data.hypotheses || null,
       notes: data.notes || null,
     }
