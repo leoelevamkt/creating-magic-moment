@@ -108,8 +108,8 @@ export const dashboardData = createServerFn({ method: 'GET' })
     ])
     const tasks = tasksQ.data ?? []
     const counts = {
-      inCorrection: tasks.filter((t) => t.status === 'in_correction').length,
-      awaitingAdmin: tasks.filter((t) => t.status === 'awaiting_admin').length,
+      inCorrection: tasks.filter((t) => t.status === 'correcting').length,
+      awaitingAdmin: tasks.filter((t) => t.status === 'review').length,
       approved: tasks.filter((t) => t.status === 'approved').length,
     }
     return {
