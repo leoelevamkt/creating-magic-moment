@@ -56,18 +56,12 @@ function PatientsPage() {
   })
 
   const mutation = useMutation({
-    mutationFn: (payload: {
-      name: string
-      birthDate: string
-      cpf: string
-      schooling: string
-      city: string
-      hypotheses: string
-      notes: string
-    }) => create({ data: payload }),
+    mutationFn: (payload: Parameters<typeof create>[0] extends { data: infer D } ? D : never) =>
+      create({ data: payload }),
     onSuccess: () => {
       toast.success('Paciente cadastrado.')
       setOpen(false)
+      setContact({ hasGuardians: false, guardians: [], emergencyContact: { ...EMPTY_EMERGENCY } })
       qc.invalidateQueries({ queryKey: ['patients'] })
       router.invalidate()
     },
@@ -77,6 +71,11 @@ function PatientsPage() {
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const fd = new FormData(event.currentTarget)
+    const contactPayload = toPatientContactPayload(contact)
+    if (contact.hasGuardians && contactPayload.guardians.length === 0) {
+      toast.error('Preencha ao menos um responsável ou desmarque "Possui responsável(eis)".')
+      return
+    }
     mutation.mutate({
       name: String(fd.get('name') ?? ''),
       birthDate: String(fd.get('birthDate') ?? ''),
@@ -85,8 +84,10 @@ function PatientsPage() {
       city: String(fd.get('city') ?? ''),
       hypotheses: String(fd.get('hypotheses') ?? ''),
       notes: String(fd.get('notes') ?? ''),
+      ...contactPayload,
     })
   }
+
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
