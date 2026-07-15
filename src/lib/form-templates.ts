@@ -308,6 +308,7 @@ export const formTemplates: FormTemplate[] = [
       { key: 'clin_protecao', label: 'Fatores de proteção e recursos do avaliado', type: 'textarea' },
       { key: 'clin_observacoes', label: 'Observações sobre comportamento, rapport e esforço', type: 'textarea' },
     ],
+  },
   {
     id: PRE_CADASTRO_TEMPLATE_ID,
     title: 'Pré-cadastro — Agendamento inicial',
