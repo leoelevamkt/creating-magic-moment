@@ -56,7 +56,9 @@ function PatientsPage() {
   })
 
   type CreatePayload = {
-    name: string; birthDate: string; cpf: string; schooling: string; city: string;
+    name: string;
+    sex: 'feminino' | 'masculino' | 'outro' | 'nao_informado' | null;
+    birthDate: string; cpf: string; schooling: string; city: string;
     hypotheses: string; notes: string;
     hasGuardians: boolean;
     guardians: { name: string; phone: string; relation: string }[];
@@ -82,8 +84,10 @@ function PatientsPage() {
       toast.error('Preencha ao menos um responsável ou desmarque "Possui responsável(eis)".')
       return
     }
+    const sexRaw = String(fd.get('sex') ?? '')
     mutation.mutate({
       name: String(fd.get('name') ?? ''),
+      sex: (sexRaw ? sexRaw : null) as CreatePayload['sex'],
       birthDate: String(fd.get('birthDate') ?? ''),
       cpf: String(fd.get('cpf') ?? ''),
       schooling: String(fd.get('schooling') ?? ''),
@@ -93,6 +97,7 @@ function PatientsPage() {
       ...contactPayload,
     })
   }
+
 
 
   return (
