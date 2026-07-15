@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Pencil, Play, Plus, ShieldCheck, Trash2, X } from 'lucide-react'
 import { ExportCsvButton } from '@/components/common/ExportCsvButton'
-import { KANBAN_STALE_DAYS, columnEnteredAt, daysInColumn, isStale } from '@/lib/kanban-stale'
+import { KANBAN_STALE_DAYS, daysInColumn, isStale } from '@/lib/kanban-stale'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
