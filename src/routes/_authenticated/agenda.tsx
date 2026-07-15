@@ -475,9 +475,67 @@ function AgendaPage() {
           )
         })}
       </div>
+
+      <Dialog open={suggest !== null} onOpenChange={(v) => { if (!v) setSuggest(null) }}>
+        <DialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">Encaixe da lista de espera</DialogTitle>
+          </DialogHeader>
+          {suggest ? (
+            <div className="flex flex-col gap-3 pt-2 text-sm">
+              <p className="text-muted-foreground">
+                Horário liberado: {suggest.sessionDate}
+                {suggest.startTime ? ` · ${suggest.startTime}` : ''}
+                {suggest.endTime ? `–${suggest.endTime}` : ''} · {suggest.modality}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Candidatos sugeridos, ordenados por prioridade e compatibilidade:
+              </p>
+              <ul className="flex flex-col gap-2">
+                {suggest.entries.map((e) => {
+                  const name = e.patients?.name ?? e.patient_name ?? '—'
+                  return (
+                    <li
+                      key={e.id}
+                      className="flex items-start justify-between gap-3 rounded-lg border p-3"
+                    >
+                      <div>
+                        <p className="font-medium">{name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Prioridade {e.priority} · {e.modality}
+                          {e.contact_phone ? ` · ${e.contact_phone}` : ''}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const q = new URLSearchParams({
+                            date: suggest.sessionDate,
+                            ...(suggest.startTime ? { start: suggest.startTime } : {}),
+                            ...(suggest.endTime ? { end: suggest.endTime } : {}),
+                            waitlist: e.id,
+                          })
+                          toast.info(`Selecione o paciente "${name}" no formulário.`)
+                          setSuggest(null)
+                          setOpen(true)
+                          void q // reserved for future prefill
+                        }}
+                      >
+                        <UserPlus size={14} /> Encaixar
+                      </Button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
+
 
 function TestPicker({ tests }: { tests: Array<{ id: string; acronym: string | null; category: string; estimated_minutes: number | null }> }) {
   const byCat = useMemo(() => {
