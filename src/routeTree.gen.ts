@@ -23,6 +23,7 @@ import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
 import { Route as AuthenticatedPatientsIdRouteImport } from './routes/_authenticated/patients.$id'
 import { Route as AuthenticatedPatientsIdTriagemRouteImport } from './routes/_authenticated/patients.$id.triagem'
+import { Route as AuthenticatedPatientsIdLaudoRouteImport } from './routes/_authenticated/patients.$id.laudo'
 import { Route as AuthenticatedPatientsIdAnamneseRouteImport } from './routes/_authenticated/patients.$id.anamnese'
 
 const AuthRoute = AuthRouteImport.update({
@@ -96,6 +97,12 @@ const AuthenticatedPatientsIdTriagemRoute =
     path: '/triagem',
     getParentRoute: () => AuthenticatedPatientsIdRoute,
   } as any)
+const AuthenticatedPatientsIdLaudoRoute =
+  AuthenticatedPatientsIdLaudoRouteImport.update({
+    id: '/laudo',
+    path: '/laudo',
+    getParentRoute: () => AuthenticatedPatientsIdRoute,
+  } as any)
 const AuthenticatedPatientsIdAnamneseRoute =
   AuthenticatedPatientsIdAnamneseRouteImport.update({
     id: '/anamnese',
@@ -117,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AuthenticatedTasksRoute
   '/patients/$id': typeof AuthenticatedPatientsIdRouteWithChildren
   '/patients/$id/anamnese': typeof AuthenticatedPatientsIdAnamneseRoute
+  '/patients/$id/laudo': typeof AuthenticatedPatientsIdLaudoRoute
   '/patients/$id/triagem': typeof AuthenticatedPatientsIdTriagemRoute
 }
 export interface FileRoutesByTo {
@@ -133,6 +141,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof AuthenticatedTasksRoute
   '/patients/$id': typeof AuthenticatedPatientsIdRouteWithChildren
   '/patients/$id/anamnese': typeof AuthenticatedPatientsIdAnamneseRoute
+  '/patients/$id/laudo': typeof AuthenticatedPatientsIdLaudoRoute
   '/patients/$id/triagem': typeof AuthenticatedPatientsIdTriagemRoute
 }
 export interface FileRoutesById {
@@ -151,6 +160,7 @@ export interface FileRoutesById {
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/patients/$id': typeof AuthenticatedPatientsIdRouteWithChildren
   '/_authenticated/patients/$id/anamnese': typeof AuthenticatedPatientsIdAnamneseRoute
+  '/_authenticated/patients/$id/laudo': typeof AuthenticatedPatientsIdLaudoRoute
   '/_authenticated/patients/$id/triagem': typeof AuthenticatedPatientsIdTriagemRoute
 }
 export interface FileRouteTypes {
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/patients/$id'
     | '/patients/$id/anamnese'
+    | '/patients/$id/laudo'
     | '/patients/$id/triagem'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/patients/$id'
     | '/patients/$id/anamnese'
+    | '/patients/$id/laudo'
     | '/patients/$id/triagem'
   id:
     | '__root__'
@@ -202,6 +214,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tasks'
     | '/_authenticated/patients/$id'
     | '/_authenticated/patients/$id/anamnese'
+    | '/_authenticated/patients/$id/laudo'
     | '/_authenticated/patients/$id/triagem'
   fileRoutesById: FileRoutesById
 }
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPatientsIdTriagemRouteImport
       parentRoute: typeof AuthenticatedPatientsIdRoute
     }
+    '/_authenticated/patients/$id/laudo': {
+      id: '/_authenticated/patients/$id/laudo'
+      path: '/laudo'
+      fullPath: '/patients/$id/laudo'
+      preLoaderRoute: typeof AuthenticatedPatientsIdLaudoRouteImport
+      parentRoute: typeof AuthenticatedPatientsIdRoute
+    }
     '/_authenticated/patients/$id/anamnese': {
       id: '/_authenticated/patients/$id/anamnese'
       path: '/anamnese'
@@ -323,12 +343,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedPatientsIdRouteChildren {
   AuthenticatedPatientsIdAnamneseRoute: typeof AuthenticatedPatientsIdAnamneseRoute
+  AuthenticatedPatientsIdLaudoRoute: typeof AuthenticatedPatientsIdLaudoRoute
   AuthenticatedPatientsIdTriagemRoute: typeof AuthenticatedPatientsIdTriagemRoute
 }
 
 const AuthenticatedPatientsIdRouteChildren: AuthenticatedPatientsIdRouteChildren =
   {
     AuthenticatedPatientsIdAnamneseRoute: AuthenticatedPatientsIdAnamneseRoute,
+    AuthenticatedPatientsIdLaudoRoute: AuthenticatedPatientsIdLaudoRoute,
     AuthenticatedPatientsIdTriagemRoute: AuthenticatedPatientsIdTriagemRoute,
   }
 
