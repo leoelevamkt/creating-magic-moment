@@ -2,12 +2,14 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Play, Plus, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Pencil, Play, Plus, ShieldCheck, Trash2, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import {
   createEvaluation,
+  deleteTask,
   listTasks,
+  updateTask,
   updateTaskStatus,
   type TaskStatus,
 } from '@/lib/evaluations.functions'
