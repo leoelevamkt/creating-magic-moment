@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { BrainCircuit, Loader2, ShieldCheck } from 'lucide-react'
+import { Loader2, ShieldCheck } from 'lucide-react'
+import logoAsset from '@/assets/neuroflux-logo.jpg.asset.json'
 import { supabase } from '@/integrations/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -58,8 +59,8 @@ function AuthPage() {
     <main className="flex min-h-svh bg-background">
       <section className="hidden flex-1 flex-col justify-between bg-primary p-12 text-primary-foreground lg:flex">
         <div className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/10">
-            <BrainCircuit size={22} />
+          <span className="flex size-10 items-center justify-center overflow-hidden rounded-xl bg-primary-foreground">
+            <img src={logoAsset.url} alt="NeuroFlux" className="size-full object-contain" />
           </span>
           <span className="font-serif text-2xl font-semibold">NeuroFlux</span>
         </div>
@@ -83,7 +84,7 @@ function AuthPage() {
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">
             <div className="flex items-center gap-3 text-primary">
-              <BrainCircuit />
+              <img src={logoAsset.url} alt="NeuroFlux" className="size-10 object-contain" />
               <span className="font-serif text-2xl font-semibold">NeuroFlux</span>
             </div>
           </div>

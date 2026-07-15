@@ -1,7 +1,6 @@
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import {
   BarChart3,
-  BrainCircuit,
   Boxes,
   CalendarDays,
   ClipboardList,
@@ -15,6 +14,7 @@ import {
   Settings,
   Users,
 } from 'lucide-react'
+import logoAsset from '@/assets/neuroflux-logo.jpg.asset.json'
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -49,8 +49,8 @@ function Sidebar({ role }: { role: string }) {
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex h-20 items-center gap-3 border-b border-sidebar-border px-6">
-        <span className="flex size-10 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground">
-          <BrainCircuit size={22} />
+        <span className="flex size-10 items-center justify-center overflow-hidden rounded-xl bg-sidebar-primary-foreground">
+          <img src={logoAsset.url} alt="NeuroFlux" className="size-full object-contain" />
         </span>
         <div>
           <p className="font-serif text-xl font-semibold">NeuroFlux</p>
