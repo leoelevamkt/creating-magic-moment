@@ -122,7 +122,7 @@ function SupervisionPage() {
             </div>
           ) : (
             (cases.data ?? []).map((c) => {
-              const owner = (c.profiles as { name: string } | null)?.name ?? '—'
+              const owner = c.owner_name
               const patient = (c.patients as { name: string } | null)?.name
               return (
                 <button
