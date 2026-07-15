@@ -98,7 +98,7 @@ ${an.transcript ? `Trecho da entrevista (transcrição):\n${an.transcript}` : ''
       method: 'POST',
       headers: { 'content-type': 'application/json', 'Lovable-API-Key': key },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'google/gemini-3.1-pro-preview',
         messages: [{ role: 'user', content: prompt }],
       }),
     })

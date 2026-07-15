@@ -248,7 +248,7 @@ ${withResults
       method: 'POST',
       headers: { 'content-type': 'application/json', 'Lovable-API-Key': key },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'google/gemini-3.1-pro-preview',
         messages: [{ role: 'user', content: prompt }],
       }),
     })
@@ -348,7 +348,7 @@ ${tasks.length === 0 ? '- nenhum resultado' : tasks.map((t) => {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'Lovable-API-Key': key },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'google/gemini-3.1-pro-preview',
         messages: [{ role: 'user', content: prompt }],
       }),
     })

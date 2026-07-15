@@ -34,7 +34,7 @@ export const transcribeAudio = createServerFn({ method: 'POST' })
 
     const form = new FormData()
     form.append('file', new Blob([bin], { type: baseMime }), `audio.${ext}`)
-    form.append('model', 'openai/gpt-4o-mini-transcribe')
+    form.append('model', 'openai/gpt-4o-transcribe')
     if (data.language) form.append('language', data.language)
     form.append('response_format', 'json')
 
