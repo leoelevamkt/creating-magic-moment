@@ -32,6 +32,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  GuardiansEmergencyFields,
+  EMPTY_GUARDIAN,
+  EMPTY_EMERGENCY,
+  toPatientContactPayload,
+  type GuardiansEmergencyValue,
+} from '@/components/patients/GuardiansEmergencyFields'
 
 export const Route = createFileRoute('/_authenticated/patients/$id/')({
   head: () => ({ meta: [{ title: 'Prontuário — NeuroFlux' }] }),
