@@ -173,9 +173,9 @@ function PatientsPage() {
                   onClick={() => router.navigate({ to: '/patients/$id', params: { id: p.id } })}
                 >
                   <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell>{format(new Date(p.birth_date), 'dd/MM/yyyy')}</TableCell>
-                  <TableCell>{p.city}</TableCell>
-                  <TableCell>{p.schooling}</TableCell>
+                  <TableCell>{p.birth_date ? format(new Date(p.birth_date), 'dd/MM/yyyy') : '—'}</TableCell>
+                  <TableCell>{p.city ?? '—'}</TableCell>
+                  <TableCell>{p.schooling ?? '—'}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{p.status}</Badge>
                   </TableCell>
