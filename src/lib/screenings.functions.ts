@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
+import { RATE_LIMITS, enforceRateLimit } from '@/lib/rate-limit.server'
 
 const CriterionSchema = z.object({
   code: z.string(),
@@ -73,6 +74,7 @@ export const analyzeScreeningWithAI = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { id: string }) => i)
   .handler(async ({ context, data }) => {
+    await enforceRateLimit(RATE_LIMITS.aiSynthesis, `user:${context.userId}`)
     const { data: row, error } = await context.supabase
       .from('screenings')
       .select('*, patients(name, birth_date, schooling)')

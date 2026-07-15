@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
+import { RATE_LIMITS, enforceRateLimit } from '@/lib/rate-limit.server'
 import { getRequest } from '@tanstack/react-start/server'
 import watermarkAsset from '@/assets/laudo/watermark.png.asset.json'
 import signatureAsset from '@/assets/laudo/signature.png.asset.json'
@@ -88,6 +89,7 @@ export const generateLaudoDraft = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { patientId: string }) => i)
   .handler(async ({ context, data }) => {
+    await enforceRateLimit(RATE_LIMITS.aiReport, `user:${context.userId}`)
     const key = process.env.LOVABLE_API_KEY
     if (!key) throw new Error('Lovable AI Gateway não configurado.')
 

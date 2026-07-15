@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
+import { RATE_LIMITS, enforceRateLimit } from '@/lib/rate-limit.server'
 
 const CreateInput = z.object({
   name: z.string().min(2),
@@ -213,6 +214,7 @@ export const generateEvaluationSynthesis = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { evaluationId: string }) => i)
   .handler(async ({ context, data }) => {
+    await enforceRateLimit(RATE_LIMITS.aiSynthesis, `user:${context.userId}`)
     const { data: ev, error } = await context.supabase
       .from('evaluations')
       .select('id, title, patient_id, patients(name, birth_date, schooling, hypotheses)')
@@ -304,6 +306,7 @@ export const generatePatientOverallSynthesis = createServerFn({ method: 'POST' }
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { id: string }) => i)
   .handler(async ({ context, data }) => {
+    await enforceRateLimit(RATE_LIMITS.aiSynthesis, `user:${context.userId}`)
     const { data: patient, error } = await context.supabase
       .from('patients')
       .select('id, name, birth_date, schooling, city, hypotheses, notes')
