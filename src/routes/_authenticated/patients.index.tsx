@@ -55,9 +55,15 @@ function PatientsPage() {
     queryFn: () => list(),
   })
 
+  type CreatePayload = {
+    name: string; birthDate: string; cpf: string; schooling: string; city: string;
+    hypotheses: string; notes: string;
+    hasGuardians: boolean;
+    guardians: { name: string; phone: string; relation: string }[];
+    emergencyContact: { name: string; phone: string; relation: string } | null;
+  }
   const mutation = useMutation({
-    mutationFn: (payload: Parameters<typeof create>[0] extends { data: infer D } ? D : never) =>
-      create({ data: payload }),
+    mutationFn: (payload: CreatePayload) => create({ data: payload }),
     onSuccess: () => {
       toast.success('Paciente cadastrado.')
       setOpen(false)
