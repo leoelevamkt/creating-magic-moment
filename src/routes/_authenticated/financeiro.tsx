@@ -15,7 +15,7 @@ function FinanceiroPage() {
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <header>
-        <h1 className="font-serif text-3xl font-semibold">Financeiro da empresa</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl font-semibold">Financeiro da empresa</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Gerencie entradas, saídas e a saúde financeira de toda a clínica.
         </p>

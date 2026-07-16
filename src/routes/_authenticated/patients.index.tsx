@@ -136,7 +136,7 @@ function PatientsPage() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-primary">Pacientes</p>
-          <h1 className="font-serif text-3xl font-semibold text-foreground">
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground">
             Prontuários ativos
           </h1>
         </div>

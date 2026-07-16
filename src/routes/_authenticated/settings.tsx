@@ -71,7 +71,7 @@ function SettingsPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <header>
-        <h1 className="font-serif text-3xl font-semibold">Acesso e equipe</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl font-semibold">Acesso e equipe</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Gerencie os acessos da clínica e confira as regras essenciais de proteção dos dados clínicos.
         </p>

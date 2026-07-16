@@ -153,7 +153,7 @@ function CatalogPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-primary">Catálogo de testes</p>
-          <h1 className="font-serif text-3xl font-semibold">Instrumentos disponíveis</h1>
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold">Instrumentos disponíveis</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Testes SATEPSI e complementares aprovados para uso na clínica.
           </p>

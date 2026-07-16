@@ -103,7 +103,7 @@ function AnamnesePage() {
           <Link to="/patients/$id" params={{ id }} className="text-xs text-muted-foreground hover:text-foreground">
             ← Voltar ao prontuário
           </Link>
-          <h1 className="mt-1 font-serif text-3xl font-semibold">Anamnese</h1>
+          <h1 className="mt-1 font-serif text-2xl sm:text-3xl font-semibold">Anamnese</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Registre a entrevista inicial. Use a transcrição por IA para agilizar e inserir trechos direto no campo focado.
           </p>

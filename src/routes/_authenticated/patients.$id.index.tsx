@@ -136,7 +136,7 @@ function PatientDetailPage() {
             ← Pacientes / Prontuário
           </Link>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-serif text-3xl font-semibold leading-tight sm:text-4xl">{patient.name}</h1>
+            <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-semibold leading-tight">{patient.name}</h1>
             <Badge variant={statusVariant} className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
               {statusLabel}
             </Badge>

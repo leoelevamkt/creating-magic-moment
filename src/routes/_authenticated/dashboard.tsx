@@ -47,7 +47,7 @@ function Dashboard() {
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <header>
         <p className="text-sm font-medium text-primary">Visão geral</p>
-        <h1 className="font-serif text-3xl font-semibold">
+        <h1 className="font-serif text-2xl sm:text-3xl font-semibold">
           Olá, {p.data?.name ?? 'clínica'}
         </h1>
       </header>
