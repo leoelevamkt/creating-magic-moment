@@ -550,6 +550,7 @@ export type Database = {
       }
       patients: {
         Row: {
+          assigned_to: string | null
           birth_date: string | null
           city: string | null
           cpf: string | null
@@ -572,6 +573,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_to?: string | null
           birth_date?: string | null
           city?: string | null
           cpf?: string | null
@@ -594,6 +596,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_to?: string | null
           birth_date?: string | null
           city?: string | null
           cpf?: string | null
