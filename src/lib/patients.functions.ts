@@ -361,6 +361,8 @@ export const updatePatient = createServerFn({ method: 'POST' })
       notes: data.notes || null,
     }
     if (data.professionals !== undefined) patch.professionals = data.professionals
+    if (data.assignedTo !== undefined) patch.assigned_to = data.assignedTo
+
     if (data.status) patch.status = data.status
     if (typeof data.hasGuardians === 'boolean') {
       patch.has_guardians = data.hasGuardians
