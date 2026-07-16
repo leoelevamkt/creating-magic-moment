@@ -91,7 +91,7 @@ function buildPatientFromResponses(
     birth_date: birth,
     cpf: s('p_cpf'),
     phone: s('p_telefone'),
-    sex: s('p_sexo'),
+    sex: normalizeSex(s('p_sexo')),
     city: s('p_cidade'),
     hypotheses: s('queixa_principal'),
     medications: takesMeds === 'Sim' ? medsList ?? 'Sim (sem detalhes)' : null,
