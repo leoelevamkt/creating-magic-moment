@@ -23,6 +23,8 @@ import {
   deletePatientPlanEntry,
 } from '@/lib/patient-plan.functions'
 import { getPatientDetail, updateTaskResult, generateEvaluationSynthesis, updatePatient, generatePatientOverallSynthesis, setPatientStatus, deletePatient } from '@/lib/patients.functions'
+import { listTeam } from '@/lib/staff.functions'
+
 import { DocumentsTab } from '@/components/patients/DocumentsTab'
 import { FinanceTab } from '@/components/patients/FinanceTab'
 import { CpfInput } from '@/components/patients/CpfInput'
