@@ -1007,6 +1007,8 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
       phone: String(fd.get('phone') ?? ''),
       medications: String(fd.get('medications') ?? ''),
       professionals: normalizeProfessionals(professionals),
+      assignedTo: assignedTo || null,
+
       hypotheses: String(fd.get('hypotheses') ?? ''),
       notes: String(fd.get('notes') ?? ''),
       ...contactPayload,
