@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import {
   BarChart3,
@@ -10,7 +11,8 @@ import {
   ListTodo,
   LogOut,
   MessagesSquare,
-  PanelLeft,
+  Menu,
+  MoreHorizontal,
   Settings,
   Users,
   Wallet,
@@ -48,8 +50,23 @@ const staffNav = [
   { to: '/settings', label: 'Configurações', icon: Settings },
 ] as const
 
+// Bottom nav shows the 4 most-used sections + "Mais" opening the sheet
+const adminBottom = [
+  { to: '/dashboard', label: 'Início', icon: LayoutDashboard },
+  { to: '/agenda', label: 'Agenda', icon: CalendarDays },
+  { to: '/kanban', label: 'Kanban', icon: ClipboardList },
+  { to: '/patients', label: 'Pacientes', icon: Users },
+] as const
 
-function Sidebar({ role }: { role: string }) {
+const staffBottom = [
+  { to: '/kanban', label: 'Correções', icon: ClipboardList },
+  { to: '/patients', label: 'Pacientes', icon: Users },
+  { to: '/tasks', label: 'Tarefas', icon: ListTodo },
+  { to: '/formularios', label: 'Forms', icon: FileText },
+] as const
+
+
+function Sidebar({ role, onNavigate }: { role: string; onNavigate?: () => void }) {
   const pathname = useLocation({ select: (l) => l.pathname })
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
@@ -60,7 +77,7 @@ function Sidebar({ role }: { role: string }) {
           <p className="text-xs text-sidebar-foreground/55">Gestão clínica</p>
         </div>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 p-4">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-4">
         {(role === 'admin' ? adminNav : staffNav).map((item) => {
           const Icon = item.icon
           const active = pathname === item.to || pathname.startsWith(item.to + '/')
@@ -68,13 +85,14 @@ function Sidebar({ role }: { role: string }) {
             <Link
               key={item.to}
               to={item.to}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              onClick={onNavigate}
+              className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors ${
                 active
                   ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/65 hover:bg-sidebar-accent/55 hover:text-sidebar-foreground'
+                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/55 hover:text-sidebar-foreground'
               }`}
             >
-              <Icon size={19} />
+              <Icon size={20} />
               {item.label}
             </Link>
           )
@@ -83,9 +101,10 @@ function Sidebar({ role }: { role: string }) {
       <div className="border-t border-sidebar-border p-4">
         <Link
           to="/settings"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/65 hover:bg-sidebar-accent"
+          onClick={onNavigate}
+          className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent"
         >
-          <Settings size={19} />
+          <Settings size={20} />
           Configurações
         </Link>
         <div className="mt-3 rounded-xl bg-sidebar-accent/55 p-3">
@@ -96,6 +115,48 @@ function Sidebar({ role }: { role: string }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function BottomNav({ role, onMoreClick }: { role: string; onMoreClick: () => void }) {
+  const pathname = useLocation({ select: (l) => l.pathname })
+  const items = role === 'admin' ? adminBottom : staffBottom
+  return (
+    <nav
+      aria-label="Navegação principal"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur lg:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <ul className="grid grid-cols-5">
+        {items.map((item) => {
+          const Icon = item.icon
+          const active = pathname === item.to || pathname.startsWith(item.to + '/')
+          return (
+            <li key={item.to}>
+              <Link
+                to={item.to}
+                className={`flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] font-medium transition-colors ${
+                  active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon size={20} aria-hidden />
+                <span className="truncate">{item.label}</span>
+              </Link>
+            </li>
+          )
+        })}
+        <li>
+          <button
+            type="button"
+            onClick={onMoreClick}
+            className="flex min-h-14 w-full flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <MoreHorizontal size={20} aria-hidden />
+            <span>Mais</span>
+          </button>
+        </li>
+      </ul>
+    </nav>
   )
 }
 
@@ -110,6 +171,7 @@ export function AppShell({
 }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   async function logout() {
     await queryClient.cancelQueries()
@@ -125,20 +187,36 @@ export function AppShell({
         <Sidebar role={role} />
       </aside>
       <div className="min-w-0">
-        <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:px-8">
-          <div className="flex items-center gap-3">
-            <Sheet>
-              <SheetTrigger render={<Button variant="outline" size="icon" className="lg:hidden" />}>
-                <PanelLeft />
-                <span className="sr-only">Abrir menu</span>
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b bg-background/95 px-3 backdrop-blur md:h-20 md:px-8">
+          <div className="flex min-w-0 items-center gap-2">
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+              <SheetTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-11 lg:hidden"
+                    aria-label="Abrir menu"
+                  />
+                }
+              >
+                <Menu />
               </SheetTrigger>
-              <SheetContent side="left" className="w-64 p-0" showCloseButton={false}>
+              <SheetContent side="left" className="w-72 p-0" showCloseButton={false}>
                 <SheetTitle className="sr-only">Menu principal</SheetTitle>
-                <Sidebar role={role} />
+                <Sidebar role={role} onNavigate={() => setSheetOpen(false)} />
               </SheetContent>
             </Sheet>
+            <img
+              src={logoAsset.url}
+              alt="NeuroFlux"
+              className="size-8 shrink-0 object-contain lg:hidden"
+            />
+            <span className="truncate font-serif text-lg font-semibold lg:hidden">
+              NeuroFlux
+            </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             {role !== 'admin' && <TimeClock />}
             <ThemeToggle />
             <div className="hidden text-right sm:block">
@@ -147,17 +225,26 @@ export function AppShell({
                 {role === 'admin' ? 'Admin' : 'Funcionária'}
               </p>
             </div>
-            <span className="flex size-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+            <span
+              className="hidden size-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground sm:flex"
+              aria-hidden
+            >
               {userName.slice(0, 2).toUpperCase()}
             </span>
-            <Button variant="ghost" size="icon" onClick={logout}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-11"
+              onClick={logout}
+              aria-label="Sair"
+            >
               <LogOut />
-              <span className="sr-only">Sair</span>
             </Button>
           </div>
         </header>
-        <main className="p-4 md:p-8">{children}</main>
+        <main className="p-4 pb-24 md:p-8 lg:pb-8">{children}</main>
       </div>
+      <BottomNav role={role} onMoreClick={() => setSheetOpen(true)} />
     </div>
   )
 }
