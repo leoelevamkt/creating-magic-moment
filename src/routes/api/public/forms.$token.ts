@@ -7,6 +7,21 @@ const SubmitBody = z.object({
   responses: z.record(z.string(), z.any()),
 })
 
+/** Normaliza texto livre de sexo/gênero para os valores aceitos pelo check constraint. */
+function normalizeSex(v: string | null): string | null {
+  if (!v) return null
+  const t = v
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+  if (!t) return null
+  if (/(^|\b)(f|fem|feminin[oa]|menina|mulher|garota)(\b|$)/.test(t)) return 'feminino'
+  if (/(^|\b)(m|masc|masculin[oa]|menino|homem|garoto)(\b|$)/.test(t)) return 'masculino'
+  if (/(nao informad|prefiro nao|n\/i|ni)/.test(t)) return 'nao_informado'
+  return 'outro'
+}
+
 /** Constrói o payload de INSERT em `patients` a partir das respostas de um pré-cadastro. */
 function buildPatientFromResponses(
   responses: Record<string, unknown>,
@@ -91,7 +106,7 @@ function buildPatientFromResponses(
     birth_date: birth,
     cpf: s('p_cpf'),
     phone: s('p_telefone'),
-    sex: s('p_sexo'),
+    sex: normalizeSex(s('p_sexo')),
     city: s('p_cidade'),
     hypotheses: s('queixa_principal'),
     medications: takesMeds === 'Sim' ? medsList ?? 'Sim (sem detalhes)' : null,
