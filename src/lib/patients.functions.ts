@@ -143,7 +143,7 @@ export const getPatientDetail = createServerFn({ method: 'GET' })
   .handler(async ({ context, data }) => {
     const { data: patient, error } = await context.supabase
       .from('patients')
-      .select('id, name, sex, birth_date, cpf, schooling, city, phone, medications, professionals, hypotheses, notes, overall_synthesis, status, has_guardians, guardians, emergency_contact, created_at')
+      .select('id, name, sex, birth_date, cpf, schooling, city, phone, medications, professionals, assigned_to, hypotheses, notes, overall_synthesis, status, has_guardians, guardians, emergency_contact, created_at')
       .eq('id', data.id)
       .maybeSingle()
     if (error) throw new Error(error.message)
