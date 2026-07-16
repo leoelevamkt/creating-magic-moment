@@ -1082,7 +1082,22 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
             <Label>Observações clínicas</Label>
             <Textarea name="notes" rows={3} defaultValue={patient.notes ?? ''} />
           </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="assignedTo">Profissional responsável</Label>
+            <select
+              id="assignedTo"
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">Não atribuído</option>
+              {(teamData ?? []).map((m) => (
+                <option key={m.id} value={m.id}>{m.name} — {m.role === 'admin' ? 'Admin' : 'Equipe'}</option>
+              ))}
+            </select>
+          </div>
           <ProfessionalsField value={professionals} onChange={setProfessionals} />
+
           <GuardiansEmergencyFields value={contact} onChange={setContact} />
           <div className="flex justify-end sm:col-span-2">
             <Button type="submit" disabled={mut.isPending}>
