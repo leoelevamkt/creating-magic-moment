@@ -33,12 +33,14 @@ const CreateInput = z.object({
   phone: z.string().optional().nullable(),
   medications: z.string().optional().nullable(),
   professionals: z.array(ProfessionalSchema).max(20).optional().default([]),
+  assignedTo: z.string().uuid().optional().nullable(),
   hypotheses: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   hasGuardians: z.boolean().optional().default(false),
   guardians: z.array(GuardianSchema).max(10).optional().default([]),
   emergencyContact: EmergencyContactSchema.nullable().optional(),
 })
+
 
 export const listPatients = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
