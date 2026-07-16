@@ -230,6 +230,22 @@ function PatientsPage() {
 
       <PatientsReportCards data={data ?? []} />
 
+      <div className="flex flex-wrap items-center gap-3">
+        <Label htmlFor="filterAssigned" className="text-sm">Filtrar por profissional responsável</Label>
+        <select
+          id="filterAssigned"
+          value={filterAssigned}
+          onChange={(e) => setFilterAssigned(e.target.value)}
+          className="h-9 rounded-md border bg-background px-3 text-sm"
+        >
+          <option value="all">Todos</option>
+          <option value="none">Sem responsável</option>
+          {(teamData ?? []).map((m) => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="rounded-2xl border bg-card">
         {isLoading ? (
           <p className="p-8 text-sm text-muted-foreground">Carregando pacientes…</p>
@@ -249,11 +265,18 @@ function PatientsPage() {
                 <TableHead>Nascimento</TableHead>
                 <TableHead>Cidade</TableHead>
                 <TableHead>Escolaridade</TableHead>
+                <TableHead>Responsável</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((p) => (
+              {data
+                .filter((p) => {
+                  if (filterAssigned === 'all') return true
+                  if (filterAssigned === 'none') return !p.assigned_to
+                  return p.assigned_to === filterAssigned
+                })
+                .map((p) => (
                 <TableRow
                   key={p.id}
                   className="cursor-pointer"
@@ -264,6 +287,7 @@ function PatientsPage() {
                   <TableCell>{p.birth_date ? format(new Date(p.birth_date), 'dd/MM/yyyy') : '—'}</TableCell>
                   <TableCell>{p.city ?? '—'}</TableCell>
                   <TableCell>{p.schooling ?? '—'}</TableCell>
+                  <TableCell>{p.assigned_professional?.name ?? '—'}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{p.status}</Badge>
                   </TableCell>
@@ -273,6 +297,7 @@ function PatientsPage() {
           </Table>
         )}
       </div>
+
     </div>
   )
 }
