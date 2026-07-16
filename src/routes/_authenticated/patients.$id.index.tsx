@@ -963,6 +963,10 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
     ? (rawProfessionals as Professional[])
     : []
   const [professionals, setProfessionals] = useState<Professional[]>(initialProfessionals)
+  const initialAssignedTo = (patient as unknown as { assigned_to?: string | null }).assigned_to ?? ''
+  const [assignedTo, setAssignedTo] = useState<string>(initialAssignedTo ?? '')
+  const team = useServerFn(listTeam)
+  const { data: teamData } = useQuery({ queryKey: ['team'], queryFn: () => team() })
   const mut = useMutation({
     mutationFn: (v: {
       name: string;
@@ -970,11 +974,13 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
       birthDate: string; cpf: string; schooling: string; city: string;
       phone: string; medications: string;
       professionals: Professional[];
+      assignedTo: string | null;
       hypotheses: string; notes: string;
       hasGuardians: boolean;
       guardians: GuardianRec[];
       emergencyContact: EmergencyRec | null;
     }) => save({ data: { id: patient.id, ...v } }),
+
     onSuccess: () => {
       toast.success('Paciente atualizado.')
       setOpen(false)
