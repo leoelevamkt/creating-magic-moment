@@ -328,6 +328,8 @@ const UpdatePatientInput = z.object({
   phone: z.string().optional().nullable(),
   medications: z.string().optional().nullable(),
   professionals: z.array(ProfessionalSchema).max(20).optional(),
+  assignedTo: z.string().uuid().nullable().optional(),
+
   hypotheses: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   status: z.enum(['active', 'archived', 'discharged']).optional(),
