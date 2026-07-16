@@ -79,6 +79,8 @@ export const createPatient = createServerFn({ method: 'POST' })
         phone: data.phone || null,
         medications: data.medications || null,
         professionals: data.professionals ?? [],
+        assigned_to: data.assignedTo ?? context.userId,
+
         hypotheses: data.hypotheses || null,
         notes: data.notes || null,
         has_guardians: !!data.hasGuardians,
