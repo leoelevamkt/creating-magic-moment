@@ -199,8 +199,23 @@ function PatientsPage() {
                 <Area label="Medicações em uso" name="medications" />
                 <Area label="Hipóteses diagnósticas" name="hypotheses" />
                 <Area label="Observações clínicas" name="notes" />
+                <div className="flex flex-col gap-2 sm:col-span-2">
+                  <Label htmlFor="assignedTo">Profissional responsável</Label>
+                  <select
+                    id="assignedTo"
+                    value={assignedTo}
+                    onChange={(e) => setAssignedTo(e.target.value)}
+                    className="h-10 rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="">Não atribuído</option>
+                    {(teamData ?? []).map((m) => (
+                      <option key={m.id} value={m.id}>{m.name} — {m.role === 'admin' ? 'Admin' : 'Equipe'}</option>
+                    ))}
+                  </select>
+                </div>
                 <ProfessionalsField value={professionals} onChange={setProfessionals} />
                 <GuardiansEmergencyFields value={contact} onChange={setContact} />
+
                 <div className="flex justify-end sm:col-span-2">
                   <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending ? 'Salvando…' : 'Salvar paciente'}
