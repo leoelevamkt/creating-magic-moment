@@ -94,6 +94,8 @@ function PatientsPage() {
       setOpen(false)
       setContact({ hasGuardians: false, guardians: [], emergencyContact: { ...EMPTY_EMERGENCY } })
       setProfessionals([])
+      setAssignedTo('')
+
       qc.invalidateQueries({ queryKey: ['patients'] })
       router.invalidate()
     },
