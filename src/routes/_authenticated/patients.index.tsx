@@ -54,6 +54,7 @@ export const Route = createFileRoute('/_authenticated/patients/')({
 function PatientsPage() {
   const list = useServerFn(listPatients)
   const create = useServerFn(createPatient)
+  const team = useServerFn(listTeam)
   const qc = useQueryClient()
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -61,10 +62,16 @@ function PatientsPage() {
     hasGuardians: false, guardians: [], emergencyContact: { ...EMPTY_EMERGENCY },
   })
   const [professionals, setProfessionals] = useState<Professional[]>([])
+  const [assignedTo, setAssignedTo] = useState<string>('')
+  const [filterAssigned, setFilterAssigned] = useState<string>('all')
 
   const { data, isLoading } = useQuery({
     queryKey: ['patients'],
     queryFn: () => list(),
+  })
+  const { data: teamData } = useQuery({
+    queryKey: ['team'],
+    queryFn: () => team(),
   })
 
   type CreatePayload = {
@@ -73,11 +80,13 @@ function PatientsPage() {
     birthDate: string; cpf: string; schooling: string; city: string;
     phone: string; medications: string;
     professionals: Professional[];
+    assignedTo: string | null;
     hypotheses: string; notes: string;
     hasGuardians: boolean;
     guardians: { name: string; phone: string; relation: string }[];
     emergencyContact: { name: string; phone: string; relation: string } | null;
   }
+
   const mutation = useMutation({
     mutationFn: (payload: CreatePayload) => create({ data: payload }),
     onSuccess: () => {
