@@ -7,6 +7,8 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import * as XLSX from 'xlsx'
 import { bulkCreatePatients, createPatient, listPatients } from '@/lib/patients.functions'
+import { listTeam } from '@/lib/staff.functions'
+
 import { formatAge } from '@/lib/age'
 import {
   GuardiansEmergencyFields,
@@ -52,6 +54,7 @@ export const Route = createFileRoute('/_authenticated/patients/')({
 function PatientsPage() {
   const list = useServerFn(listPatients)
   const create = useServerFn(createPatient)
+  const team = useServerFn(listTeam)
   const qc = useQueryClient()
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -59,10 +62,16 @@ function PatientsPage() {
     hasGuardians: false, guardians: [], emergencyContact: { ...EMPTY_EMERGENCY },
   })
   const [professionals, setProfessionals] = useState<Professional[]>([])
+  const [assignedTo, setAssignedTo] = useState<string>('')
+  const [filterAssigned, setFilterAssigned] = useState<string>('all')
 
   const { data, isLoading } = useQuery({
     queryKey: ['patients'],
     queryFn: () => list(),
+  })
+  const { data: teamData } = useQuery({
+    queryKey: ['team'],
+    queryFn: () => team(),
   })
 
   type CreatePayload = {
@@ -71,11 +80,13 @@ function PatientsPage() {
     birthDate: string; cpf: string; schooling: string; city: string;
     phone: string; medications: string;
     professionals: Professional[];
+    assignedTo: string | null;
     hypotheses: string; notes: string;
     hasGuardians: boolean;
     guardians: { name: string; phone: string; relation: string }[];
     emergencyContact: { name: string; phone: string; relation: string } | null;
   }
+
   const mutation = useMutation({
     mutationFn: (payload: CreatePayload) => create({ data: payload }),
     onSuccess: () => {
@@ -83,6 +94,8 @@ function PatientsPage() {
       setOpen(false)
       setContact({ hasGuardians: false, guardians: [], emergencyContact: { ...EMPTY_EMERGENCY } })
       setProfessionals([])
+      setAssignedTo('')
+
       qc.invalidateQueries({ queryKey: ['patients'] })
       router.invalidate()
     },
@@ -108,6 +121,8 @@ function PatientsPage() {
       phone: String(fd.get('phone') ?? ''),
       medications: String(fd.get('medications') ?? ''),
       professionals: normalizeProfessionals(professionals),
+      assignedTo: assignedTo || null,
+
       hypotheses: String(fd.get('hypotheses') ?? ''),
       notes: String(fd.get('notes') ?? ''),
       ...contactPayload,
@@ -184,8 +199,23 @@ function PatientsPage() {
                 <Area label="Medicações em uso" name="medications" />
                 <Area label="Hipóteses diagnósticas" name="hypotheses" />
                 <Area label="Observações clínicas" name="notes" />
+                <div className="flex flex-col gap-2 sm:col-span-2">
+                  <Label htmlFor="assignedTo">Profissional responsável</Label>
+                  <select
+                    id="assignedTo"
+                    value={assignedTo}
+                    onChange={(e) => setAssignedTo(e.target.value)}
+                    className="h-10 rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="">Não atribuído</option>
+                    {(teamData ?? []).map((m) => (
+                      <option key={m.id} value={m.id}>{m.name} — {m.role === 'admin' ? 'Admin' : 'Equipe'}</option>
+                    ))}
+                  </select>
+                </div>
                 <ProfessionalsField value={professionals} onChange={setProfessionals} />
                 <GuardiansEmergencyFields value={contact} onChange={setContact} />
+
                 <div className="flex justify-end sm:col-span-2">
                   <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending ? 'Salvando…' : 'Salvar paciente'}
@@ -199,6 +229,22 @@ function PatientsPage() {
       </header>
 
       <PatientsReportCards data={data ?? []} />
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Label htmlFor="filterAssigned" className="text-sm">Filtrar por profissional responsável</Label>
+        <select
+          id="filterAssigned"
+          value={filterAssigned}
+          onChange={(e) => setFilterAssigned(e.target.value)}
+          className="h-9 rounded-md border bg-background px-3 text-sm"
+        >
+          <option value="all">Todos</option>
+          <option value="none">Sem responsável</option>
+          {(teamData ?? []).map((m) => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </select>
+      </div>
 
       <div className="rounded-2xl border bg-card">
         {isLoading ? (
@@ -219,11 +265,18 @@ function PatientsPage() {
                 <TableHead>Nascimento</TableHead>
                 <TableHead>Cidade</TableHead>
                 <TableHead>Escolaridade</TableHead>
+                <TableHead>Responsável</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((p) => (
+              {data
+                .filter((p) => {
+                  if (filterAssigned === 'all') return true
+                  if (filterAssigned === 'none') return !p.assigned_to
+                  return p.assigned_to === filterAssigned
+                })
+                .map((p) => (
                 <TableRow
                   key={p.id}
                   className="cursor-pointer"
@@ -234,6 +287,7 @@ function PatientsPage() {
                   <TableCell>{p.birth_date ? format(new Date(p.birth_date), 'dd/MM/yyyy') : '—'}</TableCell>
                   <TableCell>{p.city ?? '—'}</TableCell>
                   <TableCell>{p.schooling ?? '—'}</TableCell>
+                  <TableCell>{p.assigned_professional?.name ?? '—'}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{p.status}</Badge>
                   </TableCell>
@@ -243,6 +297,7 @@ function PatientsPage() {
           </Table>
         )}
       </div>
+
     </div>
   )
 }

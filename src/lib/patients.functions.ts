@@ -33,6 +33,7 @@ const CreateInput = z.object({
   phone: z.string().optional().nullable(),
   medications: z.string().optional().nullable(),
   professionals: z.array(ProfessionalSchema).max(20).optional().default([]),
+  assignedTo: z.string().uuid().optional().nullable(),
   hypotheses: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   hasGuardians: z.boolean().optional().default(false),
@@ -40,16 +41,25 @@ const CreateInput = z.object({
   emergencyContact: EmergencyContactSchema.nullable().optional(),
 })
 
+
 export const listPatients = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from('patients')
-      .select('id, name, sex, birth_date, cpf, schooling, city, phone, medications, professionals, status, has_guardians, guardians, emergency_contact, created_at')
+      .select('id, name, sex, birth_date, cpf, schooling, city, phone, medications, professionals, assigned_to, status, has_guardians, guardians, emergency_contact, created_at')
       .order('created_at', { ascending: false })
     if (error) throw new Error(error.message)
-    return data ?? []
+    const rows = data ?? []
+    const ids = Array.from(new Set(rows.map((r) => (r as { assigned_to: string | null }).assigned_to).filter((v): v is string => !!v)))
+    let map: Record<string, { name: string; email: string }> = {}
+    if (ids.length > 0) {
+      const { data: profs } = await context.supabase.from('profiles').select('id, name, email').in('id', ids)
+      map = Object.fromEntries((profs ?? []).map((p) => [p.id, { name: p.name, email: p.email }]))
+    }
+    return rows.map((r) => ({ ...r, assigned_professional: r.assigned_to ? map[r.assigned_to] ?? null : null }))
   })
+
 
 export const createPatient = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
@@ -69,6 +79,8 @@ export const createPatient = createServerFn({ method: 'POST' })
         phone: data.phone || null,
         medications: data.medications || null,
         professionals: data.professionals ?? [],
+        assigned_to: data.assignedTo ?? context.userId,
+
         hypotheses: data.hypotheses || null,
         notes: data.notes || null,
         has_guardians: !!data.hasGuardians,
@@ -131,7 +143,7 @@ export const getPatientDetail = createServerFn({ method: 'GET' })
   .handler(async ({ context, data }) => {
     const { data: patient, error } = await context.supabase
       .from('patients')
-      .select('id, name, sex, birth_date, cpf, schooling, city, phone, medications, professionals, hypotheses, notes, overall_synthesis, status, has_guardians, guardians, emergency_contact, created_at')
+      .select('id, name, sex, birth_date, cpf, schooling, city, phone, medications, professionals, assigned_to, hypotheses, notes, overall_synthesis, status, has_guardians, guardians, emergency_contact, created_at')
       .eq('id', data.id)
       .maybeSingle()
     if (error) throw new Error(error.message)
@@ -316,6 +328,8 @@ const UpdatePatientInput = z.object({
   phone: z.string().optional().nullable(),
   medications: z.string().optional().nullable(),
   professionals: z.array(ProfessionalSchema).max(20).optional(),
+  assignedTo: z.string().uuid().nullable().optional(),
+
   hypotheses: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   status: z.enum(['active', 'archived', 'discharged']).optional(),
@@ -333,7 +347,7 @@ export const updatePatient = createServerFn({ method: 'POST' })
       phone: string | null; medications: string | null;
       hypotheses: string | null; notes: string | null;
       status?: 'active' | 'archived' | 'discharged';
-      has_guardians?: boolean; guardians?: unknown; emergency_contact?: unknown; professionals?: unknown;
+      has_guardians?: boolean; guardians?: unknown; emergency_contact?: unknown; professionals?: unknown; assigned_to?: string | null;
     } = {
       name: data.name,
       sex: data.sex ?? null,
@@ -347,6 +361,8 @@ export const updatePatient = createServerFn({ method: 'POST' })
       notes: data.notes || null,
     }
     if (data.professionals !== undefined) patch.professionals = data.professionals
+    if (data.assignedTo !== undefined) patch.assigned_to = data.assignedTo
+
     if (data.status) patch.status = data.status
     if (typeof data.hasGuardians === 'boolean') {
       patch.has_guardians = data.hasGuardians
