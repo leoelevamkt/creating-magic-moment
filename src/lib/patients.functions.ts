@@ -47,11 +47,19 @@ export const listPatients = createServerFn({ method: 'GET' })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from('patients')
-      .select('id, name, sex, birth_date, cpf, schooling, city, phone, medications, professionals, status, has_guardians, guardians, emergency_contact, created_at')
+      .select('id, name, sex, birth_date, cpf, schooling, city, phone, medications, professionals, assigned_to, status, has_guardians, guardians, emergency_contact, created_at')
       .order('created_at', { ascending: false })
     if (error) throw new Error(error.message)
-    return data ?? []
+    const rows = data ?? []
+    const ids = Array.from(new Set(rows.map((r) => (r as { assigned_to: string | null }).assigned_to).filter((v): v is string => !!v)))
+    let map: Record<string, { name: string; email: string }> = {}
+    if (ids.length > 0) {
+      const { data: profs } = await context.supabase.from('profiles').select('id, name, email').in('id', ids)
+      map = Object.fromEntries((profs ?? []).map((p) => [p.id, { name: p.name, email: p.email }]))
+    }
+    return rows.map((r) => ({ ...r, assigned_professional: r.assigned_to ? map[r.assigned_to] ?? null : null }))
   })
+
 
 export const createPatient = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
