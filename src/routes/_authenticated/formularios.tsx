@@ -292,37 +292,57 @@ function FormulariosPage() {
       </div>
 
       <Dialog open={!!viewingId} onOpenChange={(o) => !o && setViewingId(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[92svh] w-[calc(100vw-1rem)] max-w-3xl flex-col gap-0 p-0 sm:w-full">
+          <DialogHeader className="border-b p-4 sm:p-6">
             <DialogTitle>Respostas do formulário</DialogTitle>
           </DialogHeader>
           {viewQ.data && (
-            <div className="grid gap-3 text-sm">
-              <div>
-                <p className="text-xs text-muted-foreground">Paciente</p>
-                <p className="font-medium">{viewQ.data.patients?.name ?? '—'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Formulário</p>
-                <p className="font-medium">{viewQ.data.title}</p>
-              </div>
-              <div className="grid gap-2">
-                {(viewQ.data.fields as { key: string; label: string }[]).map((f) => {
-                  const v = (viewQ.data.responses as Record<string, unknown>)?.[f.key]
-                  return (
-                    <div key={f.key} className="rounded-lg border bg-muted/30 p-3">
-                      <p className="text-xs font-medium text-muted-foreground">{f.label}</p>
-                      <p className="mt-1 whitespace-pre-wrap">
-                        {v === undefined || v === null || v === '' ? '—' : String(v)}
-                      </p>
-                    </div>
-                  )
-                })}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <div className="grid gap-3 text-sm">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Paciente</p>
+                    <p className="font-medium">{viewQ.data.patients?.name ?? '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Formulário</p>
+                    <p className="font-medium">{viewQ.data.title}</p>
+                  </div>
+                </div>
+                <div className="mt-2 grid gap-2">
+                  {(viewQ.data.fields as { key: string; label: string }[]).map((f) => {
+                    if (f.key.startsWith('sec_')) {
+                      return (
+                        <h3 key={f.key} className="mt-3 border-t pt-3 font-serif text-base font-semibold">
+                          {f.label}
+                        </h3>
+                      )
+                    }
+                    const v = (viewQ.data.responses as Record<string, unknown>)?.[f.key]
+                    const display =
+                      v === undefined || v === null || v === ''
+                        ? '—'
+                        : Array.isArray(v)
+                          ? v.length === 0
+                            ? '—'
+                            : (v as unknown[]).map((x) => String(x)).join(', ')
+                          : typeof v === 'object'
+                            ? JSON.stringify(v, null, 2)
+                            : String(v)
+                    return (
+                      <div key={f.key} className="rounded-lg border bg-muted/30 p-3">
+                        <p className="text-xs font-medium text-muted-foreground">{f.label}</p>
+                        <p className="mt-1 whitespace-pre-wrap break-words">{display}</p>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
     </div>
   )
 }
