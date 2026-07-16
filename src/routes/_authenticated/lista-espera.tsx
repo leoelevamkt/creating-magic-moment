@@ -129,7 +129,7 @@ function WaitlistPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-primary">Agenda e comunicação</p>
-          <h1 className="font-serif text-3xl font-semibold">Lista de espera</h1>
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold">Lista de espera</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Pacientes aguardando encaixe. Ao cancelar uma sessão na agenda, sugerimos
             automaticamente os melhores candidatos.

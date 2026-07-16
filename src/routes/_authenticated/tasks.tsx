@@ -91,7 +91,7 @@ function TasksPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-primary">Organização pessoal</p>
-          <h1 className="font-serif text-3xl font-semibold">Tarefas</h1>
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold">Tarefas</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Tarefas rápidas sem vínculo com paciente. Defina cor, prazo e acompanhe o status.
           </p>

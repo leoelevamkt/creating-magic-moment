@@ -87,7 +87,7 @@ function MaterialsPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-primary">Estoque</p>
-          <h1 className="font-serif text-3xl font-semibold">Materiais e testes</h1>
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold">Materiais e testes</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Cadastro de materiais e cadernos de teste, com controle de quantidade em estoque e alertas.
           </p>

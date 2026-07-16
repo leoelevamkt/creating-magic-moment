@@ -70,7 +70,7 @@ function TriagemPage() {
           <Link to="/patients/$id" params={{ id }} className="text-xs text-muted-foreground hover:text-foreground">
             ← Voltar ao prontuário
           </Link>
-          <h1 className="mt-1 font-serif text-3xl font-semibold">Triagem clínica</h1>
+          <h1 className="mt-1 font-serif text-2xl sm:text-3xl font-semibold">Triagem clínica</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Checklists resumidos do DSM-5-TR por domínio e triagem social para elegibilidade de gratuidade/subsídio.
           </p>

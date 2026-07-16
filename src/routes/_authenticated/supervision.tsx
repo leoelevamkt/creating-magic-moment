@@ -65,7 +65,7 @@ function SupervisionPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-primary">Supervisão clínica</p>
-          <h1 className="font-serif text-3xl font-semibold">Casos em supervisão</h1>
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold">Casos em supervisão</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Cada profissional cadastra os próprios casos. O administrador acompanha e comenta.
           </p>
