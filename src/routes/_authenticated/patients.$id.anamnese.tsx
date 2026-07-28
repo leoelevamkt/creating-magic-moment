@@ -137,7 +137,51 @@ function AnamnesePage() {
         </section>
       ) : null}
 
+      {(screenings.data ?? []).length > 0 ? (
+        <section className="rounded-2xl border bg-card p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-serif text-xl font-semibold">Triagens realizadas</h2>
+              <p className="text-xs text-muted-foreground">
+                Puxe o contexto das triagens para dentro da anamnese sem redigitar.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const items = screenings.data ?? []
+                const lines = items.map((s) => {
+                  const crit = Array.isArray(s.criteria) ? s.criteria : []
+                  const present = (crit as Array<{ label: string; present: boolean; value?: unknown }>)
+                    .filter((c) => c.present)
+                    .map((c) => c.value != null && c.value !== '' ? `${c.label}: ${c.value}` : c.label)
+                  const head = `• ${s.instrument === 'social' ? 'Triagem social' : (s.domain ?? s.instrument)} (${new Date(s.created_at).toLocaleDateString('pt-BR')})`
+                  const body = present.length ? `\n  - ${present.join('\n  - ')}` : ''
+                  const notes = s.notes ? `\n  Obs: ${s.notes}` : ''
+                  return head + body + notes
+                }).join('\n\n')
+                setValues((cur) => ({
+                  ...cur,
+                  observacoes: [cur.observacoes, '--- Contexto das triagens ---', lines].filter(Boolean).join('\n\n'),
+                }))
+                toast.success('Contexto das triagens copiado para Observações.')
+              }}
+            >
+              Puxar para observações
+            </Button>
+          </div>
+          <ul className="mt-3 grid gap-1 text-xs text-muted-foreground">
+            {(screenings.data ?? []).slice(0, 5).map((s) => (
+              <li key={s.id}>
+                {s.instrument === 'social' ? 'Triagem social' : (s.domain ?? s.instrument)} · {new Date(s.created_at).toLocaleDateString('pt-BR')}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section className="grid gap-5">
+
         {SECTIONS.map((s) => (
           <FieldBlock
             key={s.id}
