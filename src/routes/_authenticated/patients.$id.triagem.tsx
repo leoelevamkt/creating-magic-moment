@@ -171,6 +171,17 @@ function NewScreeningDialog({ patientId, onDone }: { patientId: string; onDone: 
   const [checks, setChecks] = useState<Record<string, boolean>>({})
   const [notes, setNotes] = useState('')
   const save = useServerFn(saveScreening)
+  const fetchAn = useServerFn(getAnamnese)
+  async function pullAnamnese() {
+    try {
+      const a = await fetchAn({ data: { patientId } })
+      const parts = [a?.queixa_principal, a?.historia_atual, a?.observacoes].filter(Boolean)
+      if (!parts.length) return toast.info('Anamnese ainda não preenchida.')
+      setNotes((cur) => [cur, '--- Contexto da anamnese ---', parts.join('\n\n')].filter(Boolean).join('\n\n'))
+      toast.success('Contexto da anamnese adicionado.')
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'Falha ao carregar anamnese.') }
+  }
+
 
   const mut = useMutation({
     mutationFn: () => save({
