@@ -371,9 +371,13 @@ export const updatePatient = createServerFn({ method: 'POST' })
       patch.guardians = data.guardians
     }
     if (data.emergencyContact !== undefined) patch.emergency_contact = data.emergencyContact
-    const { error } = await context.supabase.from('patients').update(patch as never).eq('id', data.id)
+    const { error, data: rows } = await context.supabase.from('patients').update(patch as never).eq('id', data.id).select('id')
     if (error) throw new Error(error.message)
+    if (!rows || rows.length === 0) {
+      throw new Error('Sem permissão para editar este paciente. Peça a uma administradora para conceder o perfil de equipe.')
+    }
     return { ok: true }
+
   })
 
 export const setPatientStatus = createServerFn({ method: 'POST' })
@@ -385,13 +389,18 @@ export const setPatientStatus = createServerFn({ method: 'POST' })
     }).parse(i),
   )
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase
+    const { error, data: rows } = await context.supabase
       .from('patients')
       .update({ status: data.status })
       .eq('id', data.id)
+      .select('id')
     if (error) throw new Error(error.message)
+    if (!rows || rows.length === 0) {
+      throw new Error('Sem permissão para alterar este paciente. Peça a uma administradora para conceder o perfil de equipe.')
+    }
     return { ok: true }
   })
+
 
 export const deletePatient = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])

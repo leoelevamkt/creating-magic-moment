@@ -7,6 +7,7 @@ const CreateEvaluation = z.object({
   title: z.string().min(2),
   modality: z.enum(['presencial', 'online']),
   scheduledAt: z.string().optional().nullable(),
+  assigneeId: z.string().uuid().nullable().optional(),
   testIds: z.array(z.string().uuid()),
   customTests: z
     .array(
@@ -19,6 +20,7 @@ const CreateEvaluation = z.object({
     .optional()
     .default([]),
 })
+
 
 export const listEvaluations = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
@@ -77,7 +79,9 @@ export const createEvaluation = createServerFn({ method: 'POST' })
       test_id: testId,
       status: 'todo' as 'todo',
       scheduled_at: scheduled,
+      assignee_id: data.assigneeId ?? null,
     }))
+
     const { error: tErr } = await context.supabase.from('test_tasks').insert(tasks)
     if (tErr) throw new Error(tErr.message)
     return { id: ev!.id }
@@ -89,7 +93,7 @@ export const listTasks = createServerFn({ method: 'GET' })
     const { data, error } = await context.supabase
       .from('test_tasks')
       .select(
-        'id, evaluation_id, patient_id, test_id, status, created_at, scheduled_at, started_at, completed_at, duration_minutes, correction_notes, raw_score, standard_score, classification, synthesis, admin_notes, approved_at, patients(name), test_catalog(acronym, name), evaluations(title, modality)',
+        'id, evaluation_id, patient_id, test_id, assignee_id, status, created_at, scheduled_at, started_at, completed_at, duration_minutes, correction_notes, raw_score, standard_score, classification, synthesis, admin_notes, approved_at, patients(name), test_catalog(acronym, name), evaluations(title, modality)',
       )
       .order('created_at', { ascending: false, nullsFirst: false })
     if (error) throw new Error(error.message)
@@ -139,6 +143,7 @@ const UpdateTask = z.object({
   title: z.string().min(2),
   modality: z.enum(['presencial', 'online']),
   testId: z.string().uuid(),
+  assigneeId: z.string().uuid().nullable().optional(),
 })
 
 export const updateTask = createServerFn({ method: 'POST' })
@@ -159,13 +164,17 @@ export const updateTask = createServerFn({ method: 'POST' })
       .eq('id', current.evaluation_id)
     if (evErr) throw new Error(evErr.message)
 
+    const patch: { patient_id: string; test_id: string; assignee_id?: string | null } = { patient_id: data.patientId, test_id: data.testId }
+    if (data.assigneeId !== undefined) patch.assignee_id = data.assigneeId
     const { error } = await context.supabase
       .from('test_tasks')
-      .update({ patient_id: data.patientId, test_id: data.testId })
+      .update(patch)
       .eq('id', data.id)
+
     if (error) throw new Error(error.message)
     return { ok: true }
   })
+
 
 export const deleteTask = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])

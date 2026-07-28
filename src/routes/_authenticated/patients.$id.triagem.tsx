@@ -6,6 +6,8 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { HeartHandshake, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { listScreenings, saveScreening, deleteScreening, analyzeScreeningWithAI, analyzeSocialScreeningWithAI } from '@/lib/screenings.functions'
+import { getAnamnese } from '@/lib/anamneses.functions'
+
 import { DSM5TR_DOMAINS } from '@/lib/dsm5tr-catalog'
 import { SOCIAL_TRIAGEM_SECTIONS, SALARIO_MINIMO_BRL, faixaTarifa, FAIXA_LABELS } from '@/lib/social-triagem-catalog'
 import { Button } from '@/components/ui/button'
@@ -169,6 +171,17 @@ function NewScreeningDialog({ patientId, onDone }: { patientId: string; onDone: 
   const [checks, setChecks] = useState<Record<string, boolean>>({})
   const [notes, setNotes] = useState('')
   const save = useServerFn(saveScreening)
+  const fetchAn = useServerFn(getAnamnese)
+  async function pullAnamnese() {
+    try {
+      const a = await fetchAn({ data: { patientId } })
+      const parts = [a?.queixa_principal, a?.historia_atual, a?.observacoes].filter(Boolean)
+      if (!parts.length) return toast.info('Anamnese ainda não preenchida.')
+      setNotes((cur) => [cur, '--- Contexto da anamnese ---', parts.join('\n\n')].filter(Boolean).join('\n\n'))
+      toast.success('Contexto da anamnese adicionado.')
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'Falha ao carregar anamnese.') }
+  }
+
 
   const mut = useMutation({
     mutationFn: () => save({
@@ -230,9 +243,15 @@ function NewScreeningDialog({ patientId, onDone }: { patientId: string; onDone: 
             ))}
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label>Observações clínicas</Label>
+            <div className="flex items-center justify-between">
+              <Label>Observações clínicas</Label>
+              <Button type="button" size="sm" variant="ghost" onClick={pullAnamnese}>
+                Puxar da anamnese
+              </Button>
+            </div>
             <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
+
           <div className="flex justify-end">
             <Button onClick={() => mut.mutate()} disabled={mut.isPending}>
               {mut.isPending ? 'Salvando…' : 'Salvar triagem'}
@@ -265,6 +284,17 @@ function NewSocialScreeningDialog({ patientId, onDone }: { patientId: string; on
   const [checks, setChecks] = useState<Record<string, boolean>>({})
   const [notes, setNotes] = useState('')
   const save = useServerFn(saveScreening)
+  const fetchAn = useServerFn(getAnamnese)
+  async function pullAnamnese() {
+    try {
+      const a = await fetchAn({ data: { patientId } })
+      const parts = [a?.historia_social, a?.observacoes].filter(Boolean)
+      if (!parts.length) return toast.info('Anamnese ainda não preenchida.')
+      setNotes((cur) => [cur, '--- Contexto social da anamnese ---', parts.join('\n\n')].filter(Boolean).join('\n\n'))
+      toast.success('Contexto da anamnese adicionado.')
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'Falha ao carregar anamnese.') }
+  }
+
 
   const rendaNum = Number(renda) || 0
   const pessoasNum = Math.max(1, Number(pessoas) || 1)
@@ -376,9 +406,15 @@ function NewSocialScreeningDialog({ patientId, onDone }: { patientId: string; on
           ))}
 
           <div className="flex flex-col gap-1.5">
-            <Label>Observações da entrevista social</Label>
+            <div className="flex items-center justify-between">
+              <Label>Observações da entrevista social</Label>
+              <Button type="button" size="sm" variant="ghost" onClick={pullAnamnese}>
+                Puxar da anamnese
+              </Button>
+            </div>
             <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
+
           <div className="flex justify-end">
             <Button onClick={() => mut.mutate()} disabled={mut.isPending || !renda || !pessoas}>
               {mut.isPending ? 'Salvando…' : 'Salvar triagem social'}

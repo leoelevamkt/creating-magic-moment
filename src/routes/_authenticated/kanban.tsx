@@ -22,6 +22,8 @@ import {
 } from '@/lib/evaluations.functions'
 import { listPatients } from '@/lib/patients.functions'
 import { listCatalog } from '@/lib/profile.functions'
+import { listTeam } from '@/lib/staff.functions'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -62,7 +64,9 @@ function KanbanPage() {
     title: string
     modality: 'presencial' | 'online'
     testId: string
+    assigneeId: string | null
   }>(null)
+
   const qc = useQueryClient()
   const tasksFn = useServerFn(listTasks)
   const setStatus = useServerFn(updateTaskStatus)
@@ -71,6 +75,10 @@ function KanbanPage() {
   const removeTask = useServerFn(deleteTask)
   const patientsFn = useServerFn(listPatients)
   const catalogFn = useServerFn(listCatalog)
+  const teamFn = useServerFn(listTeam)
+  const team = useQuery({ queryKey: ['team'], queryFn: () => teamFn() })
+
+
 
   const tasks = useQuery({ queryKey: ['tasks'], queryFn: () => tasksFn() })
   const patients = useQuery({ queryKey: ['patients'], queryFn: () => patientsFn() })
@@ -133,7 +141,9 @@ function KanbanPage() {
       title: string
       modality: 'presencial' | 'online'
       testId: string
+      assigneeId: string | null
     }) => patchTask({ data: v }),
+
     onSuccess: () => {
       toast.success('Tarefa atualizada.')
       setEditing(null)
@@ -165,9 +175,11 @@ function KanbanPage() {
       title: string
       modality: 'presencial' | 'online'
       scheduledAt: string | null
+      assigneeId: string | null
       testIds: string[]
       customTests: Array<{ name: string; acronym: string }>
     }) => create({ data: v }),
+
     onSuccess: () => {
       toast.success('Avaliação planejada.')
       setOpen(false)
@@ -210,10 +222,12 @@ function KanbanPage() {
       title: String(fd.get('title') ?? 'Avaliação neuropsicológica'),
       modality: (String(fd.get('modality') ?? 'presencial') as 'presencial' | 'online'),
       scheduledAt: String(fd.get('scheduledAt') ?? '') || null,
+      assigneeId: String(fd.get('assigneeId') ?? '') || null,
       testIds,
       customTests,
     })
   }
+
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
@@ -287,10 +301,26 @@ function KanbanPage() {
                   </select>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <Label>Data e horário</Label>
-                <Input type="datetime-local" name="scheduledAt" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <Label>Data e horário</Label>
+                  <Input type="datetime-local" name="scheduledAt" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label>Responsável pela avaliação</Label>
+                  <select
+                    name="assigneeId"
+                    defaultValue=""
+                    className="h-10 rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="">— Sem responsável —</option>
+                    {(team.data ?? []).map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
+
               <div className="flex flex-col gap-2">
                 <Label>Testes a aplicar</Label>
                 <Input
@@ -441,6 +471,17 @@ function KanbanPage() {
                         </div>
 
                         <dl className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                          {(() => {
+                            const aId = (t as { assignee_id: string | null }).assignee_id
+                            const assignee = aId ? (team.data ?? []).find((m) => m.id === aId) : null
+                            return assignee ? (
+                              <div className="flex justify-between gap-2">
+                                <dt>Responsável</dt>
+                                <dd className="font-medium text-foreground">{assignee.name}</dd>
+                              </div>
+                            ) : null
+                          })()}
+
                           {t.created_at ? (
                             <div className="flex justify-between gap-2">
                               <dt>Criada</dt>
@@ -497,6 +538,8 @@ function KanbanPage() {
                                 title: ev?.title ?? '',
                                 modality: (ev?.modality ?? 'presencial') as 'presencial' | 'online',
                                 testId: t.test_id,
+                                assigneeId: (t as { assignee_id: string | null }).assignee_id ?? null,
+
                               })
                             }}
                             title="Editar tarefa"
@@ -553,7 +596,9 @@ function KanbanPage() {
                   title: String(fd.get('title') ?? ''),
                   modality: (String(fd.get('modality') ?? 'presencial') as 'presencial' | 'online'),
                   testId: String(fd.get('testId') ?? ''),
+                  assigneeId: String(fd.get('assigneeId') ?? '') || null,
                 })
+
               }}
               className="flex flex-col gap-4 pt-2"
             >
@@ -604,6 +649,22 @@ function KanbanPage() {
                   ))}
                 </select>
               </div>
+              <div className="flex flex-col gap-2">
+                <Label>Responsável pela avaliação</Label>
+                <select
+                  name="assigneeId"
+                  defaultValue={editing.assigneeId ?? ''}
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="">— Sem responsável —</option>
+                  {(team.data ?? []).map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+
+
+
               <p className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
                 Datas de início, finalização e duração são preenchidas automaticamente conforme a
                 tarefa avança entre as etapas.
