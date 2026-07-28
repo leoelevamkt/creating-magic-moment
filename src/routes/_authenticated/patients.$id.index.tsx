@@ -673,12 +673,15 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
   const [open, setOpen] = useState(false)
   const create = useServerFn(createEvaluation)
   const catalogFn = useServerFn(listCatalog)
+  const teamFn = useServerFn(listTeam)
   const catalog = useQuery({ queryKey: ['catalog'], queryFn: () => catalogFn(), enabled: open })
+  const teamQ = useQuery({ queryKey: ['team'], queryFn: () => teamFn(), enabled: open })
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
   const [customTests, setCustomTests] = useState<Array<{ name: string; acronym: string }>>([])
   const [customName, setCustomName] = useState('')
   const [customAcronym, setCustomAcronym] = useState('')
+
 
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -700,6 +703,7 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
       title: string
       modality: 'presencial' | 'online'
       scheduledAt: string | null
+      assigneeId: string | null
       testIds: string[]
       customTests: Array<{ name: string; acronym: string | null }>
     }) => create({ data: { patientId, ...v } }),
@@ -739,10 +743,12 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
       title: String(fd.get('title') ?? 'Avaliação neuropsicológica'),
       modality: (String(fd.get('modality') ?? 'presencial') as 'presencial' | 'online'),
       scheduledAt: String(fd.get('scheduledAt') ?? '') || null,
+      assigneeId: String(fd.get('assigneeId') ?? '') || null,
       testIds: Array.from(selected),
       customTests: customTests.map((t) => ({ name: t.name, acronym: t.acronym || null })),
     })
   }
+
 
   const totalSel = selected.size + customTests.length
 
@@ -769,10 +775,26 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
               </select>
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>Data e horário</Label>
-            <Input type="datetime-local" name="scheduledAt" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label>Data e horário</Label>
+              <Input type="datetime-local" name="scheduledAt" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Responsável pela avaliação</Label>
+              <select
+                name="assigneeId"
+                defaultValue=""
+                className="h-10 rounded-md border bg-background px-3 text-sm"
+              >
+                <option value="">— Sem responsável —</option>
+                {(teamQ.data ?? []).map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
+
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2">

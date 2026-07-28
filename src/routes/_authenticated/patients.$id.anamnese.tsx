@@ -5,6 +5,8 @@ import { useServerFn } from '@tanstack/react-start'
 import { toast } from 'sonner'
 import { Mic, Sparkles, Square } from 'lucide-react'
 import { getAnamnese, upsertAnamnese, analyzeAnamneseWithAI } from '@/lib/anamneses.functions'
+import { listScreenings } from '@/lib/screenings.functions'
+
 import { transcribeAudio } from '@/lib/transcribe.functions'
 import { SegmentedRecorder, blobToBase64, chunkAudioFile } from '@/lib/audio-chunker'
 import type { ChangeEvent } from 'react'
@@ -53,8 +55,11 @@ function AnamnesePage() {
   const fetchAn = useServerFn(getAnamnese)
   const save = useServerFn(upsertAnamnese)
   const analyze = useServerFn(analyzeAnamneseWithAI)
+  const scrFn = useServerFn(listScreenings)
 
   const q = useQuery({ queryKey: ['anamnese', id], queryFn: () => fetchAn({ data: { patientId: id } }) })
+  const screenings = useQuery({ queryKey: ['screenings', id], queryFn: () => scrFn({ data: { patientId: id } }) })
+
   const [values, setValues] = useState<Record<Fields, string>>({
     queixa_principal: '', historia_atual: '', desenvolvimento: '', historia_medica: '',
     medicacoes: '', historia_familiar: '', historia_escolar: '', historia_social: '',
