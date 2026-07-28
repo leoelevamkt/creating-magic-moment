@@ -406,9 +406,15 @@ function NewSocialScreeningDialog({ patientId, onDone }: { patientId: string; on
           ))}
 
           <div className="flex flex-col gap-1.5">
-            <Label>Observações da entrevista social</Label>
+            <div className="flex items-center justify-between">
+              <Label>Observações da entrevista social</Label>
+              <Button type="button" size="sm" variant="ghost" onClick={pullAnamnese}>
+                Puxar da anamnese
+              </Button>
+            </div>
             <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
+
           <div className="flex justify-end">
             <Button onClick={() => mut.mutate()} disabled={mut.isPending || !renda || !pessoas}>
               {mut.isPending ? 'Salvando…' : 'Salvar triagem social'}
