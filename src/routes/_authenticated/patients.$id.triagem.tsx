@@ -6,6 +6,8 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { HeartHandshake, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { listScreenings, saveScreening, deleteScreening, analyzeScreeningWithAI, analyzeSocialScreeningWithAI } from '@/lib/screenings.functions'
+import { getAnamnese } from '@/lib/anamneses.functions'
+
 import { DSM5TR_DOMAINS } from '@/lib/dsm5tr-catalog'
 import { SOCIAL_TRIAGEM_SECTIONS, SALARIO_MINIMO_BRL, faixaTarifa, FAIXA_LABELS } from '@/lib/social-triagem-catalog'
 import { Button } from '@/components/ui/button'
