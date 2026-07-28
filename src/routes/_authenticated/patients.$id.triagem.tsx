@@ -284,6 +284,17 @@ function NewSocialScreeningDialog({ patientId, onDone }: { patientId: string; on
   const [checks, setChecks] = useState<Record<string, boolean>>({})
   const [notes, setNotes] = useState('')
   const save = useServerFn(saveScreening)
+  const fetchAn = useServerFn(getAnamnese)
+  async function pullAnamnese() {
+    try {
+      const a = await fetchAn({ data: { patientId } })
+      const parts = [a?.historia_social, a?.observacoes].filter(Boolean)
+      if (!parts.length) return toast.info('Anamnese ainda não preenchida.')
+      setNotes((cur) => [cur, '--- Contexto social da anamnese ---', parts.join('\n\n')].filter(Boolean).join('\n\n'))
+      toast.success('Contexto da anamnese adicionado.')
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'Falha ao carregar anamnese.') }
+  }
+
 
   const rendaNum = Number(renda) || 0
   const pessoasNum = Math.max(1, Number(pessoas) || 1)
