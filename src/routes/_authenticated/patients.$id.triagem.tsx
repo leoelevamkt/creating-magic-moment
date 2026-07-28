@@ -243,9 +243,15 @@ function NewScreeningDialog({ patientId, onDone }: { patientId: string; onDone: 
             ))}
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label>Observações clínicas</Label>
+            <div className="flex items-center justify-between">
+              <Label>Observações clínicas</Label>
+              <Button type="button" size="sm" variant="ghost" onClick={pullAnamnese}>
+                Puxar da anamnese
+              </Button>
+            </div>
             <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
+
           <div className="flex justify-end">
             <Button onClick={() => mut.mutate()} disabled={mut.isPending}>
               {mut.isPending ? 'Salvando…' : 'Salvar triagem'}
