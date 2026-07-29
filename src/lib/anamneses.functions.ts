@@ -15,6 +15,7 @@ const UpsertInput = z.object({
   historia_social: z.string().nullable().optional(),
   observacoes: z.string().nullable().optional(),
   transcript: z.string().nullable().optional(),
+  structured_data: z.record(z.string(), z.unknown()).nullable().optional(),
 })
 
 export const getAnamnese = createServerFn({ method: 'GET' })
