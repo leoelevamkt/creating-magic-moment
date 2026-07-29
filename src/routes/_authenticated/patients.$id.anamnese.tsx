@@ -97,8 +97,11 @@ function AnamnesePage() {
   const hydrated = useRef(false)
 
   useEffect(() => {
-    if (q.data && !hydrated.current) {
+    if (q.isSuccess && !hydrated.current) {
       hydrated.current = true
+      setLoaded(true)
+      if (!q.data) return
+
       setValues({
         queixa_principal: q.data.queixa_principal ?? '',
         historia_atual: q.data.historia_atual ?? '',
