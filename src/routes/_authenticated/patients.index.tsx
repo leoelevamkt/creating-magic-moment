@@ -232,20 +232,48 @@ function PatientsPage() {
 
       <PatientsReportCards data={data ?? []} />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Label htmlFor="filterAssigned" className="text-sm">Filtrar por profissional responsável</Label>
-        <select
-          id="filterAssigned"
-          value={filterAssigned}
-          onChange={(e) => setFilterAssigned(e.target.value)}
-          className="h-9 rounded-md border bg-background px-3 text-sm"
-        >
-          <option value="all">Todos</option>
-          <option value="none">Sem responsável</option>
-          {(teamData ?? []).map((m) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </select>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex-1 min-w-[200px]">
+          <Label htmlFor="searchQuery" className="text-sm">Buscar por nome</Label>
+          <Input
+            id="searchQuery"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Digite o nome do paciente…"
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor="sortBy" className="text-sm">Ordenar por</Label>
+          <select
+            id="sortBy"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="mt-1 block h-10 rounded-md border bg-background px-3 text-sm"
+          >
+            <option value="name-asc">Nome (A–Z)</option>
+            <option value="name-desc">Nome (Z–A)</option>
+            <option value="created-desc">Cadastro (mais recente)</option>
+            <option value="created-asc">Cadastro (mais antigo)</option>
+            <option value="age-asc">Idade (mais novo)</option>
+            <option value="age-desc">Idade (mais velho)</option>
+          </select>
+        </div>
+        <div>
+          <Label htmlFor="filterAssigned" className="text-sm">Profissional responsável</Label>
+          <select
+            id="filterAssigned"
+            value={filterAssigned}
+            onChange={(e) => setFilterAssigned(e.target.value)}
+            className="mt-1 block h-10 rounded-md border bg-background px-3 text-sm"
+          >
+            <option value="all">Todos</option>
+            <option value="none">Sem responsável</option>
+            {(teamData ?? []).map((m) => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="rounded-2xl border bg-card">
