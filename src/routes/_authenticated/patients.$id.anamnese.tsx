@@ -68,6 +68,8 @@ function AnamnesePage() {
   })
   const [activeTarget, setActiveTarget] = useState<Fields>('historia_atual')
   const [analysis, setAnalysis] = useState<string>('')
+  const [mode, setMode] = useState<'livre' | 'neuro_child'>('livre')
+  const [childData, setChildData] = useState<ChildNeuroData>({})
 
   useEffect(() => {
     if (q.data) {
@@ -83,11 +85,17 @@ function AnamnesePage() {
         observacoes: q.data.observacoes ?? '',
         transcript: q.data.transcript ?? '',
       })
+      const sd = (q.data as { structured_data?: Record<string, unknown> | null }).structured_data ?? {}
+      const child = (sd as Record<string, unknown>).child_neuro
+      if (child && typeof child === 'object') {
+        setChildData(child as ChildNeuroData)
+        setMode('neuro_child')
+      }
     }
   }, [q.data])
 
   const saveMut = useMutation({
-    mutationFn: () => save({ data: { patientId: id, ...values } }),
+    mutationFn: () => save({ data: { patientId: id, ...values, structured_data: { child_neuro: childData } } }),
     onSuccess: () => { toast.success('Anamnese salva.'); qc.invalidateQueries({ queryKey: ['anamnese', id] }) },
     onError: (e: Error) => toast.error(e.message),
   })
