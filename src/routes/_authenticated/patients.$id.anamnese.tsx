@@ -13,6 +13,7 @@ import type { ChangeEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { NeuroChildAnamnese, type ChildNeuroData } from '@/components/anamnese/NeuroChildAnamnese'
 
 export const Route = createFileRoute('/_authenticated/patients/$id/anamnese')({
   head: () => ({ meta: [{ title: 'Anamnese — NeuroFlux' }] }),
