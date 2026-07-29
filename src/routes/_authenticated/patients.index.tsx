@@ -64,6 +64,8 @@ function PatientsPage() {
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [assignedTo, setAssignedTo] = useState<string>('')
   const [filterAssigned, setFilterAssigned] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [sortBy, setSortBy] = useState<string>('name-asc')
 
   const { data, isLoading } = useQuery({
     queryKey: ['patients'],
