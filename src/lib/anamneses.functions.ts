@@ -55,7 +55,7 @@ export const upsertAnamnese = createServerFn({ method: 'POST' })
     }
     const { error } = await context.supabase
       .from('anamneses')
-      .upsert(payload, { onConflict: 'patient_id' })
+      .upsert(payload as never, { onConflict: 'patient_id' })
     if (error) throw new Error(error.message)
     return { ok: true }
   })
