@@ -116,6 +116,11 @@ function AnamnesePage() {
         setChildData(child as ChildNeuroData)
         setMode('neuro_child')
       }
+      const adult = (sd as Record<string, unknown>).adult_neuro
+      if (adult && typeof adult === 'object') {
+        setAdultData(adult as AdultNeuroData)
+        setMode('neuro_adult')
+      }
     }
   }, [q.data])
 
