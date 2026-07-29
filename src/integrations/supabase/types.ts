@@ -59,6 +59,33 @@ export type Database = {
         }
         Relationships: []
       }
+      anamnese_revisions: {
+        Row: {
+          anamnese_id: string | null
+          author_id: string | null
+          created_at: string
+          id: string
+          patient_id: string
+          snapshot: Json
+        }
+        Insert: {
+          anamnese_id?: string | null
+          author_id?: string | null
+          created_at?: string
+          id?: string
+          patient_id: string
+          snapshot?: Json
+        }
+        Update: {
+          anamnese_id?: string | null
+          author_id?: string | null
+          created_at?: string
+          id?: string
+          patient_id?: string
+          snapshot?: Json
+        }
+        Relationships: []
+      }
       anamneses: {
         Row: {
           created_at: string
