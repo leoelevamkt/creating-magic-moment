@@ -64,6 +64,8 @@ function PatientsPage() {
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [assignedTo, setAssignedTo] = useState<string>('')
   const [filterAssigned, setFilterAssigned] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [sortBy, setSortBy] = useState<string>('name-asc')
 
   const { data, isLoading } = useQuery({
     queryKey: ['patients'],
@@ -230,20 +232,48 @@ function PatientsPage() {
 
       <PatientsReportCards data={data ?? []} />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Label htmlFor="filterAssigned" className="text-sm">Filtrar por profissional responsável</Label>
-        <select
-          id="filterAssigned"
-          value={filterAssigned}
-          onChange={(e) => setFilterAssigned(e.target.value)}
-          className="h-9 rounded-md border bg-background px-3 text-sm"
-        >
-          <option value="all">Todos</option>
-          <option value="none">Sem responsável</option>
-          {(teamData ?? []).map((m) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </select>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex-1 min-w-[200px]">
+          <Label htmlFor="searchQuery" className="text-sm">Buscar por nome</Label>
+          <Input
+            id="searchQuery"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Digite o nome do paciente…"
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor="sortBy" className="text-sm">Ordenar por</Label>
+          <select
+            id="sortBy"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="mt-1 block h-10 rounded-md border bg-background px-3 text-sm"
+          >
+            <option value="name-asc">Nome (A–Z)</option>
+            <option value="name-desc">Nome (Z–A)</option>
+            <option value="created-desc">Cadastro (mais recente)</option>
+            <option value="created-asc">Cadastro (mais antigo)</option>
+            <option value="age-asc">Idade (mais novo)</option>
+            <option value="age-desc">Idade (mais velho)</option>
+          </select>
+        </div>
+        <div>
+          <Label htmlFor="filterAssigned" className="text-sm">Profissional responsável</Label>
+          <select
+            id="filterAssigned"
+            value={filterAssigned}
+            onChange={(e) => setFilterAssigned(e.target.value)}
+            className="mt-1 block h-10 rounded-md border bg-background px-3 text-sm"
+          >
+            <option value="all">Todos</option>
+            <option value="none">Sem responsável</option>
+            {(teamData ?? []).map((m) => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="rounded-2xl border bg-card">
@@ -272,9 +302,30 @@ function PatientsPage() {
             <TableBody>
               {data
                 .filter((p) => {
-                  if (filterAssigned === 'all') return true
-                  if (filterAssigned === 'none') return !p.assigned_to
-                  return p.assigned_to === filterAssigned
+                  if (filterAssigned === 'none' && p.assigned_to) return false
+                  if (filterAssigned !== 'all' && filterAssigned !== 'none' && p.assigned_to !== filterAssigned) return false
+                  const q = searchQuery.trim().toLowerCase()
+                  if (q && !p.name.toLowerCase().includes(q)) return false
+                  return true
+                })
+                .slice()
+                .sort((a, b) => {
+                  switch (sortBy) {
+                    case 'name-desc': return b.name.localeCompare(a.name, 'pt-BR')
+                    case 'created-desc': return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    case 'created-asc': return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                    case 'age-asc': {
+                      const ad = a.birth_date ? new Date(a.birth_date).getTime() : -Infinity
+                      const bd = b.birth_date ? new Date(b.birth_date).getTime() : -Infinity
+                      return bd - ad
+                    }
+                    case 'age-desc': {
+                      const ad = a.birth_date ? new Date(a.birth_date).getTime() : Infinity
+                      const bd = b.birth_date ? new Date(b.birth_date).getTime() : Infinity
+                      return ad - bd
+                    }
+                    default: return a.name.localeCompare(b.name, 'pt-BR')
+                  }
                 })
                 .map((p) => (
                 <TableRow
