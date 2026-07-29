@@ -132,6 +132,20 @@ function AnamnesePage() {
         </div>
       </header>
 
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border bg-card p-3">
+        <span className="text-xs text-muted-foreground">Modelo:</span>
+        <button
+          type="button"
+          onClick={() => setMode('livre')}
+          className={`rounded-md border px-3 py-1.5 text-xs ${mode === 'livre' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
+        >Anamnese livre</button>
+        <button
+          type="button"
+          onClick={() => setMode('neuro_child')}
+          className={`rounded-md border px-3 py-1.5 text-xs ${mode === 'neuro_child' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
+        >Neuropsicológica — Crianças e Adolescentes</button>
+      </div>
+
       <TranscriptionPanel
         activeTarget={activeTarget}
         onTarget={setActiveTarget}
