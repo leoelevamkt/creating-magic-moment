@@ -1130,6 +1130,9 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
               {(teamData ?? []).map((m) => (
                 <option key={m.id} value={m.id}>{m.name} — {m.role === 'admin' ? 'Admin' : 'Equipe'}</option>
               ))}
+              {assignedTo && !(teamData ?? []).some((m) => m.id === assignedTo) ? (
+                <option value={assignedTo}>Profissional atual (fora da equipe)</option>
+              ) : null}
             </select>
           </div>
           <ProfessionalsField value={professionals} onChange={setProfessionals} />
