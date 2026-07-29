@@ -198,11 +198,36 @@ function AnamnesePage() {
   }, [patient, q.isSuccess])
 
 
+  // ---- Rascunho automático local (recuperação em caso de falha ao salvar) ----
+  const draftKey = `anamnese-draft:${id}`
+  const canSave = q.isSuccess && hydrated.current
+
+  useEffect(() => {
+    if (!canSave) return
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({ at: new Date().toISOString(), values, childData, adultData }),
+        )
+      } catch { /* quota */ }
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [values, childData, adultData, canSave, draftKey])
+
   const saveMut = useMutation({
-    mutationFn: () => save({ data: { patientId: id, ...values, structured_data: { child_neuro: childData, adult_neuro: adultData } } }),
-    onSuccess: () => { toast.success('Anamnese salva.'); qc.invalidateQueries({ queryKey: ['anamnese', id] }) },
+    mutationFn: () => {
+      if (!canSave) throw new Error('Aguarde o carregamento da anamnese antes de salvar.')
+      return save({ data: { patientId: id, ...values, structured_data: { child_neuro: childData, adult_neuro: adultData } } })
+    },
+    onSuccess: () => {
+      toast.success('Anamnese salva.')
+      try { localStorage.removeItem(draftKey) } catch { /* noop */ }
+      qc.invalidateQueries({ queryKey: ['anamnese', id] })
+    },
     onError: (e: Error) => toast.error(e.message),
   })
+
 
   const analyzeMut = useMutation({
     mutationFn: () => analyze({ data: { patientId: id } }),
