@@ -35,7 +35,7 @@ export const upsertAnamnese = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => UpsertInput.parse(i))
   .handler(async ({ context, data }) => {
-    const payload = {
+    const payload: Record<string, unknown> = {
       patient_id: data.patientId,
       queixa_principal: data.queixa_principal ?? null,
       historia_atual: data.historia_atual ?? null,
@@ -49,6 +49,9 @@ export const upsertAnamnese = createServerFn({ method: 'POST' })
       transcript: data.transcript ?? null,
       created_by: context.userId,
       updated_at: new Date().toISOString(),
+    }
+    if (data.structured_data !== undefined) {
+      payload.structured_data = data.structured_data ?? {}
     }
     const { error } = await context.supabase
       .from('anamneses')
