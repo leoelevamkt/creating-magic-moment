@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { format } from 'date-fns'
@@ -989,6 +989,20 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
   const [assignedTo, setAssignedTo] = useState<string>(initialAssignedTo ?? '')
   const team = useServerFn(listTeam)
   const { data: teamData } = useQuery({ queryKey: ['team'], queryFn: () => team() })
+
+  // Sync local state with latest patient data whenever the dialog is opened,
+  // so re-opening after external updates reflects the current values.
+  useEffect(() => {
+    if (!open) return
+    setAssignedTo((patient as unknown as { assigned_to?: string | null }).assigned_to ?? '')
+    setProfessionals(Array.isArray(rawProfessionals) ? (rawProfessionals as Professional[]) : [])
+    setContact({
+      hasGuardians: !!patient.has_guardians,
+      guardians: initialGuardians.length > 0 ? initialGuardians : (patient.has_guardians ? [{ ...EMPTY_GUARDIAN }] : []),
+      emergencyContact: initialEmergency ?? { ...EMPTY_EMERGENCY },
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, patient.id, (patient as unknown as { assigned_to?: string | null }).assigned_to])
   const mut = useMutation({
     mutationFn: (v: {
       name: string;
@@ -1116,6 +1130,9 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
               {(teamData ?? []).map((m) => (
                 <option key={m.id} value={m.id}>{m.name} — {m.role === 'admin' ? 'Admin' : 'Equipe'}</option>
               ))}
+              {assignedTo && !(teamData ?? []).some((m) => m.id === assignedTo) ? (
+                <option value={assignedTo}>Profissional atual (fora da equipe)</option>
+              ) : null}
             </select>
           </div>
           <ProfessionalsField value={professionals} onChange={setProfessionals} />
