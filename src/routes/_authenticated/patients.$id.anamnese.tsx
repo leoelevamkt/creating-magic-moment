@@ -176,7 +176,26 @@ function AnamnesePage() {
       }
       return draft
     })
+    setAdultData((cur) => {
+      const draft: Record<string, unknown> = { ...cur }
+      const setIf = (k: string, v: string | null | undefined) => {
+        if (v && !draft[k]) draft[k] = v
+      }
+      setIf('nome', patient.name)
+      setIf('nascimento', patient.birth_date ?? undefined)
+      setIf('sexo', patient.sex ?? undefined)
+      setIf('escolaridade', patient.schooling ?? undefined)
+      setIf('cidade_uf', patient.city ?? undefined)
+      setIf('contato', patient.phone ?? undefined)
+      if (patient.birth_date && !draft.idade) draft.idade = formatAge(patient.birth_date)
+      if (patient.professionals && patient.professionals.length > 0 && !draft.encaminhado_por) {
+        const p0 = patient.professionals[0]
+        draft.encaminhado_por = `${p0?.name ?? ''}${p0?.specialty ? ' — ' + p0.specialty : ''}`.trim()
+      }
+      return draft
+    })
   }, [patient, q.isSuccess])
+
 
   const saveMut = useMutation({
     mutationFn: () => save({ data: { patientId: id, ...values, structured_data: { child_neuro: childData, adult_neuro: adultData } } }),
