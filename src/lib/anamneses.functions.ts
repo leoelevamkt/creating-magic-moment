@@ -15,6 +15,7 @@ const UpsertInput = z.object({
   historia_social: z.string().nullable().optional(),
   observacoes: z.string().nullable().optional(),
   transcript: z.string().nullable().optional(),
+  structured_data: z.record(z.string(), z.unknown()).nullable().optional(),
 })
 
 export const getAnamnese = createServerFn({ method: 'GET' })
@@ -34,7 +35,7 @@ export const upsertAnamnese = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => UpsertInput.parse(i))
   .handler(async ({ context, data }) => {
-    const payload = {
+    const payload: Record<string, unknown> = {
       patient_id: data.patientId,
       queixa_principal: data.queixa_principal ?? null,
       historia_atual: data.historia_atual ?? null,
@@ -49,9 +50,12 @@ export const upsertAnamnese = createServerFn({ method: 'POST' })
       created_by: context.userId,
       updated_at: new Date().toISOString(),
     }
+    if (data.structured_data !== undefined) {
+      payload.structured_data = data.structured_data ?? {}
+    }
     const { error } = await context.supabase
       .from('anamneses')
-      .upsert(payload, { onConflict: 'patient_id' })
+      .upsert(payload as never, { onConflict: 'patient_id' })
     if (error) throw new Error(error.message)
     return { ok: true }
   })

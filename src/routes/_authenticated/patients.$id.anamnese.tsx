@@ -13,6 +13,7 @@ import type { ChangeEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { NeuroChildAnamnese, type ChildNeuroData } from '@/components/anamnese/NeuroChildAnamnese'
 
 export const Route = createFileRoute('/_authenticated/patients/$id/anamnese')({
   head: () => ({ meta: [{ title: 'Anamnese — NeuroFlux' }] }),
@@ -67,6 +68,8 @@ function AnamnesePage() {
   })
   const [activeTarget, setActiveTarget] = useState<Fields>('historia_atual')
   const [analysis, setAnalysis] = useState<string>('')
+  const [mode, setMode] = useState<'livre' | 'neuro_child'>('livre')
+  const [childData, setChildData] = useState<ChildNeuroData>({})
 
   useEffect(() => {
     if (q.data) {
@@ -82,11 +85,17 @@ function AnamnesePage() {
         observacoes: q.data.observacoes ?? '',
         transcript: q.data.transcript ?? '',
       })
+      const sd = (q.data as { structured_data?: Record<string, unknown> | null }).structured_data ?? {}
+      const child = (sd as Record<string, unknown>).child_neuro
+      if (child && typeof child === 'object') {
+        setChildData(child as ChildNeuroData)
+        setMode('neuro_child')
+      }
     }
   }, [q.data])
 
   const saveMut = useMutation({
-    mutationFn: () => save({ data: { patientId: id, ...values } }),
+    mutationFn: () => save({ data: { patientId: id, ...values, structured_data: { child_neuro: childData } } }),
     onSuccess: () => { toast.success('Anamnese salva.'); qc.invalidateQueries({ queryKey: ['anamnese', id] }) },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -122,6 +131,20 @@ function AnamnesePage() {
           </Button>
         </div>
       </header>
+
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border bg-card p-3">
+        <span className="text-xs text-muted-foreground">Modelo:</span>
+        <button
+          type="button"
+          onClick={() => setMode('livre')}
+          className={`rounded-md border px-3 py-1.5 text-xs ${mode === 'livre' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
+        >Anamnese livre</button>
+        <button
+          type="button"
+          onClick={() => setMode('neuro_child')}
+          className={`rounded-md border px-3 py-1.5 text-xs ${mode === 'neuro_child' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
+        >Neuropsicológica — Crianças e Adolescentes</button>
+      </div>
 
       <TranscriptionPanel
         activeTarget={activeTarget}
@@ -180,30 +203,33 @@ function AnamnesePage() {
         </section>
       ) : null}
 
-      <section className="grid gap-5">
-
-        {SECTIONS.map((s) => (
+      {mode === 'neuro_child' ? (
+        <NeuroChildAnamnese value={childData} onChange={setChildData} />
+      ) : (
+        <section className="grid gap-5">
+          {SECTIONS.map((s) => (
+            <FieldBlock
+              key={s.id}
+              id={s.id}
+              label={s.label}
+              rows={s.rows ?? 3}
+              value={values[s.id]}
+              active={activeTarget === s.id}
+              onFocus={() => setActiveTarget(s.id)}
+              onChange={(v) => setValues((cur) => ({ ...cur, [s.id]: v }))}
+            />
+          ))}
           <FieldBlock
-            key={s.id}
-            id={s.id}
-            label={s.label}
-            rows={s.rows ?? 3}
-            value={values[s.id]}
-            active={activeTarget === s.id}
-            onFocus={() => setActiveTarget(s.id)}
-            onChange={(v) => setValues((cur) => ({ ...cur, [s.id]: v }))}
+            id="transcript"
+            label="Transcrição bruta (opcional)"
+            rows={6}
+            value={values.transcript}
+            active={activeTarget === 'transcript'}
+            onFocus={() => setActiveTarget('transcript')}
+            onChange={(v) => setValues((cur) => ({ ...cur, transcript: v }))}
           />
-        ))}
-        <FieldBlock
-          id="transcript"
-          label="Transcrição bruta (opcional)"
-          rows={6}
-          value={values.transcript}
-          active={activeTarget === 'transcript'}
-          onFocus={() => setActiveTarget('transcript')}
-          onChange={(v) => setValues((cur) => ({ ...cur, transcript: v }))}
-        />
-      </section>
+        </section>
+      )}
 
       <div className="flex justify-end">
         <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>

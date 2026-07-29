@@ -74,6 +74,7 @@ export type Database = {
           observacoes: string | null
           patient_id: string
           queixa_principal: string | null
+          structured_data: Json
           transcript: string | null
           updated_at: string
         }
@@ -91,6 +92,7 @@ export type Database = {
           observacoes?: string | null
           patient_id: string
           queixa_principal?: string | null
+          structured_data?: Json
           transcript?: string | null
           updated_at?: string
         }
@@ -108,6 +110,7 @@ export type Database = {
           observacoes?: string | null
           patient_id?: string
           queixa_principal?: string | null
+          structured_data?: Json
           transcript?: string | null
           updated_at?: string
         }
