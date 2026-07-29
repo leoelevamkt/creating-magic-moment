@@ -203,30 +203,33 @@ function AnamnesePage() {
         </section>
       ) : null}
 
-      <section className="grid gap-5">
-
-        {SECTIONS.map((s) => (
+      {mode === 'neuro_child' ? (
+        <NeuroChildAnamnese value={childData} onChange={setChildData} />
+      ) : (
+        <section className="grid gap-5">
+          {SECTIONS.map((s) => (
+            <FieldBlock
+              key={s.id}
+              id={s.id}
+              label={s.label}
+              rows={s.rows ?? 3}
+              value={values[s.id]}
+              active={activeTarget === s.id}
+              onFocus={() => setActiveTarget(s.id)}
+              onChange={(v) => setValues((cur) => ({ ...cur, [s.id]: v }))}
+            />
+          ))}
           <FieldBlock
-            key={s.id}
-            id={s.id}
-            label={s.label}
-            rows={s.rows ?? 3}
-            value={values[s.id]}
-            active={activeTarget === s.id}
-            onFocus={() => setActiveTarget(s.id)}
-            onChange={(v) => setValues((cur) => ({ ...cur, [s.id]: v }))}
+            id="transcript"
+            label="Transcrição bruta (opcional)"
+            rows={6}
+            value={values.transcript}
+            active={activeTarget === 'transcript'}
+            onFocus={() => setActiveTarget('transcript')}
+            onChange={(v) => setValues((cur) => ({ ...cur, transcript: v }))}
           />
-        ))}
-        <FieldBlock
-          id="transcript"
-          label="Transcrição bruta (opcional)"
-          rows={6}
-          value={values.transcript}
-          active={activeTarget === 'transcript'}
-          onFocus={() => setActiveTarget('transcript')}
-          onChange={(v) => setValues((cur) => ({ ...cur, transcript: v }))}
-        />
-      </section>
+        </section>
+      )}
 
       <div className="flex justify-end">
         <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
