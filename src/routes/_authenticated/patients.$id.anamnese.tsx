@@ -459,6 +459,16 @@ function AnamnesePage() {
         >Neuropsicológica — Adultos</button>
       </div>
 
+      {/* Importar PDF com IA */}
+      <PdfImportPanel
+        mode={mode}
+        importing={importing}
+        report={importReport}
+        onImport={onImportPdf}
+      />
+
+
+
       <TranscriptionPanel
         activeTarget={activeTarget}
         onTarget={setActiveTarget}
