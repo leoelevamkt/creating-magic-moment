@@ -179,7 +179,7 @@ function AnamnesePage() {
   }, [patient, q.isSuccess])
 
   const saveMut = useMutation({
-    mutationFn: () => save({ data: { patientId: id, ...values, structured_data: { child_neuro: childData } } }),
+    mutationFn: () => save({ data: { patientId: id, ...values, structured_data: { child_neuro: childData, adult_neuro: adultData } } }),
     onSuccess: () => { toast.success('Anamnese salva.'); qc.invalidateQueries({ queryKey: ['anamnese', id] }) },
     onError: (e: Error) => toast.error(e.message),
   })
