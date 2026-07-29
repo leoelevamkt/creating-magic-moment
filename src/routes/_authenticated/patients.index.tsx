@@ -302,9 +302,30 @@ function PatientsPage() {
             <TableBody>
               {data
                 .filter((p) => {
-                  if (filterAssigned === 'all') return true
-                  if (filterAssigned === 'none') return !p.assigned_to
-                  return p.assigned_to === filterAssigned
+                  if (filterAssigned === 'none' && p.assigned_to) return false
+                  if (filterAssigned !== 'all' && filterAssigned !== 'none' && p.assigned_to !== filterAssigned) return false
+                  const q = searchQuery.trim().toLowerCase()
+                  if (q && !p.name.toLowerCase().includes(q)) return false
+                  return true
+                })
+                .slice()
+                .sort((a, b) => {
+                  switch (sortBy) {
+                    case 'name-desc': return b.name.localeCompare(a.name, 'pt-BR')
+                    case 'created-desc': return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    case 'created-asc': return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                    case 'age-asc': {
+                      const ad = a.birth_date ? new Date(a.birth_date).getTime() : -Infinity
+                      const bd = b.birth_date ? new Date(b.birth_date).getTime() : -Infinity
+                      return bd - ad
+                    }
+                    case 'age-desc': {
+                      const ad = a.birth_date ? new Date(a.birth_date).getTime() : Infinity
+                      const bd = b.birth_date ? new Date(b.birth_date).getTime() : Infinity
+                      return ad - bd
+                    }
+                    default: return a.name.localeCompare(b.name, 'pt-BR')
+                  }
                 })
                 .map((p) => (
                 <TableRow
