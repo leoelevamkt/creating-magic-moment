@@ -220,6 +220,23 @@ function AnamnesePage() {
       }
       return draft
     })
+    setAdultData((cur) => {
+      const draft: Record<string, unknown> = { ...cur }
+      draft.nome = patient.name
+      if (patient.birth_date) {
+        draft.nascimento = patient.birth_date
+        draft.idade = formatAge(patient.birth_date)
+      }
+      if (patient.sex) draft.sexo = patient.sex
+      if (patient.schooling) draft.escolaridade = patient.schooling
+      if (patient.city) draft.cidade_uf = patient.city
+      if (patient.phone) draft.contato = patient.phone
+      if (patient.professionals && patient.professionals.length > 0) {
+        const p0 = patient.professionals[0]
+        draft.encaminhado_por = `${p0?.name ?? ''}${p0?.specialty ? ' — ' + p0.specialty : ''}`.trim()
+      }
+      return draft
+    })
     setValues((cur) => ({
       ...cur,
       medicacoes: patient.medications || cur.medicacoes,
