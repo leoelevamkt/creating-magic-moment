@@ -90,8 +90,9 @@ function AnamnesePage() {
   })
   const [activeTarget, setActiveTarget] = useState<Fields>('historia_atual')
   const [analysis, setAnalysis] = useState<string>('')
-  const [mode, setMode] = useState<'livre' | 'neuro_child'>('livre')
+  const [mode, setMode] = useState<'livre' | 'neuro_child' | 'neuro_adult'>('livre')
   const [childData, setChildData] = useState<ChildNeuroData>({})
+  const [adultData, setAdultData] = useState<AdultNeuroData>({})
   const hydrated = useRef(false)
 
   useEffect(() => {
