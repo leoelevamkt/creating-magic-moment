@@ -442,6 +442,8 @@ function AnamnesePage() {
 
       {mode === 'neuro_child' ? (
         <NeuroChildAnamnese value={childData} onChange={setChildData} />
+      ) : mode === 'neuro_adult' ? (
+        <NeuroAdultAnamnese value={adultData} onChange={setAdultData} />
       ) : (
         <section className="grid gap-4">
           {SECTIONS.map((s) => (
