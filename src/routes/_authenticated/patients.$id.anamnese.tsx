@@ -95,6 +95,7 @@ function AnamnesePage() {
   const [childData, setChildData] = useState<ChildNeuroData>({})
   const [adultData, setAdultData] = useState<AdultNeuroData>({})
   const hydrated = useRef(false)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     if (q.isSuccess && !hydrated.current) {
@@ -203,7 +204,7 @@ function AnamnesePage() {
 
   // ---- Rascunho automático local (recuperação em caso de falha ao salvar) ----
   const draftKey = `anamnese-draft:${id}`
-  const canSave = q.isSuccess && hydrated.current
+  const canSave = loaded
 
   useEffect(() => {
     if (!canSave) return
