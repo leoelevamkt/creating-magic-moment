@@ -31,34 +31,104 @@ export const getAnamnese = createServerFn({ method: 'GET' })
     return row
   })
 
+function isEmptyValue(v: unknown): boolean {
+  if (v === null || v === undefined) return true
+  if (typeof v === 'string') return v.trim() === ''
+  if (Array.isArray(v)) return v.length === 0
+  if (typeof v === 'object') return Object.keys(v as object).length === 0
+  return false
+}
+
+/** Mescla apenas valores não vazios do novo objeto sobre o antigo (recursivo). */
+function mergeNonEmpty(
+  prev: Record<string, unknown>,
+  next: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...prev }
+  for (const [k, v] of Object.entries(next)) {
+    if (isEmptyValue(v)) continue
+    const before = out[k]
+    if (
+      before && typeof before === 'object' && !Array.isArray(before) &&
+      v && typeof v === 'object' && !Array.isArray(v)
+    ) {
+      out[k] = mergeNonEmpty(before as Record<string, unknown>, v as Record<string, unknown>)
+    } else {
+      out[k] = v
+    }
+  }
+  return out
+}
+
 export const upsertAnamnese = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => UpsertInput.parse(i))
   .handler(async ({ context, data }) => {
+    // 1) Estado atual (para snapshot + merge protetivo)
+    const { data: current } = await context.supabase
+      .from('anamneses')
+      .select('*')
+      .eq('patient_id', data.patientId)
+      .maybeSingle()
+
+    // 2) Snapshot de versão antes de qualquer escrita — nunca perder histórico
+    if (current) {
+      await context.supabase.from('anamnese_revisions').insert({
+        patient_id: data.patientId,
+        anamnese_id: (current as { id?: string }).id ?? null,
+        author_id: context.userId,
+        snapshot: current as never,
+      } as never)
+    }
+
+    const textFields = [
+      'queixa_principal', 'historia_atual', 'desenvolvimento', 'historia_medica',
+      'medicacoes', 'historia_familiar', 'historia_escolar', 'historia_social',
+      'observacoes', 'transcript',
+    ] as const
+
     const payload: Record<string, unknown> = {
       patient_id: data.patientId,
-      queixa_principal: data.queixa_principal ?? null,
-      historia_atual: data.historia_atual ?? null,
-      desenvolvimento: data.desenvolvimento ?? null,
-      historia_medica: data.historia_medica ?? null,
-      medicacoes: data.medicacoes ?? null,
-      historia_familiar: data.historia_familiar ?? null,
-      historia_escolar: data.historia_escolar ?? null,
-      historia_social: data.historia_social ?? null,
-      observacoes: data.observacoes ?? null,
-      transcript: data.transcript ?? null,
-      created_by: context.userId,
+      created_by: (current as { created_by?: string } | null)?.created_by ?? context.userId,
       updated_at: new Date().toISOString(),
     }
-    if (data.structured_data !== undefined) {
-      payload.structured_data = data.structured_data ?? {}
+
+    // 3) Merge: campo vazio NUNCA apaga conteúdo já salvo
+    const prev = (current ?? {}) as Record<string, unknown>
+    for (const f of textFields) {
+      const incoming = (data as Record<string, unknown>)[f]
+      payload[f] = isEmptyValue(incoming) ? (prev[f] ?? null) : incoming
     }
+
+    if (data.structured_data !== undefined) {
+      const prevSd = (prev.structured_data as Record<string, unknown> | null) ?? {}
+      payload.structured_data = mergeNonEmpty(
+        prevSd,
+        (data.structured_data ?? {}) as Record<string, unknown>,
+      )
+    }
+
     const { error } = await context.supabase
       .from('anamneses')
       .upsert(payload as never, { onConflict: 'patient_id' })
     if (error) throw new Error(error.message)
     return { ok: true }
   })
+
+export const listAnamneseRevisions = createServerFn({ method: 'GET' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: { patientId: string }) => i)
+  .handler(async ({ context, data }) => {
+    const { data: rows, error } = await context.supabase
+      .from('anamnese_revisions')
+      .select('id, created_at, author_id, snapshot')
+      .eq('patient_id', data.patientId)
+      .order('created_at', { ascending: false })
+      .limit(30)
+    if (error) throw new Error(error.message)
+    return rows ?? []
+  })
+
 
 export const analyzeAnamneseWithAI = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])

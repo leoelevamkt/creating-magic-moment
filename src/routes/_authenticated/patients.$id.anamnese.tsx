@@ -95,10 +95,14 @@ function AnamnesePage() {
   const [childData, setChildData] = useState<ChildNeuroData>({})
   const [adultData, setAdultData] = useState<AdultNeuroData>({})
   const hydrated = useRef(false)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    if (q.data && !hydrated.current) {
+    if (q.isSuccess && !hydrated.current) {
       hydrated.current = true
+      setLoaded(true)
+      if (!q.data) return
+
       setValues({
         queixa_principal: q.data.queixa_principal ?? '',
         historia_atual: q.data.historia_atual ?? '',
@@ -198,11 +202,36 @@ function AnamnesePage() {
   }, [patient, q.isSuccess])
 
 
+  // ---- Rascunho automático local (recuperação em caso de falha ao salvar) ----
+  const draftKey = `anamnese-draft:${id}`
+  const canSave = loaded
+
+  useEffect(() => {
+    if (!canSave) return
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({ at: new Date().toISOString(), values, childData, adultData }),
+        )
+      } catch { /* quota */ }
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [values, childData, adultData, canSave, draftKey])
+
   const saveMut = useMutation({
-    mutationFn: () => save({ data: { patientId: id, ...values, structured_data: { child_neuro: childData, adult_neuro: adultData } } }),
-    onSuccess: () => { toast.success('Anamnese salva.'); qc.invalidateQueries({ queryKey: ['anamnese', id] }) },
+    mutationFn: () => {
+      if (!canSave) throw new Error('Aguarde o carregamento da anamnese antes de salvar.')
+      return save({ data: { patientId: id, ...values, structured_data: { child_neuro: childData, adult_neuro: adultData } } })
+    },
+    onSuccess: () => {
+      toast.success('Anamnese salva.')
+      try { localStorage.removeItem(draftKey) } catch { /* noop */ }
+      qc.invalidateQueries({ queryKey: ['anamnese', id] })
+    },
     onError: (e: Error) => toast.error(e.message),
   })
+
 
   const analyzeMut = useMutation({
     mutationFn: () => analyze({ data: { patientId: id } }),
@@ -368,8 +397,8 @@ function AnamnesePage() {
           <Button variant="outline" size="sm" onClick={() => analyzeMut.mutate()} disabled={analyzeMut.isPending}>
             <Sparkles /> {analyzeMut.isPending ? 'Analisando…' : 'Análise (IA)'}
           </Button>
-          <Button size="sm" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
-            {saveMut.isPending ? 'Salvando…' : 'Salvar anamnese'}
+          <Button size="sm" onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !canSave}>
+            {saveMut.isPending ? 'Salvando…' : !canSave ? 'Carregando…' : 'Salvar anamnese'}
           </Button>
         </div>
       </div>
@@ -559,14 +588,14 @@ function AnamnesePage() {
 
       {/* Sticky bottom save (mobile-friendly) */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/90 p-3 backdrop-blur sm:hidden">
-        <Button className="w-full" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
-          {saveMut.isPending ? 'Salvando…' : 'Salvar anamnese'}
+        <Button className="w-full" onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !canSave}>
+          {saveMut.isPending ? 'Salvando…' : !canSave ? 'Carregando…' : 'Salvar anamnese'}
         </Button>
       </div>
 
       <div className="hidden justify-end sm:flex">
-        <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
-          {saveMut.isPending ? 'Salvando…' : 'Salvar anamnese'}
+        <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || !canSave}>
+          {saveMut.isPending ? 'Salvando…' : !canSave ? 'Carregando…' : 'Salvar anamnese'}
         </Button>
       </div>
     </div>
