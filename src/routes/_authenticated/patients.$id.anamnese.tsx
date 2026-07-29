@@ -375,6 +375,11 @@ function AnamnesePage() {
           onClick={() => setMode('neuro_child')}
           className={`rounded-md border px-3 py-1.5 text-xs transition ${mode === 'neuro_child' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
         >Neuropsicológica — Crianças e Adolescentes</button>
+        <button
+          type="button"
+          onClick={() => setMode('neuro_adult')}
+          className={`rounded-md border px-3 py-1.5 text-xs transition ${mode === 'neuro_adult' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
+        >Neuropsicológica — Adultos</button>
       </div>
 
       <TranscriptionPanel
