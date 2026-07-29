@@ -3,11 +3,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { toast } from 'sonner'
-import { Mic, Sparkles, Square, User2, Wand2 } from 'lucide-react'
+import { FileUp, Mic, Sparkles, Square, User2, Wand2 } from 'lucide-react'
 import { getAnamnese, upsertAnamnese, analyzeAnamneseWithAI } from '@/lib/anamneses.functions'
 import { listScreenings } from '@/lib/screenings.functions'
 import { getPatientDetail } from '@/lib/patients.functions'
 import { formatAge } from '@/lib/age'
+import { importAnamneseFromPdf } from '@/lib/anamnese-import.functions'
 
 import { transcribeAudio } from '@/lib/transcribe.functions'
 import { SegmentedRecorder, blobToBase64, chunkAudioFile } from '@/lib/audio-chunker'
@@ -209,6 +210,82 @@ function AnamnesePage() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const importPdf = useServerFn(importAnamneseFromPdf)
+  const [importing, setImporting] = useState(false)
+  const [importReport, setImportReport] = useState<{ count: number; notes: string; unmapped: string; overwrite: boolean } | null>(null)
+
+  async function onImportPdf(file: File, overwrite: boolean) {
+    if (!file) return
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('Arquivo muito grande (máx. 20 MB).')
+      return
+    }
+    setImporting(true)
+    setImportReport(null)
+    try {
+      const buf = await file.arrayBuffer()
+      const bytes = new Uint8Array(buf)
+      let bin = ''
+      const CHUNK = 0x8000
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK))
+      }
+      const b64 = btoa(bin)
+      const res = await importPdf({
+        data: {
+          fileBase64: b64,
+          mimeType: file.type || 'application/pdf',
+          filename: file.name,
+          mode,
+        },
+      })
+      const applied = res.fields ?? {}
+      if (mode === 'livre') {
+        setValues((cur) => {
+          const next = { ...cur }
+          for (const [k, v] of Object.entries(applied)) {
+            if (!(k in next)) continue
+            const key = k as Fields
+            if (overwrite || !next[key]) next[key] = v
+            else next[key] = `${next[key]}\n\n${v}`
+          }
+          if (res.unmapped) {
+            next.observacoes = [next.observacoes, '--- Conteúdo adicional do PDF ---', res.unmapped]
+              .filter(Boolean).join('\n\n')
+          }
+          return next
+        })
+      } else if (mode === 'neuro_child') {
+        setChildData((cur) => {
+          const draft: Record<string, unknown> = { ...cur }
+          for (const [k, v] of Object.entries(applied)) {
+            const existing = draft[k]
+            if (overwrite || !existing) draft[k] = v
+            else if (typeof existing === 'string') draft[k] = `${existing}\n\n${v}`
+          }
+          return draft
+        })
+      } else {
+        setAdultData((cur) => {
+          const draft: Record<string, unknown> = { ...cur }
+          for (const [k, v] of Object.entries(applied)) {
+            const existing = draft[k]
+            if (overwrite || !existing) draft[k] = v
+            else if (typeof existing === 'string') draft[k] = `${existing}\n\n${v}`
+          }
+          return draft
+        })
+      }
+      setImportReport({ count: res.extractedCount, notes: res.notes, unmapped: res.unmapped, overwrite })
+      toast.success(`PDF importado: ${res.extractedCount} campo(s) preenchido(s).`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Falha ao importar PDF.')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+
   function insertText(text: string) {
     setValues((v) => ({ ...v, [activeTarget]: (v[activeTarget] ? v[activeTarget] + '\n\n' : '') + text }))
   }
@@ -381,6 +458,16 @@ function AnamnesePage() {
           className={`rounded-md border px-3 py-1.5 text-xs transition ${mode === 'neuro_adult' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
         >Neuropsicológica — Adultos</button>
       </div>
+
+      {/* Importar PDF com IA */}
+      <PdfImportPanel
+        mode={mode}
+        importing={importing}
+        report={importReport}
+        onImport={onImportPdf}
+      />
+
+
 
       <TranscriptionPanel
         activeTarget={activeTarget}
@@ -617,3 +704,94 @@ function TranscriptionPanel({
     </section>
   )
 }
+
+function PdfImportPanel({
+  mode,
+  importing,
+  report,
+  onImport,
+}: {
+  mode: 'livre' | 'neuro_child' | 'neuro_adult'
+  importing: boolean
+  report: { count: number; notes: string; unmapped: string; overwrite: boolean } | null
+  onImport: (file: File, overwrite: boolean) => void
+}) {
+  const [overwrite, setOverwrite] = useState(false)
+  const [fileName, setFileName] = useState<string>('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const modeLabel =
+    mode === 'neuro_child' ? 'Neuropsicológica — Crianças'
+    : mode === 'neuro_adult' ? 'Neuropsicológica — Adultos'
+    : 'Anamnese livre'
+
+  return (
+    <section className="rounded-2xl border bg-card p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="flex items-center gap-2 font-serif text-xl font-semibold">
+            <FileUp className="h-5 w-5 text-primary" /> Importar anamnese por PDF
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Envie um PDF (ou imagem digitalizada) da anamnese e a IA fará a leitura e o mapeamento automático para
+            os campos do modelo atualmente selecionado: <strong>{modeLabel}</strong>.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border bg-background px-3 text-sm hover:bg-accent">
+          <FileUp className="h-4 w-4" />
+          {fileName || 'Selecionar PDF/imagem'}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="application/pdf,image/*"
+            className="hidden"
+            disabled={importing}
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              e.target.value = ''
+              if (!f) return
+              setFileName(f.name)
+              onImport(f, overwrite)
+            }}
+          />
+        </label>
+        <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={overwrite}
+            onChange={(e) => setOverwrite(e.target.checked)}
+            className="h-4 w-4 rounded border-input"
+          />
+          Sobrescrever campos já preenchidos
+        </label>
+        {importing ? (
+          <span className="text-xs text-muted-foreground">Lendo o PDF com IA…</span>
+        ) : null}
+      </div>
+
+      {report ? (
+        <div className="mt-4 rounded-xl border bg-background p-3 text-xs">
+          <p className="font-medium text-foreground">
+            {report.count} campo(s) preenchido(s){report.overwrite ? ' · sobrescrevendo' : ' · sem sobrescrever'}.
+          </p>
+          {report.notes ? (
+            <p className="mt-1 text-muted-foreground"><strong>Observações da IA:</strong> {report.notes}</p>
+          ) : null}
+          {report.unmapped ? (
+            <details className="mt-2">
+              <summary className="cursor-pointer text-muted-foreground">Conteúdo não mapeado (revisar)</summary>
+              <p className="mt-2 whitespace-pre-wrap">{report.unmapped}</p>
+            </details>
+          ) : null}
+          <p className="mt-2 text-muted-foreground">
+            Revise sempre as informações extraídas antes de salvar — a IA pode omitir ou interpretar mal itens do documento.
+          </p>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
