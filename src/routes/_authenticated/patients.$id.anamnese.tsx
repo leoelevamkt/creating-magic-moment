@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { NeuroChildAnamnese, type ChildNeuroData } from '@/components/anamnese/NeuroChildAnamnese'
+import { NeuroAdultAnamnese, type AdultNeuroData } from '@/components/anamnese/NeuroAdultAnamnese'
 
 export const Route = createFileRoute('/_authenticated/patients/$id/anamnese')({
   head: () => ({ meta: [{ title: 'Anamnese — NeuroFlux' }] }),
@@ -89,8 +90,9 @@ function AnamnesePage() {
   })
   const [activeTarget, setActiveTarget] = useState<Fields>('historia_atual')
   const [analysis, setAnalysis] = useState<string>('')
-  const [mode, setMode] = useState<'livre' | 'neuro_child'>('livre')
+  const [mode, setMode] = useState<'livre' | 'neuro_child' | 'neuro_adult'>('livre')
   const [childData, setChildData] = useState<ChildNeuroData>({})
+  const [adultData, setAdultData] = useState<AdultNeuroData>({})
   const hydrated = useRef(false)
 
   useEffect(() => {
@@ -113,6 +115,11 @@ function AnamnesePage() {
       if (child && typeof child === 'object') {
         setChildData(child as ChildNeuroData)
         setMode('neuro_child')
+      }
+      const adult = (sd as Record<string, unknown>).adult_neuro
+      if (adult && typeof adult === 'object') {
+        setAdultData(adult as AdultNeuroData)
+        setMode('neuro_adult')
       }
     }
   }, [q.data])
@@ -169,10 +176,29 @@ function AnamnesePage() {
       }
       return draft
     })
+    setAdultData((cur) => {
+      const draft: Record<string, unknown> = { ...cur }
+      const setIf = (k: string, v: string | null | undefined) => {
+        if (v && !draft[k]) draft[k] = v
+      }
+      setIf('nome', patient.name)
+      setIf('nascimento', patient.birth_date ?? undefined)
+      setIf('sexo', patient.sex ?? undefined)
+      setIf('escolaridade', patient.schooling ?? undefined)
+      setIf('cidade_uf', patient.city ?? undefined)
+      setIf('contato', patient.phone ?? undefined)
+      if (patient.birth_date && !draft.idade) draft.idade = formatAge(patient.birth_date)
+      if (patient.professionals && patient.professionals.length > 0 && !draft.encaminhado_por) {
+        const p0 = patient.professionals[0]
+        draft.encaminhado_por = `${p0?.name ?? ''}${p0?.specialty ? ' — ' + p0.specialty : ''}`.trim()
+      }
+      return draft
+    })
   }, [patient, q.isSuccess])
 
+
   const saveMut = useMutation({
-    mutationFn: () => save({ data: { patientId: id, ...values, structured_data: { child_neuro: childData } } }),
+    mutationFn: () => save({ data: { patientId: id, ...values, structured_data: { child_neuro: childData, adult_neuro: adultData } } }),
     onSuccess: () => { toast.success('Anamnese salva.'); qc.invalidateQueries({ queryKey: ['anamnese', id] }) },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -207,6 +233,23 @@ function AnamnesePage() {
         const contact = [g0?.phone, g0?.email].filter(Boolean).join(' · ') || patient.phone || ''
         if (contact) draft.contato_resp = contact
       }
+      if (patient.professionals && patient.professionals.length > 0) {
+        const p0 = patient.professionals[0]
+        draft.encaminhado_por = `${p0?.name ?? ''}${p0?.specialty ? ' — ' + p0.specialty : ''}`.trim()
+      }
+      return draft
+    })
+    setAdultData((cur) => {
+      const draft: Record<string, unknown> = { ...cur }
+      draft.nome = patient.name
+      if (patient.birth_date) {
+        draft.nascimento = patient.birth_date
+        draft.idade = formatAge(patient.birth_date)
+      }
+      if (patient.sex) draft.sexo = patient.sex
+      if (patient.schooling) draft.escolaridade = patient.schooling
+      if (patient.city) draft.cidade_uf = patient.city
+      if (patient.phone) draft.contato = patient.phone
       if (patient.professionals && patient.professionals.length > 0) {
         const p0 = patient.professionals[0]
         draft.encaminhado_por = `${p0?.name ?? ''}${p0?.specialty ? ' — ' + p0.specialty : ''}`.trim()
@@ -332,6 +375,11 @@ function AnamnesePage() {
           onClick={() => setMode('neuro_child')}
           className={`rounded-md border px-3 py-1.5 text-xs transition ${mode === 'neuro_child' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
         >Neuropsicológica — Crianças e Adolescentes</button>
+        <button
+          type="button"
+          onClick={() => setMode('neuro_adult')}
+          className={`rounded-md border px-3 py-1.5 text-xs transition ${mode === 'neuro_adult' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
+        >Neuropsicológica — Adultos</button>
       </div>
 
       <TranscriptionPanel
@@ -394,6 +442,8 @@ function AnamnesePage() {
 
       {mode === 'neuro_child' ? (
         <NeuroChildAnamnese value={childData} onChange={setChildData} />
+      ) : mode === 'neuro_adult' ? (
+        <NeuroAdultAnamnese value={adultData} onChange={setAdultData} />
       ) : (
         <section className="grid gap-4">
           {SECTIONS.map((s) => (
