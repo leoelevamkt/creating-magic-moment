@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { toast } from 'sonner'
-import { Mic, Sparkles, Square } from 'lucide-react'
+import { Mic, Sparkles, Square, User2, Wand2 } from 'lucide-react'
 import { getAnamnese, upsertAnamnese, analyzeAnamneseWithAI } from '@/lib/anamneses.functions'
 import { listScreenings } from '@/lib/screenings.functions'
+import { getPatientDetail } from '@/lib/patients.functions'
+import { formatAge } from '@/lib/age'
 
 import { transcribeAudio } from '@/lib/transcribe.functions'
 import { SegmentedRecorder, blobToBase64, chunkAudioFile } from '@/lib/audio-chunker'
@@ -50,6 +52,9 @@ const SECTIONS: Array<{ id: Fields; label: string; hint?: string; rows?: number 
   { id: 'observacoes', label: 'Observações clínicas', rows: 3 },
 ]
 
+type Guardian = { name?: string; relation?: string; phone?: string; email?: string }
+type Professional = { name?: string; specialty?: string; contact?: string }
+
 function AnamnesePage() {
   const { id } = Route.useParams()
   const qc = useQueryClient()
@@ -57,9 +62,25 @@ function AnamnesePage() {
   const save = useServerFn(upsertAnamnese)
   const analyze = useServerFn(analyzeAnamneseWithAI)
   const scrFn = useServerFn(listScreenings)
+  const patFn = useServerFn(getPatientDetail)
 
   const q = useQuery({ queryKey: ['anamnese', id], queryFn: () => fetchAn({ data: { patientId: id } }) })
   const screenings = useQuery({ queryKey: ['screenings', id], queryFn: () => scrFn({ data: { patientId: id } }) })
+  const patQ = useQuery({ queryKey: ['patient-detail', id], queryFn: () => patFn({ data: { id } }) })
+  const patient = patQ.data?.patient as
+    | undefined
+    | {
+        name: string
+        sex: string | null
+        birth_date: string | null
+        schooling: string | null
+        city: string | null
+        phone: string | null
+        medications: string | null
+        hypotheses: string | null
+        guardians: Guardian[] | null
+        professionals: Professional[] | null
+      }
 
   const [values, setValues] = useState<Record<Fields, string>>({
     queixa_principal: '', historia_atual: '', desenvolvimento: '', historia_medica: '',
@@ -70,9 +91,11 @@ function AnamnesePage() {
   const [analysis, setAnalysis] = useState<string>('')
   const [mode, setMode] = useState<'livre' | 'neuro_child'>('livre')
   const [childData, setChildData] = useState<ChildNeuroData>({})
+  const hydrated = useRef(false)
 
   useEffect(() => {
-    if (q.data) {
+    if (q.data && !hydrated.current) {
+      hydrated.current = true
       setValues({
         queixa_principal: q.data.queixa_principal ?? '',
         historia_atual: q.data.historia_atual ?? '',
@@ -94,6 +117,60 @@ function AnamnesePage() {
     }
   }, [q.data])
 
+  // Auto-preencher a partir dos dados já cadastrados do paciente.
+  useEffect(() => {
+    if (!patient || !q.isSuccess) return
+    // Anamnese livre: só preenche se o campo estiver vazio, para não sobrescrever.
+    setValues((cur) => {
+      const next = { ...cur }
+      if (!next.medicacoes && patient.medications) next.medicacoes = patient.medications
+      // história familiar: usa hipóteses ou lista de responsáveis como ponto de partida
+      if (!next.historia_familiar && patient.guardians && patient.guardians.length > 0) {
+        next.historia_familiar = patient.guardians
+          .filter((g) => g?.name)
+          .map((g) => `${g.name}${g.relation ? ` (${g.relation})` : ''}${g.phone ? ' · ' + g.phone : ''}`)
+          .join('\n')
+      }
+      return next
+    })
+    setChildData((cur) => {
+      const draft: Record<string, unknown> = { ...cur }
+      const setIf = (k: string, v: string | null | undefined) => {
+        if (v && !draft[k]) draft[k] = v
+      }
+      setIf('nome', patient.name)
+      setIf('nascimento', patient.birth_date ?? undefined)
+      setIf('sexo', patient.sex ?? undefined)
+      setIf('escola', patient.schooling ?? undefined)
+      setIf('cidade_uf', patient.city ?? undefined)
+      setIf('hipotese_encaminhante', patient.hypotheses ?? undefined)
+      if (patient.birth_date && !draft.idade) draft.idade = formatAge(patient.birth_date)
+      if (patient.guardians && patient.guardians.length > 0) {
+        const g0 = patient.guardians[0]
+        setIf('responsaveis', patient.guardians.map((g) => g?.name).filter(Boolean).join(', '))
+        setIf('relacao', g0?.relation ?? undefined)
+        setIf('contato_resp', [g0?.phone, g0?.email].filter(Boolean).join(' · ') || patient.phone || undefined)
+      } else if (patient.phone) {
+        setIf('contato_resp', patient.phone)
+      }
+      if (patient.professionals && patient.professionals.length > 0 && !draft.encaminhado_por) {
+        const p0 = patient.professionals[0]
+        draft.encaminhado_por = `${p0?.name ?? ''}${p0?.specialty ? ' — ' + p0.specialty : ''}`.trim()
+      }
+      // composição familiar inicial a partir dos responsáveis, se ainda vazia
+      const comp = draft.composicao_familiar as unknown[] | undefined
+      if ((!comp || comp.length === 0) && patient.guardians && patient.guardians.length > 0) {
+        draft.composicao_familiar = patient.guardians.map((g) => ({
+          nome: g?.name ?? '',
+          relacao: g?.relation ?? '',
+          idade: '',
+          ocupacao: '',
+        }))
+      }
+      return draft
+    })
+  }, [patient, q.isSuccess])
+
   const saveMut = useMutation({
     mutationFn: () => save({ data: { patientId: id, ...values, structured_data: { child_neuro: childData } } }),
     onSuccess: () => { toast.success('Anamnese salva.'); qc.invalidateQueries({ queryKey: ['anamnese', id] }) },
@@ -110,39 +187,150 @@ function AnamnesePage() {
     setValues((v) => ({ ...v, [activeTarget]: (v[activeTarget] ? v[activeTarget] + '\n\n' : '') + text }))
   }
 
+  function refillFromPatient() {
+    if (!patient) return
+    setChildData((cur) => {
+      const draft: Record<string, unknown> = { ...cur }
+      draft.nome = patient.name
+      if (patient.birth_date) {
+        draft.nascimento = patient.birth_date
+        draft.idade = formatAge(patient.birth_date)
+      }
+      if (patient.sex) draft.sexo = patient.sex
+      if (patient.schooling) draft.escola = patient.schooling
+      if (patient.city) draft.cidade_uf = patient.city
+      if (patient.hypotheses) draft.hipotese_encaminhante = patient.hypotheses
+      if (patient.guardians && patient.guardians.length > 0) {
+        const g0 = patient.guardians[0]
+        draft.responsaveis = patient.guardians.map((g) => g?.name).filter(Boolean).join(', ')
+        if (g0?.relation) draft.relacao = g0.relation
+        const contact = [g0?.phone, g0?.email].filter(Boolean).join(' · ') || patient.phone || ''
+        if (contact) draft.contato_resp = contact
+      }
+      if (patient.professionals && patient.professionals.length > 0) {
+        const p0 = patient.professionals[0]
+        draft.encaminhado_por = `${p0?.name ?? ''}${p0?.specialty ? ' — ' + p0.specialty : ''}`.trim()
+      }
+      return draft
+    })
+    setValues((cur) => ({
+      ...cur,
+      medicacoes: patient.medications || cur.medicacoes,
+    }))
+    toast.success('Dados do paciente aplicados na anamnese.')
+  }
+
+  const patientChips = useMemo(() => {
+    if (!patient) return [] as Array<{ label: string; value: string }>
+    const items: Array<{ label: string; value: string }> = []
+    if (patient.birth_date) items.push({ label: 'Idade', value: formatAge(patient.birth_date) })
+    if (patient.sex) items.push({ label: 'Sexo', value: patient.sex })
+    if (patient.schooling) items.push({ label: 'Escola', value: patient.schooling })
+    if (patient.city) items.push({ label: 'Cidade', value: patient.city })
+    if (patient.phone) items.push({ label: 'Telefone', value: patient.phone })
+    if (patient.medications) items.push({ label: 'Medicações', value: patient.medications })
+    return items
+  }, [patient])
+
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+    <div className="mx-auto flex max-w-5xl flex-col gap-6 pb-24">
+      {/* Sticky action bar */}
+      <div className="sticky top-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border sm:px-5">
+        <div className="min-w-0">
           <Link to="/patients/$id" params={{ id }} className="text-xs text-muted-foreground hover:text-foreground">
             ← Voltar ao prontuário
           </Link>
-          <h1 className="mt-1 font-serif text-2xl sm:text-3xl font-semibold">Anamnese</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Registre a entrevista inicial. Use a transcrição por IA para agilizar e inserir trechos direto no campo focado.
-          </p>
+          <h1 className="mt-0.5 truncate font-serif text-xl sm:text-2xl font-semibold">
+            Anamnese {patient ? `· ${patient.name}` : ''}
+          </h1>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => analyzeMut.mutate()} disabled={analyzeMut.isPending}>
-            <Sparkles /> {analyzeMut.isPending ? 'Analisando…' : 'Análise de caso (IA)'}
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => analyzeMut.mutate()} disabled={analyzeMut.isPending}>
+            <Sparkles /> {analyzeMut.isPending ? 'Analisando…' : 'Análise (IA)'}
           </Button>
-          <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+          <Button size="sm" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
             {saveMut.isPending ? 'Salvando…' : 'Salvar anamnese'}
           </Button>
         </div>
-      </header>
+      </div>
 
+      {/* Patient snapshot */}
+      {patient ? (
+        <section className="rounded-2xl border bg-gradient-to-br from-primary/5 to-transparent p-4 sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-primary">
+                <User2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Dados do paciente</p>
+                <p className="font-serif text-lg font-semibold">{patient.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  Preenchidos automaticamente nos campos vazios da anamnese.
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={refillFromPatient}>
+              <Wand2 /> Reaplicar dados do paciente
+            </Button>
+          </div>
+          {patientChips.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {patientChips.map((c) => (
+                <span
+                  key={c.label}
+                  className="inline-flex items-center gap-1 rounded-full border bg-background/60 px-3 py-1 text-xs"
+                >
+                  <span className="text-muted-foreground">{c.label}:</span>
+                  <span className="font-medium">{c.value}</span>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {patient.guardians && patient.guardians.length > 0 ? (
+            <div className="mt-3 grid gap-1 text-xs">
+              <p className="text-muted-foreground">Responsáveis</p>
+              <ul className="grid gap-0.5">
+                {patient.guardians.map((g, i) => (
+                  <li key={i}>
+                    <span className="font-medium">{g?.name ?? '—'}</span>
+                    {g?.relation ? ` · ${g.relation}` : ''}
+                    {g?.phone ? ` · ${g.phone}` : ''}
+                    {g?.email ? ` · ${g.email}` : ''}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {patient.professionals && patient.professionals.length > 0 ? (
+            <div className="mt-3 grid gap-1 text-xs">
+              <p className="text-muted-foreground">Profissionais que acompanham</p>
+              <ul className="grid gap-0.5">
+                {patient.professionals.map((p, i) => (
+                  <li key={i}>
+                    <span className="font-medium">{p?.name ?? '—'}</span>
+                    {p?.specialty ? ` · ${p.specialty}` : ''}
+                    {p?.contact ? ` · ${p.contact}` : ''}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {/* Mode picker */}
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border bg-card p-3">
         <span className="text-xs text-muted-foreground">Modelo:</span>
         <button
           type="button"
           onClick={() => setMode('livre')}
-          className={`rounded-md border px-3 py-1.5 text-xs ${mode === 'livre' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
+          className={`rounded-md border px-3 py-1.5 text-xs transition ${mode === 'livre' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
         >Anamnese livre</button>
         <button
           type="button"
           onClick={() => setMode('neuro_child')}
-          className={`rounded-md border px-3 py-1.5 text-xs ${mode === 'neuro_child' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
+          className={`rounded-md border px-3 py-1.5 text-xs transition ${mode === 'neuro_child' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-accent'}`}
         >Neuropsicológica — Crianças e Adolescentes</button>
       </div>
 
@@ -171,6 +359,7 @@ function AnamnesePage() {
             </div>
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 const items = screenings.data ?? []
                 const lines = items.map((s) => {
@@ -206,7 +395,7 @@ function AnamnesePage() {
       {mode === 'neuro_child' ? (
         <NeuroChildAnamnese value={childData} onChange={setChildData} />
       ) : (
-        <section className="grid gap-5">
+        <section className="grid gap-4">
           {SECTIONS.map((s) => (
             <FieldBlock
               key={s.id}
@@ -231,7 +420,14 @@ function AnamnesePage() {
         </section>
       )}
 
-      <div className="flex justify-end">
+      {/* Sticky bottom save (mobile-friendly) */}
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/90 p-3 backdrop-blur sm:hidden">
+        <Button className="w-full" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+          {saveMut.isPending ? 'Salvando…' : 'Salvar anamnese'}
+        </Button>
+      </div>
+
+      <div className="hidden justify-end sm:flex">
         <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
           {saveMut.isPending ? 'Salvando…' : 'Salvar anamnese'}
         </Button>
@@ -252,7 +448,7 @@ function FieldBlock({
   onFocus: () => void
 }) {
   return (
-    <div className={`rounded-xl border bg-card p-4 ${active ? 'ring-2 ring-primary/40' : ''}`}>
+    <div className={`rounded-xl border bg-card p-4 transition ${active ? 'ring-2 ring-primary/40 shadow-sm' : ''}`}>
       <Label htmlFor={id} className="text-sm font-medium">{label}</Label>
       <Textarea
         id={id}
@@ -316,7 +512,6 @@ function TranscriptionPanel({
     e.target.value = ''
     setBusy(true)
     try {
-      // Se pequeno, envia direto; se grande, divide em WAVs de 4 min.
       if (f.size <= 20 * 1024 * 1024) {
         setProgress('Transcrevendo…')
         await sendOne(f, f.type || 'audio/webm')
@@ -372,4 +567,3 @@ function TranscriptionPanel({
     </section>
   )
 }
-
