@@ -1606,23 +1606,32 @@ function NoteDialog({
           <div className="flex flex-col gap-2">
             <Label>O que será aplicado</Label>
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Bateria padrão (Marque para adicionar ao checklist)</p>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                Bateria padrão (Marque para adicionar ou remover do checklist)
+              </p>
               <StandardBatteryChecklist
                 tests={batteryTests}
                 isLoading={battery.isLoading}
-                selected={new Set(items.map(it => {
-                  const t = batteryTests.find(bt => (bt.acronym || bt.name) === it.label)
-                  return t?.id || ''
-                }).filter(Boolean))}
+                selected={
+                  new Set(
+                    items
+                      .map((it) => {
+                        const t = batteryTests.find((bt) => (bt.acronym || bt.name) === it.label)
+                        return t?.id || ''
+                      })
+                      .filter(Boolean),
+                  )
+                }
                 onToggle={(id) => {
                   const t = batteryTests.find((x) => x.id === id)
                   if (t) {
                     const label = t.acronym || t.name
-                    if (!items.some((it) => it.label === label)) {
-                      setItems((prev) => [...prev, { label, done: false }])
-                    } else {
-                      setItems((prev) => prev.filter((it) => it.label !== label))
-                    }
+                    setItems((prev) => {
+                      if (prev.some((it) => it.label === label)) {
+                        return prev.filter((it) => it.label !== label)
+                      }
+                      return [...prev, { label, done: false }]
+                    })
                   }
                 }}
                 onSelectAll={() => {
