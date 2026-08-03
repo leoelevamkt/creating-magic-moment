@@ -1605,9 +1605,9 @@ function NoteDialog({
           </div>
           <div className="flex flex-col gap-2">
             <Label>O que será aplicado</Label>
-            <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="mb-2 text-xs font-medium text-muted-foreground">
-                Bateria padrão (Marque para adicionar ou remover do checklist)
+            <div className="rounded-lg border bg-amber-500/5 border-amber-500/20 p-3">
+              <p className="mb-2 text-xs font-semibold text-amber-700 dark:text-amber-500">
+                Checklist de bateria de testes padrão (marque para usar)
               </p>
               <StandardBatteryChecklist
                 tests={batteryTests}
