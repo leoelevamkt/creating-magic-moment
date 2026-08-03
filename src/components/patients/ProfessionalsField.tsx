@@ -24,10 +24,20 @@ export function ProfessionalsField({
   value,
   onChange,
 }: {
-  value: Professional[]
+  value: Professional[] | null | undefined
   onChange: (v: Professional[]) => void
 }) {
-  const rows = value.length === 0 ? [] : value
+  const rows: Professional[] = Array.isArray(value)
+    ? value.map((p) =>
+        typeof p === 'string'
+          ? { name: p, role: '', contact: '' }
+          : {
+              name: (p as Professional)?.name ?? '',
+              role: (p as Professional)?.role ?? '',
+              contact: (p as Professional)?.contact ?? '',
+            },
+      )
+    : []
 
   function set(i: number, patch: Partial<Professional>) {
     const next = rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r))
