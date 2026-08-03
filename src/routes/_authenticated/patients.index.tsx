@@ -99,7 +99,17 @@ function PatientsPage() {
     emergencyContact: { name: string; phone: string; relation: string } | null;
   }
 
+  const statusMut = useMutation({
+    mutationFn: (v: { id: string; status: 'active' | 'archived' | 'discharged' }) => setStatus({ data: v }),
+    onSuccess: () => {
+      toast.success('Status atualizado.')
+      qc.invalidateQueries({ queryKey: ['patients'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
   const mutation = useMutation({
+
     mutationFn: (payload: CreatePayload) => create({ data: payload }),
     onSuccess: () => {
       toast.success('Paciente cadastrado.')
