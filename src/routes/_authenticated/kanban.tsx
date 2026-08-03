@@ -25,6 +25,7 @@ import { listPatients } from '@/lib/patients.functions'
 import { listCatalog, getMyProfile } from '@/lib/profile.functions'
 import { listTeam } from '@/lib/staff.functions'
 import { listStandardBattery } from '@/lib/standard-battery.functions'
+import { StandardBatteryChecklist, type BatteryTest } from '@/components/evaluations/StandardBatteryChecklist'
 
 
 import { Button } from '@/components/ui/button'
@@ -87,6 +88,17 @@ function KanbanPage() {
   const patients = useQuery({ queryKey: ['patients'], queryFn: () => patientsFn() })
   const catalog = useQuery({ queryKey: ['catalog'], queryFn: () => catalogFn() })
   const battery = useQuery({ queryKey: ['standard-battery'], queryFn: () => batteryFn() })
+  const batteryTests = useMemo<BatteryTest[]>(
+    () => ((battery.data ?? []) as Array<BatteryTest | null>).filter(Boolean) as BatteryTest[],
+    [battery.data],
+  )
+
+  // Ao abrir o planejamento, a bateria padrão já vem marcada no checklist.
+  useEffect(() => {
+    if (!open) return
+    if (batteryTests.length === 0) return
+    setSelectedTests((prev) => (prev.size > 0 ? prev : new Set(batteryTests.map((t) => t.id))))
+  }, [open, batteryTests])
 
 
   const grouped = useMemo(() => {
@@ -221,7 +233,7 @@ function KanbanPage() {
   }
 
   function applyStandardBattery() {
-    const ids = (battery.data ?? []).map((t: any) => t.id).filter(Boolean)
+    const ids = batteryTests.map((t) => t.id)
     if (ids.length === 0) {
       toast.error('Nenhum teste na bateria padrão. Configure no catálogo.')
       return
@@ -344,18 +356,22 @@ function KanbanPage() {
               </div>
 
               <div className="flex flex-col gap-2">
+                <StandardBatteryChecklist
+                  tests={batteryTests}
+                  isLoading={battery.isLoading}
+                  selected={selectedTests}
+                  onToggle={toggleTest}
+                  onSelectAll={applyStandardBattery}
+                  onClear={() =>
+                    setSelectedTests((prev) => {
+                      const next = new Set(prev)
+                      for (const t of batteryTests) next.delete(t.id)
+                      return next
+                    })
+                  }
+                />
                 <div className="flex items-center justify-between">
-                  <Label>Testes a aplicar</Label>
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-amber-600 hover:text-amber-700 dark:text-amber-500"
-                    onClick={applyStandardBattery}
-                  >
-                    <Star size={14} className="mr-1 fill-current" />
-                    Aplicar bateria padrão
-                  </Button>
+                  <Label>Testes a aplicar ({selectedTests.size + customTests.length})</Label>
                 </div>
                 <Input
 
