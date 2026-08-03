@@ -98,7 +98,7 @@ export const listPatientPlan = createServerFn({ method: 'GET' })
     const { data: rows, error } = await context.supabase
       .from('sessions_plan')
       .select(
-        'id, title, session_date, start_time, end_time, modality, status, objectives, notes, session_number, checklist, planned_test_ids',
+        'id, title, session_date, start_time, end_time, modality, status, objectives, notes, transcript, session_number, checklist, planned_test_ids',
       )
       .eq('patient_id', data.patientId)
       .order('session_number', { ascending: true, nullsFirst: false })
@@ -151,6 +151,7 @@ const PlanUpdate = z.object({
   objectives: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   status: z.enum(['scheduled', 'done', 'cancelled']).optional(),
+  transcript: z.string().nullable().optional(),
   checklist: z.array(ChecklistItem).optional(),
 })
 export const updatePatientPlanEntry = createServerFn({ method: 'POST' })
@@ -164,6 +165,7 @@ export const updatePatientPlanEntry = createServerFn({ method: 'POST' })
       objectives?: string | null
       notes?: string | null
       status?: 'scheduled' | 'done' | 'cancelled'
+      transcript?: string | null
       session_number?: number | null
       session_date?: string
       start_time?: string | null
