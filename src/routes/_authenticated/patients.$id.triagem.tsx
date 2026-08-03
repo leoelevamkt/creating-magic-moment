@@ -164,7 +164,7 @@ function TriagemPage() {
   )
 }
 
-function NewScreeningDialog({ patientId, onDone }: { patientId: string; onDone: () => void }) {
+export function NewScreeningDialog({ patientId, onDone }: { patientId: string; onDone: () => void }) {
   const [open, setOpen] = useState(false)
   const [domainId, setDomainId] = useState<string>(DSM5TR_DOMAINS[0]!.id)
   const domain = useMemo(() => DSM5TR_DOMAINS.find((d) => d.id === domainId)!, [domainId])
