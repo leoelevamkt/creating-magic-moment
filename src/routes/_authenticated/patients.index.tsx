@@ -119,8 +119,8 @@ function PatientsPage() {
 
   const statusMut = useMutation({
     mutationFn: (v: { id: string; status: 'active' | 'archived' | 'discharged' }) => setStatus({ data: v }),
-    onSuccess: () => {
-      toast.success('Status atualizado.')
+    onSuccess: (res) => {
+      toast.success(`Paciente ${res.status === 'active' ? 'ativado' : 'desativado'} com sucesso.`)
       qc.invalidateQueries({ queryKey: ['patients'] })
     },
     onError: (e: Error) => toast.error(e.message),
