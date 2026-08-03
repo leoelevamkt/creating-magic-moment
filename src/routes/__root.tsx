@@ -11,6 +11,7 @@ import { Toaster } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { DefaultCatchBoundary } from '@/components/default-catch-boundary'
 import { NotFound } from '@/components/not-found'
+import { GlobalErrorToaster } from '@/components/common/GlobalErrorToaster'
 import styles from '@/styles.css?url'
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -101,6 +102,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         {children}
         <Toaster position="top-center" richColors />
+        <GlobalErrorToaster />
         <Scripts />
       </body>
     </html>
