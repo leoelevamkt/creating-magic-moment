@@ -1081,10 +1081,6 @@ function EditPatientDialog({ patient, onSaved }: { patient: PatientData; onSaved
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
     const contactPayload = toPatientContactPayload(contact)
-    if (contact.hasGuardians && contactPayload.guardians.length === 0) {
-      toast.error('Preencha ao menos um responsável ou desmarque "Possui responsável(eis)".')
-      return
-    }
     const sexRaw = String(fd.get('sex') ?? '')
     mut.mutate({
       name: String(fd.get('name') ?? ''),

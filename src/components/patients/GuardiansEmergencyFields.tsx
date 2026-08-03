@@ -142,5 +142,5 @@ export function toPatientContactPayload(v: Partial<GuardiansEmergencyValue> | nu
   const phone = str(ec?.phone)
   const relation = str(ec?.relation)
   const validEmergency = name && phone && relation ? { name, phone, relation } : null
-  return { hasGuardians: !!v?.hasGuardians, guardians, emergencyContact: validEmergency }
+  return { hasGuardians: guardians.length > 0, guardians, emergencyContact: validEmergency }
 }
