@@ -1,13 +1,14 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute, useRouter, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { Download, Plus, Upload, Users } from 'lucide-react'
+import { Download, MoreHorizontal, Plus, Upload, UserCheck, UserMinus, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import * as XLSX from 'xlsx'
-import { bulkCreatePatients, createPatient, listPatients } from '@/lib/patients.functions'
+import { bulkCreatePatients, createPatient, listPatients, setPatientStatus } from '@/lib/patients.functions'
 import { listTeam } from '@/lib/staff.functions'
+
 
 import { formatAge } from '@/lib/age'
 import {
@@ -43,7 +44,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
+
 
 export const Route = createFileRoute('/_authenticated/patients/')({
   head: () => ({ meta: [{ title: 'Pacientes — NeuroFlux' }] }),
@@ -55,7 +63,9 @@ function PatientsPage() {
   const list = useServerFn(listPatients)
   const create = useServerFn(createPatient)
   const team = useServerFn(listTeam)
+  const setStatus = useServerFn(setPatientStatus)
   const qc = useQueryClient()
+
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [contact, setContact] = useState<GuardiansEmergencyValue>({
@@ -340,8 +350,41 @@ function PatientsPage() {
                   <TableCell>{p.schooling ?? '—'}</TableCell>
                   <TableCell>{p.assigned_professional?.name ?? '—'}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{p.status}</Badge>
+                    <Badge variant={p.status === 'active' ? 'default' : 'secondary'}>
+                      {p.status === 'active' ? 'Ativo' : p.status === 'archived' ? 'Inativo' : 'Alta'}
+                    </Badge>
                   </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        }
+                      />
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem render={<Link to="/patients/$id" params={{ id: p.id }} />}>
+                          Ver prontuário
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => statusMut.mutate({ id: p.id, status: p.status === 'active' ? 'archived' : 'active' })}
+                          className={p.status === 'active' ? 'text-destructive' : 'text-primary'}
+                        >
+                          {p.status === 'active' ? (
+                            <>
+                              <UserMinus className="mr-2 h-4 w-4" /> Desativar
+                            </>
+                          ) : (
+                            <>
+                              <UserCheck className="mr-2 h-4 w-4" /> Ativar
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+
                 </TableRow>
               ))}
             </TableBody>
