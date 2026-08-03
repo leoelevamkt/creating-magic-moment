@@ -442,24 +442,25 @@ function PatientMoreMenu({
             {isActive ? 'Desativar paciente (Inativo)' : 'Ativar paciente'}
           </DropdownMenuItem>
 
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="text-destructive focus:text-destructive"
-          onSelect={() => {
-            if (
-              confirm(
-                'Excluir permanentemente este paciente e todos os seus dados? Esta ação não pode ser desfeita.',
-              )
-            ) {
-              delMut.mutate()
-            }
-          }}
-          disabled={delMut.isPending}
-        >
-          <Trash2 className="mr-2 size-4" /> Excluir
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={() => {
+              if (
+                confirm(
+                  'Excluir permanentemente este paciente e todos os seus dados? Esta ação não pode ser desfeita.',
+                )
+              ) {
+                delMut.mutate()
+              }
+            }}
+            disabled={delMut.isPending}
+          >
+            <Trash2 className="mr-2 size-4" /> Excluir
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
 }
 
