@@ -1500,10 +1500,11 @@ function NoteDialog({
   )
 
   useEffect(() => {
+    // For new session plan entries, if they aren't provided by initial data
     if (open && !initial && batteryTests.length > 0 && items.length === 0) {
-      setItems(batteryTests.map(t => ({ label: t.acronym || t.name, done: false })))
+      setItems(batteryTests.map((t) => ({ label: t.acronym || t.name, done: false })))
     }
-  }, [open, initial, batteryTests])
+  }, [open, initial, batteryTests, items.length])
 
   function addItem() {
     const label = newItem.trim()
