@@ -389,15 +389,11 @@ export const setPatientStatus = createServerFn({ method: 'POST' })
     }).parse(i),
   )
   .handler(async ({ context, data }) => {
-    const { error, data: rows } = await context.supabase
+    const { error } = await context.supabase
       .from('patients')
       .update({ status: data.status })
       .eq('id', data.id)
-      .select('id')
     if (error) throw new Error(error.message)
-    if (!rows || rows.length === 0) {
-      throw new Error('Sem permissão para alterar este paciente. Peça a uma administradora para conceder o perfil de equipe.')
-    }
     return { ok: true }
   })
 
