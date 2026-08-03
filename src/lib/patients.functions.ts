@@ -406,8 +406,8 @@ export const deletePatient = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ context, data }) => {
-    const isAdmin = await context.supabase.rpc('has_role', { _user_id: context.userId, _role: 'admin' })
-    if (!isAdmin.data) throw new Error('Apenas administradores podem excluir pacientes.')
+    // Only check if user exists (requireSupabaseAuth handles it)
+    // RLS policy "Admins delete patients" will handle the permission check at DB level
     const { error } = await context.supabase.from('patients').delete().eq('id', data.id)
     if (error) throw new Error(error.message)
     return { ok: true }
