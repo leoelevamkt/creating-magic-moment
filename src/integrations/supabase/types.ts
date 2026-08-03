@@ -1296,6 +1296,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_team: { Args: { _uid: string }; Returns: boolean }
       reset_rate_limit: {
         Args: { _action: string; _key: string }
         Returns: undefined
