@@ -338,16 +338,9 @@ export const formTemplates: FormTemplate[] = [
 
       // Responsáveis (se menor de 18)
       { key: 'sec_resp', label: 'Responsáveis', type: 'textarea', help: 'Preencha se o paciente for menor de 18 anos.' },
-      { key: 'r1_nome', label: 'Responsável 1 — Nome completo', type: 'text' },
-      { key: 'r1_parentesco', label: 'Responsável 1 — Parentesco', type: 'choice', options: ['Mãe', 'Pai', 'Avó/Avô', 'Tio/Tia', 'Tutor legal', 'Outro'] },
-      { key: 'r1_cpf', label: 'Responsável 1 — CPF', type: 'text' },
-      { key: 'r1_telefone', label: 'Responsável 1 — Telefone', type: 'text' },
-      { key: 'r1_profissao', label: 'Responsável 1 — Profissão', type: 'text' },
-      { key: 'r2_nome', label: 'Responsável 2 — Nome completo', type: 'text' },
-      { key: 'r2_parentesco', label: 'Responsável 2 — Parentesco', type: 'choice', options: ['Mãe', 'Pai', 'Avó/Avô', 'Tio/Tia', 'Tutor legal', 'Outro'] },
-      { key: 'r2_cpf', label: 'Responsável 2 — CPF', type: 'text' },
-      { key: 'r2_telefone', label: 'Responsável 2 — Telefone', type: 'text' },
-      { key: 'r2_profissao', label: 'Responsável 2 — Profissão', type: 'text' },
+      { key: 'r1_nome', label: 'Responsável — Nome completo', type: 'text' },
+      { key: 'r1_telefone', label: 'Responsável — Telefone', type: 'text' },
+
 
       // Encaminhamento
       { key: 'sec_enc', label: 'Encaminhamento', type: 'textarea' },
@@ -360,7 +353,7 @@ export const formTemplates: FormTemplate[] = [
       { key: 'toma_medicacao', label: 'Toma alguma medicação atualmente?', type: 'choice', options: ['Sim', 'Não'] },
       { key: 'medicacoes_lista', label: 'Quais medicações e doses?', type: 'textarea' },
       { key: 'faz_acompanhamento', label: 'Já faz ou já fez algum acompanhamento?', type: 'checklist', options: ['Psicologia', 'Psiquiatria', 'Neurologia', 'Fonoaudiologia', 'Terapia Ocupacional', 'Fisioterapia', 'Nutrição', 'Nenhum'] },
-      { key: 'acompanhamento_detalhes', label: 'Detalhes do acompanhamento (com quem, quando, resultado)', type: 'textarea' },
+      
 
       // Queixa principal
       { key: 'queixa_principal', label: 'Qual a queixa principal / motivo da avaliação?', type: 'textarea', required: true, help: 'Descreva com suas próprias palavras.' },
