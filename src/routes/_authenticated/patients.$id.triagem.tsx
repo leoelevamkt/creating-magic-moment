@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { toast } from 'sonner'
@@ -212,6 +212,8 @@ function NewScreeningDialog({ patientId, onDone }: { patientId: string; onDone: 
       setOpen(false)
       setChecks({})
       setNotes('')
+      localStorage.removeItem(`screening_draft_${patientId}_dsm5`)
+      localStorage.removeItem(`screening_notes_draft_${patientId}_dsm5`)
       onDone()
     },
     onError: (e: Error) => toast.error(e.message),
@@ -291,10 +293,21 @@ function socialMeta(criteria: Criterion[]) {
 
 function NewSocialScreeningDialog({ patientId, onDone }: { patientId: string; onDone: () => void }) {
   const [open, setOpen] = useState(false)
-  const [renda, setRenda] = useState<string>('')
-  const [pessoas, setPessoas] = useState<string>('')
-  const [checks, setChecks] = useState<Record<string, boolean>>({})
-  const [notes, setNotes] = useState('')
+  const [renda, setRenda] = useState<string>(() => localStorage.getItem(`screening_social_renda_${patientId}`) || '')
+  const [pessoas, setPessoas] = useState<string>(() => localStorage.getItem(`screening_social_pessoas_${patientId}`) || '')
+  const [checks, setChecks] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem(`screening_social_checks_${patientId}`)
+    return saved ? JSON.parse(saved) : {}
+  })
+  const [notes, setNotes] = useState(() => localStorage.getItem(`screening_social_notes_${patientId}`) || '')
+
+  useEffect(() => {
+    localStorage.setItem(`screening_social_renda_${patientId}`, renda)
+    localStorage.setItem(`screening_social_pessoas_${patientId}`, pessoas)
+    localStorage.setItem(`screening_social_checks_${patientId}`, JSON.stringify(checks))
+    localStorage.setItem(`screening_social_notes_${patientId}`, notes)
+  }, [renda, pessoas, checks, notes, patientId])
+
   const save = useServerFn(saveScreening)
   const fetchAn = useServerFn(getAnamnese)
   async function pullAnamnese() {
@@ -338,6 +351,10 @@ function NewSocialScreeningDialog({ patientId, onDone }: { patientId: string; on
     onSuccess: () => {
       toast.success('Triagem social salva.')
       setOpen(false)
+      localStorage.removeItem(`screening_social_renda_${patientId}`)
+      localStorage.removeItem(`screening_social_pessoas_${patientId}`)
+      localStorage.removeItem(`screening_social_checks_${patientId}`)
+      localStorage.removeItem(`screening_social_notes_${patientId}`)
       setChecks({}); setRenda(''); setPessoas(''); setNotes('')
       onDone()
     },
