@@ -46,11 +46,9 @@ function Dashboard() {
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <header>
-        <p className="text-sm font-medium text-primary">
-          salvar automático a triagem
-        </p>
+        <p className="text-sm font-medium text-primary">Visão geral</p>
         <h1 className="font-serif text-2xl sm:text-3xl font-semibold">
-          Ter uma triagem no início do caso, sem precisar abriel pelo link
+          Olá, {p.data?.name ?? 'clínica'}
         </h1>
       </header>
 

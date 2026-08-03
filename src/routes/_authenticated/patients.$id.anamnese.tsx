@@ -43,8 +43,8 @@ type Fields =
   | 'transcript'
 
 const SECTIONS: Array<{ id: Fields; label: string; hint?: string; rows?: number }> = [
-  { id: 'queixa_principal', label: 'Verificar a transcrição para a triagem e a anamnese', rows: 3 },
-  { id: 'historia_atual', label: 'Opção de escrever cada sessão da avaliação, com transcrição também, campo para escrever', rows: 4 },
+  { id: 'queixa_principal', label: 'Queixa principal', rows: 3 },
+  { id: 'historia_atual', label: 'História da queixa atual', rows: 4 },
   { id: 'desenvolvimento', label: 'Desenvolvimento (gestação, marcos)', rows: 4 },
   { id: 'historia_medica', label: 'História médica e neurológica', rows: 4 },
   { id: 'medicacoes', label: 'Medicações em uso', rows: 2 },
