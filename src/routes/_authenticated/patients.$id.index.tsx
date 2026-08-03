@@ -805,6 +805,9 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">Planejar avaliação</DialogTitle>
+          <p className="text-sm text-muted-foreground -mt-2">
+            Plano de avaliação com checklist de listagem de testes pronta com a bateria padrão (usuário só precisará marcar os testes a serem aplicados).
+          </p>
         </DialogHeader>
         <form onSubmit={onSubmit} className="flex flex-col gap-4 pt-2">
           <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
