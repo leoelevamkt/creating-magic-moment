@@ -109,12 +109,6 @@ function PatientDetailPage() {
   const upcoming = detailQ.data?.upcoming ?? []
   const evaluations = detailQ.data?.evaluations ?? []
   const history = detailQ.data?.history ?? []
-  const batteryFn = useServerFn(listStandardBattery)
-  const battery = useQuery({ queryKey: ['standard-battery'], queryFn: () => batteryFn() })
-  const batteryTests = useMemo<BatteryTest[]>(
-    () => ((battery.data ?? []) as Array<BatteryTest | null>).filter(Boolean) as BatteryTest[],
-    [battery.data],
-  )
 
   if (detailQ.isLoading) {
     return <div className="p-8 text-sm text-muted-foreground">Carregando prontuário…</div>
