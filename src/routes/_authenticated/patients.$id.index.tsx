@@ -845,20 +845,23 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
 
 
           <div className="flex flex-col gap-2">
-            <StandardBatteryChecklist
-              tests={batteryTests}
-              isLoading={battery.isLoading}
-              selected={selected}
-              onToggle={toggle}
-              onSelectAll={() => setSelected(new Set(batteryTests.map((t) => t.id)))}
-              onClear={() =>
-                setSelected((prev) => {
-                  const next = new Set(prev)
-                  for (const t of batteryTests) next.delete(t.id)
-                  return next
-                })
-              }
-            />
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <p className="mb-2 text-sm font-medium">Bateria padrão (Marque para aplicar)</p>
+              <StandardBatteryChecklist
+                tests={batteryTests}
+                isLoading={battery.isLoading}
+                selected={selected}
+                onToggle={toggle}
+                onSelectAll={() => setSelected(new Set(batteryTests.map((t) => t.id)))}
+                onClear={() =>
+                  setSelected((prev) => {
+                    const next = new Set(prev)
+                    for (const t of batteryTests) next.delete(t.id)
+                    return next
+                  })
+                }
+              />
+            </div>
             <div className="flex items-center justify-between gap-2">
               <Label>Testes a aplicar ({totalSel})</Label>
             </div>
