@@ -78,13 +78,14 @@ function KanbanPage() {
   const patientsFn = useServerFn(listPatients)
   const catalogFn = useServerFn(listCatalog)
   const teamFn = useServerFn(listTeam)
+  const batteryFn = useServerFn(listStandardBattery)
   const team = useQuery({ queryKey: ['team'], queryFn: () => teamFn() })
-
-
 
   const tasks = useQuery({ queryKey: ['tasks'], queryFn: () => tasksFn() })
   const patients = useQuery({ queryKey: ['patients'], queryFn: () => patientsFn() })
   const catalog = useQuery({ queryKey: ['catalog'], queryFn: () => catalogFn() })
+  const battery = useQuery({ queryKey: ['standard-battery'], queryFn: () => batteryFn() })
+
 
   const grouped = useMemo(() => {
     const map = new Map<TaskStatus, NonNullable<typeof tasks.data>>()
