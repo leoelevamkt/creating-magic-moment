@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { NewScreeningDialog } from './patients.$id.triagem'
+import { AudioTranscriber } from '@/components/common/AudioTranscriber'
 import {
   listPatientNotes,
   createPatientNote,
