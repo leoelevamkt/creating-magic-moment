@@ -386,45 +386,29 @@ export const setPatientStatus = createServerFn({ method: 'POST' })
     }).parse(i),
   )
   .handler(async ({ context, data }) => {
-    console.log(`[setPatientStatus] User ${context.userId} setting status ${data.status} for patient ${data.id}`);
-    
-    // Double check permissions or use supabaseAdmin if strictly necessary
-    // But standard staff should be able to update if RLS is correct
     const { error, data: row } = await context.supabase
       .from('patients')
       .update({ status: data.status })
       .eq('id', data.id)
       .select('id, status')
-      .maybeSingle();
+      .maybeSingle()
 
     if (error) {
-      console.error('[setPatientStatus] Database Error:', error);
-      throw new Error(`Erro ao atualizar status: ${error.message}`);
+      console.error('[setPatientStatus] Error:', error)
+      throw new Error(`Erro ao atualizar status: ${error.message}`)
     }
-    
+
     if (!row) {
-      // If row is null, either the patient doesn't exist or RLS blocked the update
-      // Let's try to see if the patient exists at all to give a better error
       const { data: exists } = await context.supabase
         .from('patients')
         .select('id')
         .eq('id', data.id)
-        .maybeSingle();
-        
-      if (!exists) {
-        throw new Error('Paciente não encontrado.');
-      } else {
-        throw new Error('Você não tem permissão para alterar o status deste paciente.');
-      }
-    }
-    
-    return { ok: true, status: row.status }
-      
-      throw new Error('Você não tem permissão para desativar este paciente.');
+        .maybeSingle()
+      if (!exists) throw new Error('Paciente não encontrado.')
+      throw new Error('Você não tem permissão para alterar o status deste paciente.')
     }
 
-    console.log(`[setPatientStatus] Success: ${row.status}`);
-    return { ok: true, status: row.status };
+    return { ok: true, status: row.status }
   })
 
 
