@@ -353,7 +353,7 @@ export const formTemplates: FormTemplate[] = [
       { key: 'toma_medicacao', label: 'Toma alguma medicação atualmente?', type: 'choice', options: ['Sim', 'Não'] },
       { key: 'medicacoes_lista', label: 'Quais medicações e doses?', type: 'textarea' },
       { key: 'faz_acompanhamento', label: 'Já faz ou já fez algum acompanhamento?', type: 'checklist', options: ['Psicologia', 'Psiquiatria', 'Neurologia', 'Fonoaudiologia', 'Terapia Ocupacional', 'Fisioterapia', 'Nutrição', 'Nenhum'] },
-      { key: 'acompanhamento_detalhes', label: 'Detalhes do acompanhamento (com quem, quando, resultado)', type: 'textarea' },
+      
 
       // Queixa principal
       { key: 'queixa_principal', label: 'Qual a queixa principal / motivo da avaliação?', type: 'textarea', required: true, help: 'Descreva com suas próprias palavras.' },
