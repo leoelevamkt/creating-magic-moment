@@ -18,6 +18,7 @@ import {
   listTasks,
   updateTask,
   updateTaskStatus,
+  updateTaskChecklist,
   type TaskStatus,
 } from '@/lib/evaluations.functions'
 import { listPatients } from '@/lib/patients.functions'
