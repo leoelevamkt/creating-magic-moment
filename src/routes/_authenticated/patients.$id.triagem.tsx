@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { AudioTranscriber } from '@/components/common/AudioTranscriber'
 
 export const Route = createFileRoute('/_authenticated/patients/$id/triagem')({
   head: () => ({ meta: [{ title: 'Triagem — NeuroFlux' }] }),
