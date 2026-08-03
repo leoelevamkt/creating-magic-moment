@@ -35,6 +35,8 @@ import { formatAge } from '@/lib/age'
 import { useRouter } from '@tanstack/react-router'
 import { createSession } from '@/lib/sessions.functions'
 import { createEvaluation } from '@/lib/evaluations.functions'
+import { listStandardBattery } from '@/lib/standard-battery.functions'
+import { StandardBatteryChecklist, type BatteryTest } from '@/components/evaluations/StandardBatteryChecklist'
 import { listCatalog } from '@/lib/profile.functions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -694,8 +696,18 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
   const create = useServerFn(createEvaluation)
   const catalogFn = useServerFn(listCatalog)
   const teamFn = useServerFn(listTeam)
+  const batteryFn = useServerFn(listStandardBattery)
   const catalog = useQuery({ queryKey: ['catalog'], queryFn: () => catalogFn(), enabled: open })
   const teamQ = useQuery({ queryKey: ['team'], queryFn: () => teamFn(), enabled: open })
+  const battery = useQuery({
+    queryKey: ['standard-battery'],
+    queryFn: () => batteryFn(),
+    enabled: open,
+  })
+  const batteryTests = useMemo<BatteryTest[]>(
+    () => ((battery.data ?? []) as Array<BatteryTest | null>).filter(Boolean) as BatteryTest[],
+    [battery.data],
+  )
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
   const [customTests, setCustomTests] = useState<Array<{ name: string; acronym: string }>>([])
@@ -737,6 +749,13 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
     },
     onError: (e: Error) => toast.error(e.message),
   })
+
+  // Bateria padrão já marcada ao abrir o plano de avaliação.
+  useEffect(() => {
+    if (!open) return
+    if (batteryTests.length === 0) return
+    setSelected((prev) => (prev.size > 0 ? prev : new Set(batteryTests.map((t) => t.id))))
+  }, [open, batteryTests])
 
   function toggle(id: string) {
     setSelected((s) => {
@@ -817,6 +836,20 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
 
 
           <div className="flex flex-col gap-2">
+            <StandardBatteryChecklist
+              tests={batteryTests}
+              isLoading={battery.isLoading}
+              selected={selected}
+              onToggle={toggle}
+              onSelectAll={() => setSelected(new Set(batteryTests.map((t) => t.id)))}
+              onClear={() =>
+                setSelected((prev) => {
+                  const next = new Set(prev)
+                  for (const t of batteryTests) next.delete(t.id)
+                  return next
+                })
+              }
+            />
             <div className="flex items-center justify-between gap-2">
               <Label>Testes a aplicar ({totalSel})</Label>
             </div>
