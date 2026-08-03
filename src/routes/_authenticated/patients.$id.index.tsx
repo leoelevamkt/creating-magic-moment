@@ -2070,6 +2070,15 @@ function PlanDialog({
   const [items, setItems] = useState<ChecklistItem[]>(initial?.checklist ?? [])
   const [newItem, setNewItem] = useState('')
 
+  const battery = useQuery(listStandardBatteryQueryOptions)
+  const batteryTests = battery.data ?? []
+
+  useEffect(() => {
+    if (open && !initial && batteryTests.length > 0 && items.length === 0) {
+      setItems(batteryTests.map((t) => ({ label: t.acronym || t.name, done: false })))
+    }
+  }, [open, initial, batteryTests, items.length])
+
   function addItem() {
     const t = newItem.trim()
     if (!t) return
