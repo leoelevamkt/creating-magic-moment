@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { NewScreeningDialog } from './patients.$id.triagem'
 import {
   listPatientNotes,
   createPatientNote,
