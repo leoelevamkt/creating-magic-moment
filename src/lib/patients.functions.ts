@@ -386,12 +386,15 @@ export const setPatientStatus = createServerFn({ method: 'POST' })
     }).parse(i),
   )
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase
+    const { error, data: row } = await context.supabase
       .from('patients')
       .update({ status: data.status })
       .eq('id', data.id)
+      .select('id, status')
+      .maybeSingle()
     if (error) throw new Error(error.message)
-    return { ok: true }
+    if (!row) throw new Error('Paciente não encontrado ou acesso negado.')
+    return { ok: true, status: row.status }
   })
 
 

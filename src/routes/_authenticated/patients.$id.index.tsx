@@ -385,11 +385,14 @@ function PatientMoreMenu({
   const router = useRouter()
   const setStatus = useServerFn(setPatientStatus)
   const removePatient = useServerFn(deletePatient)
+  const qc = useQueryClient()
+  
   const statusMut = useMutation({
     mutationFn: (s: 'active' | 'archived' | 'discharged') => setStatus({ data: { id: patientId, status: s } }),
-    onSuccess: () => {
-      toast.success('Status atualizado.')
-      onChanged()
+    onSuccess: (res) => {
+      toast.success(`Paciente ${res.status === 'active' ? 'ativado' : 'desativado'} com sucesso.`)
+      qc.invalidateQueries({ queryKey: ['patient-detail', patientId] })
+      qc.invalidateQueries({ queryKey: ['patients'] })
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -397,6 +400,7 @@ function PatientMoreMenu({
     mutationFn: () => removePatient({ data: { id: patientId } }),
     onSuccess: () => {
       toast.success('Paciente excluído.')
+      qc.invalidateQueries({ queryKey: ['patients'] })
       router.navigate({ to: '/patients' })
     },
     onError: (e: Error) => toast.error(e.message),
