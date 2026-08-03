@@ -1534,7 +1534,7 @@ function NoteDialog({
             {initial ? 'Editar anotação' : 'Nova anotação'}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={submit} className="grid max-h-[75vh] gap-3 overflow-y-auto pt-2">
+        <form onSubmit={submit} className="grid max-h-[75vh] gap-4 overflow-y-auto pt-2">
           <div className="flex flex-col gap-1.5">
             <Label>Título</Label>
             <Input name="title" defaultValue={initial?.title ?? ''} />
@@ -1591,13 +1591,18 @@ function NoteDialog({
               <StandardBatteryChecklist
                 tests={batteryTests}
                 isLoading={battery.isLoading}
-                selected={new Set()}
+                selected={new Set(items.map(it => {
+                  const t = batteryTests.find(bt => (bt.acronym || bt.name) === it.label)
+                  return t?.id || ''
+                }).filter(Boolean))}
                 onToggle={(id) => {
                   const t = batteryTests.find((x) => x.id === id)
                   if (t) {
                     const label = t.acronym || t.name
                     if (!items.some((it) => it.label === label)) {
                       setItems((prev) => [...prev, { label, done: false }])
+                    } else {
+                      setItems((prev) => prev.filter((it) => it.label !== label))
                     }
                   }
                 }}
