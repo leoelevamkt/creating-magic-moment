@@ -93,12 +93,7 @@ function KanbanPage() {
     [battery.data],
   )
 
-  // Ao abrir o planejamento, a bateria padrão já vem marcada no checklist.
-  useEffect(() => {
-    if (!open) return
-    if (batteryTests.length === 0) return
-    setSelectedTests((prev) => (prev.size > 0 ? prev : new Set(batteryTests.map((t) => t.id))))
-  }, [open, batteryTests])
+  // A bateria padrão vem desmarcada: o usuário marca os testes que serão aplicados.
 
 
   const grouped = useMemo(() => {
