@@ -390,6 +390,7 @@ export const setPatientStatus = createServerFn({ method: 'POST' })
       .from('patients')
       .update({ status: data.status })
       .eq('id', data.id)
+      .select()
     if (error) throw new Error(error.message)
     return { ok: true }
   })
