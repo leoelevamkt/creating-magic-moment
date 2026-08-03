@@ -971,6 +971,7 @@ export type Database = {
       tasks: {
         Row: {
           assigned_to: string | null
+          checklist: Json | null
           color: string
           created_at: string
           created_by: string
@@ -983,6 +984,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          checklist?: Json | null
           color?: string
           created_at?: string
           created_by: string
@@ -995,6 +997,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          checklist?: Json | null
           color?: string
           created_at?: string
           created_by?: string
