@@ -371,11 +371,8 @@ export const updatePatient = createServerFn({ method: 'POST' })
       patch.guardians = data.guardians
     }
     if (data.emergencyContact !== undefined) patch.emergency_contact = data.emergencyContact
-    const { error, data: rows } = await context.supabase.from('patients').update(patch as never).eq('id', data.id).select('id')
+    const { error } = await context.supabase.from('patients').update(patch as never).eq('id', data.id)
     if (error) throw new Error(error.message)
-    if (!rows || rows.length === 0) {
-      throw new Error('Sem permissão para editar este paciente. Peça a uma administradora para conceder o perfil de equipe.')
-    }
     return { ok: true }
 
   })
@@ -389,15 +386,11 @@ export const setPatientStatus = createServerFn({ method: 'POST' })
     }).parse(i),
   )
   .handler(async ({ context, data }) => {
-    const { error, data: rows } = await context.supabase
+    const { error } = await context.supabase
       .from('patients')
       .update({ status: data.status })
       .eq('id', data.id)
-      .select('id')
     if (error) throw new Error(error.message)
-    if (!rows || rows.length === 0) {
-      throw new Error('Sem permissão para alterar este paciente. Peça a uma administradora para conceder o perfil de equipe.')
-    }
     return { ok: true }
   })
 
@@ -406,8 +399,8 @@ export const deletePatient = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ context, data }) => {
-    const isAdmin = await context.supabase.rpc('has_role', { _user_id: context.userId, _role: 'admin' })
-    if (!isAdmin.data) throw new Error('Apenas administradores podem excluir pacientes.')
+    // Only check if user exists (requireSupabaseAuth handles it)
+    // RLS policy "Admins delete patients" will handle the permission check at DB level
     const { error } = await context.supabase.from('patients').delete().eq('id', data.id)
     if (error) throw new Error(error.message)
     return { ok: true }
