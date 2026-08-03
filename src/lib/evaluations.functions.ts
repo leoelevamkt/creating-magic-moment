@@ -93,11 +93,23 @@ export const listTasks = createServerFn({ method: 'GET' })
     const { data, error } = await context.supabase
       .from('test_tasks')
       .select(
-        'id, evaluation_id, patient_id, test_id, assignee_id, status, created_at, scheduled_at, started_at, completed_at, duration_minutes, correction_notes, raw_score, standard_score, classification, synthesis, admin_notes, approved_at, patients(name), test_catalog(acronym, name), evaluations(title, modality)',
+        'id, evaluation_id, patient_id, test_id, assignee_id, status, created_at, scheduled_at, started_at, completed_at, duration_minutes, correction_notes, raw_score, standard_score, classification, synthesis, admin_notes, approved_at, checklist, patients(name), test_catalog(acronym, name), evaluations(title, modality)',
       )
       .order('created_at', { ascending: false, nullsFirst: false })
     if (error) throw new Error(error.message)
     return data ?? []
+  })
+
+export const updateTaskChecklist = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: { id: string; checklist: Array<{ id: string; text: string; done: boolean }> }) => i)
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from('test_tasks')
+      .update({ checklist: data.checklist })
+      .eq('id', data.id)
+    if (error) throw new Error(error.message)
+    return { ok: true }
   })
 
 export type TaskStatus = 'todo' | 'correcting' | 'review' | 'approved'
