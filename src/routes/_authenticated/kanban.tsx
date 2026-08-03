@@ -76,6 +76,7 @@ function KanbanPage() {
   const create = useServerFn(createEvaluation)
   const patchTask = useServerFn(updateTask)
   const removeTask = useServerFn(deleteTask)
+  const patchChecklist = useServerFn(updateTaskChecklist)
   const patientsFn = useServerFn(listPatients)
   const catalogFn = useServerFn(listCatalog)
   const teamFn = useServerFn(listTeam)
