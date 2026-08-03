@@ -1840,6 +1840,79 @@ function PlanRow({ entry, onChanged }: { entry: PlanEntry; onChanged: () => void
           {entry.notes}
         </p>
       ) : null}
+
+      <SessionRecord
+        entry={entry}
+        saving={updMut.isPending}
+        onSave={(v) => updMut.mutate({ id: entry.id, notes: v.notes, transcript: v.transcript })}
+      />
+    </div>
+  )
+}
+
+function SessionRecord({
+  entry,
+  saving,
+  onSave,
+}: {
+  entry: PlanEntry
+  saving: boolean
+  onSave: (v: { notes: string; transcript: string }) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [notes, setNotes] = useState(entry.notes ?? '')
+  const [transcript, setTranscript] = useState(entry.transcript ?? '')
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        className="mt-3 px-0 text-primary"
+        onClick={() => setOpen(true)}
+      >
+        <Pencil className="size-3.5" /> Escrever registro da sessão
+        {entry.transcript ? ' (com transcrição)' : ''}
+      </Button>
+    )
+  }
+
+  return (
+    <div className="mt-3 flex flex-col gap-3 rounded-xl border bg-muted/20 p-3">
+      <div className="flex flex-col gap-1.5">
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+          Registro escrito da sessão
+        </Label>
+        <Textarea rows={5} value={notes} onChange={(e) => setNotes(e.target.value)} />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+            Transcrição do áudio
+          </Label>
+          <AudioTranscriber
+            compact
+            onInsert={(t) => setTranscript((cur) => (cur ? `${cur}\n\n${t}` : t))}
+          />
+        </div>
+        <Textarea
+          rows={5}
+          value={transcript}
+          placeholder="Grave ou envie o áudio da sessão — o texto transcrito aparece aqui e pode ser editado."
+          onChange={(e) => setTranscript(e.target.value)}
+        />
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
+          Fechar
+        </Button>
+        <Button type="button" size="sm" disabled={saving} onClick={() => onSave({ notes, transcript })}>
+          {saving ? 'Salvando…' : 'Salvar registro'}
+        </Button>
+      </div>
     </div>
   )
 }
