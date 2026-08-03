@@ -56,7 +56,7 @@ export function GuardiansEmergencyFields({
 
         {value.hasGuardians ? (
           <div className="mt-4 flex flex-col gap-4">
-            {value.guardians.map((g, i) => (
+            {(value.guardians ?? []).map((g, i) => (
               <div key={i} className="rounded-lg border bg-background p-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-muted-foreground">Responsável {i + 1}</span>
@@ -69,16 +69,16 @@ export function GuardiansEmergencyFields({
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="flex flex-col gap-1.5">
                     <Label>Nome</Label>
-                    <Input value={g.name} maxLength={120} onChange={(e) => setGuardian(i, { name: e.target.value })} />
+                    <Input value={g?.name ?? ''} maxLength={120} onChange={(e) => setGuardian(i, { name: e.target.value })} />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label>Telefone / WhatsApp</Label>
-                    <Input value={g.phone} maxLength={40} placeholder="🇧🇷 +55 (11) 90000-0000" onChange={(e) => setGuardian(i, { phone: e.target.value })} />
+                    <Input value={g?.phone ?? ''} maxLength={40} placeholder="🇧🇷 +55 (11) 90000-0000" onChange={(e) => setGuardian(i, { phone: e.target.value })} />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label>Relação com o paciente</Label>
                     <select
-                      value={g.relation}
+                      value={g?.relation ?? ''}
                       onChange={(e) => setGuardian(i, { relation: e.target.value })}
                       className="h-10 rounded-md border bg-background px-3 text-sm"
                     >
@@ -104,16 +104,16 @@ export function GuardiansEmergencyFields({
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <div className="flex flex-col gap-1.5">
             <Label>Nome</Label>
-            <Input value={value.emergencyContact.name} maxLength={120} onChange={(e) => setEmergency({ name: e.target.value })} />
+            <Input value={value.emergencyContact?.name ?? ''} maxLength={120} onChange={(e) => setEmergency({ name: e.target.value })} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Telefone / WhatsApp</Label>
-            <Input value={value.emergencyContact.phone} maxLength={40} placeholder="🇧🇷 +55 (11) 90000-0000" onChange={(e) => setEmergency({ phone: e.target.value })} />
+            <Input value={value.emergencyContact?.phone ?? ''} maxLength={40} placeholder="🇧🇷 +55 (11) 90000-0000" onChange={(e) => setEmergency({ phone: e.target.value })} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Relação com o paciente</Label>
             <select
-              value={value.emergencyContact.relation}
+              value={value.emergencyContact?.relation ?? ''}
               onChange={(e) => setEmergency({ relation: e.target.value })}
               className="h-10 rounded-md border bg-background px-3 text-sm"
             >
