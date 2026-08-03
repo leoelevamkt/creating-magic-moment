@@ -58,7 +58,7 @@ export const transcribeAudio = createServerFn({ method: 'POST' })
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
           body: JSON.stringify({
-            model: 'google/gemini-1.5-flash',
+            model: 'google/gemini-2.0-flash-exp', // Usando o modelo mais recente e eficiente da série Flash
             messages: [
               {
                 role: 'system',
