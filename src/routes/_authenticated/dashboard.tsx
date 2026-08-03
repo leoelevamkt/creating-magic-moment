@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { ErrorCard, LoadingCard, QueryBoundary, SectionBoundary } from '@/components/common/DataBoundary'
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   beforeLoad: ({ context }) => {
@@ -21,6 +22,23 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
   },
   head: () => ({ meta: [{ title: 'Painel — NeuroFlux' }] }),
   component: Dashboard,
+  pendingComponent: () => (
+    <div className="mx-auto max-w-7xl p-6">
+      <LoadingCard label="Carregando o painel…" />
+    </div>
+  ),
+  errorComponent: ({ error, reset }) => (
+    <div className="mx-auto max-w-3xl p-6">
+      <ErrorCard
+        title="Não foi possível carregar o painel"
+        message={error.message}
+        onRetry={reset}
+      />
+    </div>
+  ),
+  notFoundComponent: () => (
+    <div className="mx-auto max-w-3xl p-6 text-sm">Painel não encontrado.</div>
+  ),
 })
 
 const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
@@ -52,6 +70,14 @@ function Dashboard() {
         </h1>
       </header>
 
+      {d.isError ? (
+        <ErrorCard
+          title="Não foi possível carregar os indicadores"
+          message={d.error instanceof Error ? d.error.message : undefined}
+          onRetry={() => d.refetch()}
+        />
+      ) : null}
+
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((c) => {
           const Icon = c.icon
@@ -72,6 +98,7 @@ function Dashboard() {
         })}
       </section>
 
+      <SectionBoundary>
       <section className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <div className="rounded-2xl border bg-card p-6">
           <div className="mb-4 flex items-center justify-between">
@@ -86,6 +113,13 @@ function Dashboard() {
               Ver quadro <ArrowRight size={14} />
             </Link>
           </div>
+          <QueryBoundary
+            isLoading={d.isLoading}
+            isError={d.isError}
+            error={d.error}
+            onRetry={() => d.refetch()}
+            loadingLabel="Carregando atividade clínica…"
+          >
           <Table>
             <TableHeader>
               <TableRow>
@@ -125,6 +159,7 @@ function Dashboard() {
               )}
             </TableBody>
           </Table>
+          </QueryBoundary>
         </div>
 
         <aside className="flex flex-col gap-4">
@@ -181,6 +216,7 @@ function Dashboard() {
           </section>
         </aside>
       </section>
+      </SectionBoundary>
     </div>
   )
 }
