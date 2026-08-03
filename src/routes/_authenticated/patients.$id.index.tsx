@@ -44,6 +44,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
   DialogContent,
@@ -395,6 +396,7 @@ function PatientMoreMenu({
       qc.invalidateQueries({ queryKey: ['patient-detail', patientId] });
       qc.invalidateQueries({ queryKey: ['patients'] });
       router.invalidate();
+      onChanged();
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -409,21 +411,36 @@ function PatientMoreMenu({
   })
   const isActive = status === 'active'
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button variant="outline" size="icon" aria-label="Mais ações">
-            <MoreHorizontal className="size-4" />
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuItem
-          onSelect={() => statusMut.mutate(isActive ? 'archived' : 'active')}
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 rounded-lg border bg-card/60 px-3 py-1.5 shadow-sm">
+        <Label htmlFor="status-switch" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground cursor-pointer">
+          {isActive ? 'Ativo' : 'Inativo'}
+        </Label>
+        <Switch
+          id="status-switch"
+          checked={isActive}
+          onCheckedChange={(checked) => {
+            statusMut.mutate(checked ? 'active' : 'archived')
+          }}
           disabled={statusMut.isPending}
-        >
-          {isActive ? 'Desativar paciente (Inativo)' : 'Ativar paciente'}
-        </DropdownMenuItem>
+        />
+      </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="outline" size="icon" aria-label="Mais ações">
+              <MoreHorizontal className="size-4" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem
+            onSelect={() => statusMut.mutate(isActive ? 'archived' : 'active')}
+            disabled={statusMut.isPending}
+          >
+            {isActive ? 'Desativar paciente (Inativo)' : 'Ativar paciente'}
+          </DropdownMenuItem>
 
         <DropdownMenuSeparator />
         <DropdownMenuItem
