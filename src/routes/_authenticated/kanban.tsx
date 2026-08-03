@@ -542,6 +542,10 @@ function KanbanPage() {
                             </div>
                           ) : null}
                         </dl>
+                        <TaskChecklist
+                          task={t as any}
+                          onToggle={(taskId, checklist) => checklistMut.mutate({ id: taskId, checklist })}
+                        />
                         {col.id === 'correcting' && t.started_at && !t.completed_at ? (
                           <LiveTimer startedAt={t.started_at} />
                         ) : null}
