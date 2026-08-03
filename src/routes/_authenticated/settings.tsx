@@ -71,9 +71,11 @@ function SettingsPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <header>
-        <h1 className="font-serif text-2xl sm:text-3xl font-semibold">Acesso e equipe</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl font-semibold">
+          permita que o admin gerencie a listagem e associao de profissionais aos pacientes
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Gerencie os acessos da clínica e confira as regras essenciais de proteção dos dados clínicos.
+          corrija o funcionamento do acesso de funcionário para que tudo que ele tenha acesso funcione de maneira independente e salve tudo em tempo real e automático e sempre guarde backups de tudo
         </p>
       </header>
 
