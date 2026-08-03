@@ -1887,7 +1887,7 @@ function PlanDialog({
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">
-            {initial ? 'Editar sessão do plano' : 'Nova sessão do plano'}
+            plano de avaliação com checklist listagem de testes com a bateria padrão.
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-3 pt-2 sm:grid-cols-2">
