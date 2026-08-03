@@ -44,6 +44,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
   DialogContent,
@@ -395,6 +396,7 @@ function PatientMoreMenu({
       qc.invalidateQueries({ queryKey: ['patient-detail', patientId] });
       qc.invalidateQueries({ queryKey: ['patients'] });
       router.invalidate();
+      onChanged();
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -409,40 +411,56 @@ function PatientMoreMenu({
   })
   const isActive = status === 'active'
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button variant="outline" size="icon" aria-label="Mais ações">
-            <MoreHorizontal className="size-4" />
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuItem
-          onSelect={() => statusMut.mutate(isActive ? 'archived' : 'active')}
-          disabled={statusMut.isPending}
-        >
-          {isActive ? 'Desativar paciente (Inativo)' : 'Ativar paciente'}
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="text-destructive focus:text-destructive"
-          onSelect={() => {
-            if (
-              confirm(
-                'Excluir permanentemente este paciente e todos os seus dados? Esta ação não pode ser desfeita.',
-              )
-            ) {
-              delMut.mutate()
-            }
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 rounded-lg border bg-card/60 px-3 py-1.5 shadow-sm">
+        <Label htmlFor="status-switch" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground cursor-pointer">
+          {isActive ? 'Ativo' : 'Inativo'}
+        </Label>
+        <Switch
+          id="status-switch"
+          checked={isActive}
+          onCheckedChange={(checked) => {
+            statusMut.mutate(checked ? 'active' : 'archived')
           }}
-          disabled={delMut.isPending}
-        >
-          <Trash2 className="mr-2 size-4" /> Excluir
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          disabled={statusMut.isPending}
+        />
+      </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="outline" size="icon" aria-label="Mais ações">
+              <MoreHorizontal className="size-4" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem
+            onSelect={() => statusMut.mutate(isActive ? 'archived' : 'active')}
+            disabled={statusMut.isPending}
+          >
+            {isActive ? 'Desativar paciente (Inativo)' : 'Ativar paciente'}
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={() => {
+              if (
+                confirm(
+                  'Excluir permanentemente este paciente e todos os seus dados? Esta ação não pode ser desfeita.',
+                )
+              ) {
+                delMut.mutate()
+              }
+            }}
+            disabled={delMut.isPending}
+          >
+            <Trash2 className="mr-2 size-4" /> Excluir
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
 }
 
@@ -1482,10 +1500,11 @@ function NoteDialog({
   )
 
   useEffect(() => {
+    // For new session plan entries, if they aren't provided by initial data
     if (open && !initial && batteryTests.length > 0 && items.length === 0) {
-      setItems(batteryTests.map(t => ({ label: t.acronym || t.name, done: false })))
+      setItems(batteryTests.map((t) => ({ label: t.acronym || t.name, done: false })))
     }
-  }, [open, initial, batteryTests])
+  }, [open, initial, batteryTests, items.length])
 
   function addItem() {
     const label = newItem.trim()
@@ -1587,23 +1606,32 @@ function NoteDialog({
           <div className="flex flex-col gap-2">
             <Label>O que será aplicado</Label>
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Bateria padrão (Marque para adicionar ao checklist)</p>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                Bateria padrão (Marque para adicionar ou remover do checklist)
+              </p>
               <StandardBatteryChecklist
                 tests={batteryTests}
                 isLoading={battery.isLoading}
-                selected={new Set(items.map(it => {
-                  const t = batteryTests.find(bt => (bt.acronym || bt.name) === it.label)
-                  return t?.id || ''
-                }).filter(Boolean))}
+                selected={
+                  new Set(
+                    items
+                      .map((it) => {
+                        const t = batteryTests.find((bt) => (bt.acronym || bt.name) === it.label)
+                        return t?.id || ''
+                      })
+                      .filter(Boolean),
+                  )
+                }
                 onToggle={(id) => {
                   const t = batteryTests.find((x) => x.id === id)
                   if (t) {
                     const label = t.acronym || t.name
-                    if (!items.some((it) => it.label === label)) {
-                      setItems((prev) => [...prev, { label, done: false }])
-                    } else {
-                      setItems((prev) => prev.filter((it) => it.label !== label))
-                    }
+                    setItems((prev) => {
+                      if (prev.some((it) => it.label === label)) {
+                        return prev.filter((it) => it.label !== label)
+                      }
+                      return [...prev, { label, done: false }]
+                    })
                   }
                 }}
                 onSelectAll={() => {
@@ -2042,6 +2070,19 @@ function PlanDialog({
   const [items, setItems] = useState<ChecklistItem[]>(initial?.checklist ?? [])
   const [newItem, setNewItem] = useState('')
 
+  const batteryFn = useServerFn(listStandardBattery)
+  const battery = useQuery({ queryKey: ['standard-battery'], queryFn: () => batteryFn() })
+  const batteryTests = useMemo<BatteryTest[]>(
+    () => ((battery.data ?? []) as Array<BatteryTest | null>).filter(Boolean) as BatteryTest[],
+    [battery.data],
+  )
+
+  useEffect(() => {
+    if (open && !initial && batteryTests.length > 0 && items.length === 0) {
+      setItems(batteryTests.map((t) => ({ label: t.acronym || t.name, done: false })))
+    }
+  }, [open, initial, batteryTests, items.length])
+
   function addItem() {
     const t = newItem.trim()
     if (!t) return
@@ -2110,6 +2151,54 @@ function PlanDialog({
 
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>Checklist do que será feito</Label>
+            <div className="mb-2 rounded-lg border bg-muted/30 p-3">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                Bateria padrão (Marque para adicionar ou remover do checklist)
+              </p>
+              <StandardBatteryChecklist
+                tests={batteryTests}
+                isLoading={battery.isLoading}
+                selected={
+                  new Set(
+                    items
+                      .map((it) => {
+                        const t = batteryTests.find((bt) => (bt.acronym || bt.name) === it.label)
+                        return t?.id || ''
+                      })
+                      .filter(Boolean),
+                  )
+                }
+                onToggle={(id) => {
+                  const t = batteryTests.find((x) => x.id === id)
+                  if (t) {
+                    const label = t.acronym || t.name
+                    setItems((prev) => {
+                      if (prev.some((it) => it.label === label)) {
+                        return prev.filter((it) => it.label !== label)
+                      }
+                      return [...prev, { label, done: false }]
+                    })
+                  }
+                }}
+                onSelectAll={() => {
+                  setItems((prev) => {
+                    const next = [...prev]
+                    batteryTests.forEach((t) => {
+                      const label = t.acronym || t.name
+                      if (!next.some((it) => it.label === label)) {
+                        next.push({ label, done: false })
+                      }
+                    })
+                    return next
+                  })
+                }}
+                onClear={() => {
+                  setItems((prev) =>
+                    prev.filter((it) => !batteryTests.some((t) => (t.acronym || t.name) === it.label)),
+                  )
+                }}
+              />
+            </div>
             <div className="flex flex-col gap-1.5">
               {items.map((it, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm">
