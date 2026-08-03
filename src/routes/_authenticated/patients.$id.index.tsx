@@ -1480,6 +1480,19 @@ function NoteDialog({
   const [dates, setDates] = useState<string[]>(initial?.sessionDates ?? [])
   const [newDate, setNewDate] = useState('')
 
+  const batteryFn = useServerFn(listStandardBattery)
+  const battery = useQuery({ queryKey: ['standard-battery'], queryFn: () => batteryFn() })
+  const batteryTests = useMemo<BatteryTest[]>(
+    () => ((battery.data ?? []) as Array<BatteryTest | null>).filter(Boolean) as BatteryTest[],
+    [battery.data],
+  )
+
+  useEffect(() => {
+    if (open && !initial && batteryTests.length > 0 && items.length === 0) {
+      setItems(batteryTests.map(t => ({ label: t.acronym || t.name, done: false })))
+    }
+  }, [open, initial, batteryTests])
+
   function addItem() {
     const label = newItem.trim()
     if (!label) return
