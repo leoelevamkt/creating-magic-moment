@@ -361,7 +361,7 @@ function KanbanPage() {
 
               <div className="flex flex-col gap-2">
                 <div className="rounded-lg border bg-muted/30 p-3">
-                  <p className="mb-2 text-sm font-medium">Bateria padrão (Marque para aplicar)</p>
+                  <p className="mb-2 text-sm font-medium">Bateria padrão (Marque para selecionar os testes)</p>
                   <StandardBatteryChecklist
                     tests={batteryTests}
                     isLoading={battery.isLoading}

@@ -1474,6 +1474,19 @@ function NoteDialog({
   const [dates, setDates] = useState<string[]>(initial?.sessionDates ?? [])
   const [newDate, setNewDate] = useState('')
 
+  const batteryFn = useServerFn(listStandardBattery)
+  const battery = useQuery({ queryKey: ['standard-battery'], queryFn: () => batteryFn() })
+  const batteryTests = useMemo<BatteryTest[]>(
+    () => ((battery.data ?? []) as Array<BatteryTest | null>).filter(Boolean) as BatteryTest[],
+    [battery.data],
+  )
+
+  useEffect(() => {
+    if (open && !initial && batteryTests.length > 0 && items.length === 0) {
+      setItems(batteryTests.map(t => ({ label: t.acronym || t.name, done: false })))
+    }
+  }, [open, initial, batteryTests])
+
   function addItem() {
     const label = newItem.trim()
     if (!label) return
@@ -1521,7 +1534,7 @@ function NoteDialog({
             {initial ? 'Editar anotação' : 'Nova anotação'}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={submit} className="grid max-h-[75vh] gap-3 overflow-y-auto pt-2">
+        <form onSubmit={submit} className="grid max-h-[75vh] gap-4 overflow-y-auto pt-2">
           <div className="flex flex-col gap-1.5">
             <Label>Título</Label>
             <Input name="title" defaultValue={initial?.title ?? ''} />
@@ -1571,13 +1584,50 @@ function NoteDialog({
               ) : null}
             </div>
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <Label>O que será aplicado</Label>
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Bateria padrão (Marque para adicionar ao checklist)</p>
+              <StandardBatteryChecklist
+                tests={batteryTests}
+                isLoading={battery.isLoading}
+                selected={new Set(items.map(it => {
+                  const t = batteryTests.find(bt => (bt.acronym || bt.name) === it.label)
+                  return t?.id || ''
+                }).filter(Boolean))}
+                onToggle={(id) => {
+                  const t = batteryTests.find((x) => x.id === id)
+                  if (t) {
+                    const label = t.acronym || t.name
+                    if (!items.some((it) => it.label === label)) {
+                      setItems((prev) => [...prev, { label, done: false }])
+                    } else {
+                      setItems((prev) => prev.filter((it) => it.label !== label))
+                    }
+                  }
+                }}
+                onSelectAll={() => {
+                  setItems((prev) => {
+                    const next = [...prev]
+                    batteryTests.forEach((t) => {
+                      const label = t.acronym || t.name
+                      if (!next.some((it) => it.label === label)) {
+                        next.push({ label, done: false })
+                      }
+                    })
+                    return next
+                  })
+                }}
+                onClear={() => {
+                  setItems((prev) => prev.filter((it) => !batteryTests.some((t) => (t.acronym || t.name) === it.label)))
+                }}
+              />
+            </div>
             <Textarea
               name="planned_tests"
-              rows={6}
-              placeholder="Ex.: WAIS-IV, Rey, TDE-II…"
-              defaultValue={initial?.plannedTests ?? 'WAIS-III\n\nAPM RAVEN\n\nD2-R\n\nCPT-FLEX\n\nBPA-2\n\nTORRE DE LONDRES\n\nETDAH-AD\n\nBDEFS\n\nEPF-TDAH\n\nSRS-2\n\nERA-F\n\nCAT-Q\n\nAQ\n\nEQ\n\nRAADS\n\nRAVLT\n\nTEM-R-2\n\nFDT\n\nMFFT\n\nBFP\n\nPFISTER\n\nHTP\n\nHUMOR-A\n\nBDI-II\n\nEAG-A\n\nBAI\n\nIHS-2'}
+              rows={3}
+              placeholder="Notas adicionais sobre a aplicação…"
+              defaultValue={initial?.plannedTests ?? ''}
             />
           </div>
           <div className="flex flex-col gap-1.5">
