@@ -386,15 +386,26 @@ export const setPatientStatus = createServerFn({ method: 'POST' })
     }).parse(i),
   )
   .handler(async ({ context, data }) => {
+    console.log(`[setPatientStatus] Attempting to set status ${data.status} for patient ${data.id}`);
     const { error, data: row } = await context.supabase
       .from('patients')
       .update({ status: data.status })
       .eq('id', data.id)
       .select('id, status')
-      .maybeSingle()
-    if (error) throw new Error(error.message)
-    if (!row) throw new Error('Paciente não encontrado ou acesso negado.')
-    return { ok: true, status: row.status }
+      .single();
+
+    if (error) {
+      console.error('[setPatientStatus] Error:', error);
+      throw new Error(`Erro ao atualizar status: ${error.message}`);
+    }
+    
+    if (!row) {
+      console.warn('[setPatientStatus] No row returned');
+      throw new Error('Paciente não encontrado ou você não tem permissão para editá-lo.');
+    }
+
+    console.log(`[setPatientStatus] Success: ${row.status}`);
+    return { ok: true, status: row.status };
   })
 
 
