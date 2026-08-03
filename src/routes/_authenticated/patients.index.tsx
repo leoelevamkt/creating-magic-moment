@@ -51,6 +51,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import { ErrorCard, LoadingCard, SectionBoundary } from '@/components/common/DataBoundary'
 
 
@@ -378,9 +379,19 @@ function PatientsPage() {
                   <TableCell>{p.schooling ?? '—'}</TableCell>
                   <TableCell>{p.assigned_professional?.name ?? '—'}</TableCell>
                   <TableCell>
-                    <Badge variant={p.status === 'active' ? 'default' : 'secondary'}>
-                      {p.status === 'active' ? 'Ativo' : p.status === 'archived' ? 'Inativo' : 'Alta'}
-                    </Badge>
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={p.status === 'active'}
+                        onCheckedChange={(checked) => {
+                          statusMut.mutate({ id: p.id, status: checked ? 'active' : 'archived' })
+                        }}
+                        disabled={statusMut.isPending}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <Badge variant={p.status === 'active' ? 'default' : 'secondary'} className="hidden sm:inline-flex">
+                        {p.status === 'active' ? 'Ativo' : p.status === 'archived' ? 'Inativo' : 'Alta'}
+                      </Badge>
+                    </div>
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
