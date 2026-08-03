@@ -266,7 +266,9 @@ function KanbanPage() {
             </DialogTrigger>
           <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle className="font-serif text-2xl">Planejar avaliação</DialogTitle>
+              <DialogTitle className="font-serif text-2xl">
+                plano de avaliação com checklist listagem de testes com a bateria padrão.
+              </DialogTitle>
             </DialogHeader>
             <form onSubmit={onSubmit} className="flex flex-col gap-4 pt-2">
               <div className="flex flex-col gap-2">
