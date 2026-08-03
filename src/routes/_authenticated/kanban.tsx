@@ -166,6 +166,12 @@ function KanbanPage() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const checklistMut = useMutation({
+    mutationFn: (v: { id: string; checklist: any[] }) => patchChecklist({ data: v }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onError: (e: Error) => toast.error(e.message),
+  })
+
   function resetForm() {
     setSearch('')
     setSelectedTests(new Set())
