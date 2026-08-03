@@ -156,19 +156,20 @@ function PatientDetailPage() {
             <NavPill active={view === 'documents'} onClick={() => setView('documents')}>Documentos</NavPill>
             <NavPill active={view === 'finance'} onClick={() => setView('finance')}>Financeiro</NavPill>
             <span className="mx-1 hidden h-5 w-px bg-border sm:block" />
-            <Button variant="ghost" size="sm" className="rounded-lg" render={<Link to="/patients/$id/anamnese" params={{ id }} />}>
+            <Button variant="ghost" size="sm" className="rounded-lg" render={<Link to="/patients/$id/anamnese" params={{ id: id }} />}>
               Anamnese
             </Button>
-            <Button variant="ghost" size="sm" className="rounded-lg" render={<Link to="/patients/$id/triagem" params={{ id }} />}>
+            <Button variant="ghost" size="sm" className="rounded-lg" render={<Link to="/patients/$id/triagem" params={{ id: id }} />}>
               Triagem
             </Button>
-            <Button variant="ghost" size="sm" className="rounded-lg" render={<Link to="/patients/$id/laudo" params={{ id }} />}>
+            <Button variant="ghost" size="sm" className="rounded-lg" render={<Link to="/patients/$id/laudo" params={{ id: id }} />}>
               Laudo
             </Button>
           </div>
           <EditPatientDialog patient={patient} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
           <NewSessionDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
           <NewEvaluationDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
+
           <PatientMoreMenu
             patientId={id}
             status={patient.status}
@@ -390,13 +391,14 @@ function PatientMoreMenu({
           </Button>
         }
       />
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuItem
           onSelect={() => statusMut.mutate(isActive ? 'archived' : 'active')}
           disabled={statusMut.isPending}
         >
-          {isActive ? 'Desativar paciente' : 'Ativar paciente'}
+          {isActive ? 'Desativar paciente (Inativo)' : 'Ativar paciente'}
         </DropdownMenuItem>
+
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="text-destructive focus:text-destructive"

@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Pencil, Play, Plus, ShieldCheck, Trash2, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Pencil, Play, Plus, ShieldCheck, Star, Trash2, X } from 'lucide-react'
 import { ExportCsvButton } from '@/components/common/ExportCsvButton'
 import { KANBAN_STALE_DAYS, daysInColumn, isStale } from '@/lib/kanban-stale'
 import { format } from 'date-fns'
@@ -21,8 +21,10 @@ import {
   type TaskStatus,
 } from '@/lib/evaluations.functions'
 import { listPatients } from '@/lib/patients.functions'
-import { listCatalog } from '@/lib/profile.functions'
+import { listCatalog, getMyProfile } from '@/lib/profile.functions'
 import { listTeam } from '@/lib/staff.functions'
+import { listStandardBattery } from '@/lib/standard-battery.functions'
+
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -76,13 +78,14 @@ function KanbanPage() {
   const patientsFn = useServerFn(listPatients)
   const catalogFn = useServerFn(listCatalog)
   const teamFn = useServerFn(listTeam)
+  const batteryFn = useServerFn(listStandardBattery)
   const team = useQuery({ queryKey: ['team'], queryFn: () => teamFn() })
-
-
 
   const tasks = useQuery({ queryKey: ['tasks'], queryFn: () => tasksFn() })
   const patients = useQuery({ queryKey: ['patients'], queryFn: () => patientsFn() })
   const catalog = useQuery({ queryKey: ['catalog'], queryFn: () => catalogFn() })
+  const battery = useQuery({ queryKey: ['standard-battery'], queryFn: () => batteryFn() })
+
 
   const grouped = useMemo(() => {
     const map = new Map<TaskStatus, NonNullable<typeof tasks.data>>()
@@ -209,7 +212,18 @@ function KanbanPage() {
     setCustomAcronym('')
   }
 
+  function applyStandardBattery() {
+    const ids = (battery.data ?? []).map((t: any) => t.id).filter(Boolean)
+    if (ids.length === 0) {
+      toast.error('Nenhum teste na bateria padrão. Configure no catálogo.')
+      return
+    }
+    setSelectedTests(new Set(ids))
+    toast.success('Bateria padrão aplicada.')
+  }
+
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
     const testIds = Array.from(selectedTests)
@@ -322,8 +336,21 @@ function KanbanPage() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>Testes a aplicar</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Testes a aplicar</Label>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-amber-600 hover:text-amber-700 dark:text-amber-500"
+                    onClick={applyStandardBattery}
+                  >
+                    <Star size={14} className="mr-1 fill-current" />
+                    Aplicar bateria padrão
+                  </Button>
+                </div>
                 <Input
+
                   placeholder="Pesquisar por nome, sigla ou categoria…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}

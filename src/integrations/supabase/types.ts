@@ -831,6 +831,32 @@ export type Database = {
           },
         ]
       }
+      standard_battery: {
+        Row: {
+          created_at: string | null
+          id: string
+          test_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          test_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          test_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "standard_battery_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: true
+            referencedRelation: "test_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supervision_cases: {
         Row: {
           created_at: string
@@ -906,6 +932,38 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "supervision_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_revisions: {
+        Row: {
+          author_id: string | null
+          created_at: string | null
+          id: string
+          snapshot: Json
+          task_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          created_at?: string | null
+          id?: string
+          snapshot: Json
+          task_id: string
+        }
+        Update: {
+          author_id?: string | null
+          created_at?: string | null
+          id?: string
+          snapshot?: Json
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_revisions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "test_tasks"
             referencedColumns: ["id"]
           },
         ]

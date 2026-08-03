@@ -3,11 +3,13 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
 import { toast } from 'sonner'
-import { Library, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Library, Pencil, Plus, Star, StarOff, Trash2 } from 'lucide-react'
 import { listCatalog, getMyProfile } from '@/lib/profile.functions'
 import { upsertTest, deleteTest } from '@/lib/catalog.functions'
+import { listStandardBattery, addToStandardBattery, removeFromStandardBattery } from '@/lib/standard-battery.functions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -69,9 +71,14 @@ function CatalogPage() {
   const fetchProfile = useServerFn(getMyProfile)
   const saveTest = useServerFn(upsertTest)
   const removeTest = useServerFn(deleteTest)
+  const fetchBattery = useServerFn(listStandardBattery)
+  const addBattery = useServerFn(addToStandardBattery)
+  const removeBattery = useServerFn(removeFromStandardBattery)
 
   const catalogQ = useQuery({ queryKey: ['catalog'], queryFn: () => fetchCatalog() })
+  const batteryQ = useQuery({ queryKey: ['standard-battery'], queryFn: () => fetchBattery() })
   const profileQ = useQuery({ queryKey: ['my-profile'], queryFn: () => fetchProfile() })
+
   const isAdmin = profileQ.data?.role === 'admin'
 
   const [open, setOpen] = useState(false)
@@ -133,7 +140,22 @@ function CatalogPage() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const batteryIds = useMemo(() => new Set((batteryQ.data ?? []).map(b => b?.id).filter(Boolean)), [batteryQ.data])
+
+  const toggleBatteryMut = useMutation({
+    mutationFn: (testId: string) => {
+      const isStarred = batteryIds.has(testId)
+      return isStarred ? removeBattery({ data: { testId } }) : addBattery({ data: { testId } })
+    },
+    onSuccess: () => {
+      toast.success('Bateria padrão atualizada.')
+      qc.invalidateQueries({ queryKey: ['standard-battery'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
   const grouped = useMemo(() => {
+
     const q = search.trim().toLowerCase()
     const g: Record<string, TestRow[]> = {}
     for (const t of (catalogQ.data ?? []) as TestRow[]) {
@@ -274,7 +296,20 @@ function CatalogPage() {
                         <p className="font-serif text-lg font-semibold text-foreground">{t.acronym}</p>
                         <p className="text-sm text-muted-foreground">{t.name}</p>
                       </div>
-                      <Badge variant={t.status === 'approved' ? 'default' : 'secondary'}>{t.source}</Badge>
+                      <div className="flex items-center gap-2">
+                        {isAdmin && (
+                          <button
+                            onClick={() => toggleBatteryMut.mutate(t.id)}
+                            disabled={toggleBatteryMut.isPending}
+                            className={`p-1 transition-colors ${batteryIds.has(t.id) ? 'text-amber-500' : 'text-muted-foreground/30 hover:text-amber-500'}`}
+                            title={batteryIds.has(t.id) ? 'Remover da bateria padrão' : 'Adicionar à bateria padrão'}
+                          >
+                            {batteryIds.has(t.id) ? <Star size={16} fill="currentColor" /> : <Star size={16} />}
+                          </button>
+                        )}
+                        <Badge variant={t.status === 'approved' ? 'default' : 'secondary'}>{t.source}</Badge>
+                      </div>
+
                     </div>
                     <dl className="mt-4 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                       <div>
