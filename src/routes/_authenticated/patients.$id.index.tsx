@@ -1572,9 +1572,9 @@ function NoteDialog({
             <Label>O que será aplicado</Label>
             <Textarea
               name="planned_tests"
-              rows={2}
+              rows={6}
               placeholder="Ex.: WAIS-IV, Rey, TDE-II…"
-              defaultValue={initial?.plannedTests ?? ''}
+              defaultValue={initial?.plannedTests ?? 'WAIS-III\n\nAPM RAVEN\n\nD2-R\n\nCPT-FLEX\n\nBPA-2\n\nTORRE DE LONDRES\n\nETDAH-AD\n\nBDEFS\n\nEPF-TDAH\n\nSRS-2\n\nERA-F\n\nCAT-Q\n\nAQ\n\nEQ\n\nRAADS\n\nRAVLT\n\nTEM-R-2\n\nFDT\n\nMFFT\n\nBFP\n\nPFISTER\n\nHTP\n\nHUMOR-A\n\nBDI-II\n\nEAG-A\n\nBAI\n\nIHS-2'}
             />
           </div>
           <div className="flex flex-col gap-1.5">
