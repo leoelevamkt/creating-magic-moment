@@ -1708,6 +1708,7 @@ function PlanRow({ entry, onChanged }: { entry: PlanEntry; onChanged: () => void
       modality?: 'presencial' | 'online'
       objectives?: string | null
       notes?: string | null
+      transcript?: string | null
       status?: 'scheduled' | 'done' | 'cancelled'
       checklist?: ChecklistItem[]
     }) => upd({ data: v }),
