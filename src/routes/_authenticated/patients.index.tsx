@@ -146,10 +146,6 @@ function PatientsPage() {
     event.preventDefault()
     const fd = new FormData(event.currentTarget)
     const contactPayload = toPatientContactPayload(contact)
-    if (contact.hasGuardians && contactPayload.guardians.length === 0) {
-      toast.error('Preencha ao menos um responsável ou desmarque "Possui responsável(eis)".')
-      return
-    }
     const sexRaw = String(fd.get('sex') ?? '')
     mutation.mutate({
       name: String(fd.get('name') ?? ''),
