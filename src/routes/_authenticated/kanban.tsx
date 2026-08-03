@@ -780,6 +780,80 @@ function TestPicker({
   )
 }
 
+function TaskChecklist({
+  task,
+  onToggle,
+}: {
+  task: { id: string; checklist: Array<{ id: string; text: string; done: boolean }> | null }
+  onToggle: (taskId: string, checklist: Array<{ id: string; text: string; done: boolean }>) => void
+}) {
+  const [newItem, setNewItem] = useState('')
+  const checklist = task.checklist || []
+
+  function handleToggle(itemId: string) {
+    const next = checklist.map((it) => (it.id === itemId ? { ...it, done: !it.done } : it))
+    onToggle(task.id, next)
+  }
+
+  function handleAdd() {
+    if (!newItem.trim()) return
+    const next = [
+      ...checklist,
+      { id: crypto.randomUUID(), text: newItem.trim(), done: false },
+    ]
+    onToggle(task.id, next)
+    setNewItem('')
+  }
+
+  function handleRemove(itemId: string) {
+    const next = checklist.filter((it) => it.id !== itemId)
+    onToggle(task.id, next)
+  }
+
+  return (
+    <div className="mt-2 flex flex-col gap-2 rounded-lg border bg-muted/30 p-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Checklist</span>
+        <span className="text-[10px] text-muted-foreground">
+          {checklist.filter((c) => c.done).length}/{checklist.length}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        {checklist.map((it) => (
+          <div key={it.id} className="group flex items-center justify-between gap-2">
+            <label className="flex flex-1 items-center gap-2 text-xs">
+              <Checkbox
+                checked={it.done}
+                onCheckedChange={() => handleToggle(it.id)}
+                className="size-3.5"
+              />
+              <span className={it.done ? 'text-muted-foreground line-through' : ''}>{it.text}</span>
+            </label>
+            <button
+              onClick={() => handleRemove(it.id)}
+              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-1 pt-1">
+        <Input
+          placeholder="Novo item..."
+          className="h-7 text-xs"
+          value={newItem}
+          onChange={(e) => setNewItem(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAdd())}
+        />
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleAdd}>
+          <Plus size={14} />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 function LiveTimer({ startedAt }: { startedAt: string }) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
