@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { NewScreeningDialog } from './patients.$id.triagem'
 import {
   listPatientNotes,
   createPatientNote,
@@ -169,6 +170,7 @@ function PatientDetailPage() {
           <EditPatientDialog patient={patient} onSaved={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
           <NewSessionDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
           <NewEvaluationDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
+          <NewScreeningDialog patientId={id} onDone={() => qc.invalidateQueries({ queryKey: ['patient-detail', id] })} />
 
           <PatientMoreMenu
             patientId={id}
@@ -303,7 +305,22 @@ function PatientDetailPage() {
               )}
             </section>
 
-            <EvaluationPlan patientId={id} />
+            <div className="flex flex-col gap-6">
+              <section className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-serif text-xl font-semibold">Triagem de início de caso</h2>
+                  <NewScreeningDialog 
+                    patientId={id} 
+                    onDone={() => qc.invalidateQueries({ queryKey: ['screenings', id] })} 
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Realize a triagem clínica ou social diretamente por aqui para iniciar o processo.
+                </p>
+              </section>
+              
+              <EvaluationPlan patientId={id} />
+            </div>
           </main>
 
           {/* RIGHT — history */}

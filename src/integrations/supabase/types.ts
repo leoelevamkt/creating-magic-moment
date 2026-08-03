@@ -971,6 +971,7 @@ export type Database = {
       tasks: {
         Row: {
           assigned_to: string | null
+          checklist: Json | null
           color: string
           created_at: string
           created_by: string
@@ -983,6 +984,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          checklist?: Json | null
           color?: string
           created_at?: string
           created_by: string
@@ -995,6 +997,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          checklist?: Json | null
           color?: string
           created_at?: string
           created_by?: string
@@ -1061,6 +1064,7 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           assignee_id: string | null
+          checklist: Json | null
           classification: string | null
           completed_at: string | null
           correction_notes: string | null
@@ -1083,6 +1087,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           assignee_id?: string | null
+          checklist?: Json | null
           classification?: string | null
           completed_at?: string | null
           correction_notes?: string | null
@@ -1105,6 +1110,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           assignee_id?: string | null
+          checklist?: Json | null
           classification?: string | null
           completed_at?: string | null
           correction_notes?: string | null

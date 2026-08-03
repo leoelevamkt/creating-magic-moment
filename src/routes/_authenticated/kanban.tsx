@@ -18,6 +18,7 @@ import {
   listTasks,
   updateTask,
   updateTaskStatus,
+  updateTaskChecklist,
   type TaskStatus,
 } from '@/lib/evaluations.functions'
 import { listPatients } from '@/lib/patients.functions'
@@ -44,10 +45,10 @@ export const Route = createFileRoute('/_authenticated/kanban')({
 })
 
 const columns: Array<{ id: TaskStatus; label: string; icon: typeof ClipboardList; next?: TaskStatus; nextLabel?: string; prev?: TaskStatus; prevLabel?: string }> = [
-  { id: 'todo', label: 'A fazer', icon: ClipboardList, next: 'correcting', nextLabel: 'Iniciar correção' },
+  { id: 'todo', label: 'A fazer (dia)', icon: ClipboardList, next: 'correcting', nextLabel: 'Iniciar correção' },
   { id: 'correcting', label: 'Em correção', icon: Loader2, next: 'review', nextLabel: 'Enviar para OK', prev: 'todo', prevLabel: 'Voltar para A fazer' },
   { id: 'review', label: 'Aguardando OK do admin', icon: ShieldCheck, next: 'approved', nextLabel: 'Aprovar', prev: 'correcting', prevLabel: 'Voltar para correção' },
-  { id: 'approved', label: 'Aprovado', icon: CheckCircle2, prev: 'review', prevLabel: 'Reabrir para revisão' },
+  { id: 'approved', label: 'Finalizado (semana)', icon: CheckCircle2, prev: 'review', prevLabel: 'Reabrir para revisão' },
 ]
 
 function KanbanPage() {
@@ -75,6 +76,7 @@ function KanbanPage() {
   const create = useServerFn(createEvaluation)
   const patchTask = useServerFn(updateTask)
   const removeTask = useServerFn(deleteTask)
+  const patchChecklist = useServerFn(updateTaskChecklist)
   const patientsFn = useServerFn(listPatients)
   const catalogFn = useServerFn(listCatalog)
   const teamFn = useServerFn(listTeam)
@@ -164,6 +166,12 @@ function KanbanPage() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const checklistMut = useMutation({
+    mutationFn: (v: { id: string; checklist: any[] }) => patchChecklist({ data: v }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onError: (e: Error) => toast.error(e.message),
+  })
+
   function resetForm() {
     setSearch('')
     setSelectedTests(new Set())
@@ -250,8 +258,8 @@ function KanbanPage() {
           <p className="text-sm font-medium text-primary">Fluxo de correções</p>
           <h1 className="font-serif text-2xl sm:text-3xl font-semibold">Quadro clínico</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Acompanhe cada teste desde a aplicação até o OK final do admin, com paciente, data,
-            horário e duração registrados.
+            Checklist de atividades para o dia e para a semana. Acompanhe cada teste desde a aplicação 
+            até o OK final do admin.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -534,6 +542,10 @@ function KanbanPage() {
                             </div>
                           ) : null}
                         </dl>
+                        <TaskChecklist
+                          task={t as any}
+                          onToggle={(taskId, checklist) => checklistMut.mutate({ id: taskId, checklist })}
+                        />
                         {col.id === 'correcting' && t.started_at && !t.completed_at ? (
                           <LiveTimer startedAt={t.started_at} />
                         ) : null}
@@ -764,6 +776,80 @@ function TestPicker({
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+function TaskChecklist({
+  task,
+  onToggle,
+}: {
+  task: { id: string; checklist: Array<{ id: string; text: string; done: boolean }> | null }
+  onToggle: (taskId: string, checklist: Array<{ id: string; text: string; done: boolean }>) => void
+}) {
+  const [newItem, setNewItem] = useState('')
+  const checklist = task.checklist || []
+
+  function handleToggle(itemId: string) {
+    const next = checklist.map((it) => (it.id === itemId ? { ...it, done: !it.done } : it))
+    onToggle(task.id, next)
+  }
+
+  function handleAdd() {
+    if (!newItem.trim()) return
+    const next = [
+      ...checklist,
+      { id: crypto.randomUUID(), text: newItem.trim(), done: false },
+    ]
+    onToggle(task.id, next)
+    setNewItem('')
+  }
+
+  function handleRemove(itemId: string) {
+    const next = checklist.filter((it) => it.id !== itemId)
+    onToggle(task.id, next)
+  }
+
+  return (
+    <div className="mt-2 flex flex-col gap-2 rounded-lg border bg-muted/30 p-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Checklist</span>
+        <span className="text-[10px] text-muted-foreground">
+          {checklist.filter((c) => c.done).length}/{checklist.length}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        {checklist.map((it) => (
+          <div key={it.id} className="group flex items-center justify-between gap-2">
+            <label className="flex flex-1 items-center gap-2 text-xs">
+              <Checkbox
+                checked={it.done}
+                onCheckedChange={() => handleToggle(it.id)}
+                className="size-3.5"
+              />
+              <span className={it.done ? 'text-muted-foreground line-through' : ''}>{it.text}</span>
+            </label>
+            <button
+              onClick={() => handleRemove(it.id)}
+              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-1 pt-1">
+        <Input
+          placeholder="Novo item..."
+          className="h-7 text-xs"
+          value={newItem}
+          onChange={(e) => setNewItem(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAdd())}
+        />
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleAdd}>
+          <Plus size={14} />
+        </Button>
+      </div>
     </div>
   )
 }
