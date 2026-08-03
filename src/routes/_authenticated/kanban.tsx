@@ -233,7 +233,9 @@ function KanbanPage() {
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-primary">Fluxo de correções</p>
+          <p className="text-sm font-medium text-primary">
+            Quadro com checklist de atividades para o dia e para a semana, com opção de marcar o feito
+          </p>
           <h1 className="font-serif text-2xl sm:text-3xl font-semibold">Quadro clínico</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Acompanhe cada teste desde a aplicação até o OK final do admin, com paciente, data,
