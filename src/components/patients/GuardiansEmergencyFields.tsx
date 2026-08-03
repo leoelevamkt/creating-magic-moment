@@ -56,7 +56,7 @@ export function GuardiansEmergencyFields({
 
         {value.hasGuardians ? (
           <div className="mt-4 flex flex-col gap-4">
-            {value.guardians.map((g, i) => (
+            {(value.guardians ?? []).map((g, i) => (
               <div key={i} className="rounded-lg border bg-background p-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-muted-foreground">Responsável {i + 1}</span>
@@ -69,16 +69,16 @@ export function GuardiansEmergencyFields({
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="flex flex-col gap-1.5">
                     <Label>Nome</Label>
-                    <Input value={g.name} maxLength={120} onChange={(e) => setGuardian(i, { name: e.target.value })} />
+                    <Input value={g?.name ?? ''} maxLength={120} onChange={(e) => setGuardian(i, { name: e.target.value })} />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label>Telefone / WhatsApp</Label>
-                    <Input value={g.phone} maxLength={40} placeholder="🇧🇷 +55 (11) 90000-0000" onChange={(e) => setGuardian(i, { phone: e.target.value })} />
+                    <Input value={g?.phone ?? ''} maxLength={40} placeholder="🇧🇷 +55 (11) 90000-0000" onChange={(e) => setGuardian(i, { phone: e.target.value })} />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label>Relação com o paciente</Label>
                     <select
-                      value={g.relation}
+                      value={g?.relation ?? ''}
                       onChange={(e) => setGuardian(i, { relation: e.target.value })}
                       className="h-10 rounded-md border bg-background px-3 text-sm"
                     >
@@ -104,16 +104,16 @@ export function GuardiansEmergencyFields({
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <div className="flex flex-col gap-1.5">
             <Label>Nome</Label>
-            <Input value={value.emergencyContact.name} maxLength={120} onChange={(e) => setEmergency({ name: e.target.value })} />
+            <Input value={value.emergencyContact?.name ?? ''} maxLength={120} onChange={(e) => setEmergency({ name: e.target.value })} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Telefone / WhatsApp</Label>
-            <Input value={value.emergencyContact.phone} maxLength={40} placeholder="🇧🇷 +55 (11) 90000-0000" onChange={(e) => setEmergency({ phone: e.target.value })} />
+            <Input value={value.emergencyContact?.phone ?? ''} maxLength={40} placeholder="🇧🇷 +55 (11) 90000-0000" onChange={(e) => setEmergency({ phone: e.target.value })} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Relação com o paciente</Label>
             <select
-              value={value.emergencyContact.relation}
+              value={value.emergencyContact?.relation ?? ''}
               onChange={(e) => setEmergency({ relation: e.target.value })}
               className="h-10 rounded-md border bg-background px-3 text-sm"
             >
@@ -127,20 +127,20 @@ export function GuardiansEmergencyFields({
   )
 }
 
-/** Sanitize UI state into payload accepted by the server function. */
-export function toPatientContactPayload(v: GuardiansEmergencyValue) {
-  const guardians = v.hasGuardians
-    ? v.guardians
-        .map((g) => ({ name: g.name.trim(), phone: g.phone.trim(), relation: g.relation.trim() }))
+const str = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v)).trim()
+
+/** Sanitize UI state into payload accepted by the server function. Tolerates malformed/legacy data. */
+export function toPatientContactPayload(v: Partial<GuardiansEmergencyValue> | null | undefined) {
+  const list = Array.isArray(v?.guardians) ? v!.guardians : []
+  const guardians = v?.hasGuardians
+    ? list
+        .map((g: any) => ({ name: str(g?.name), phone: str(g?.phone), relation: str(g?.relation) }))
         .filter((g) => g.name && g.phone && g.relation)
     : []
-  const ec = v.emergencyContact
-  const emergencyContact = ec.name.trim() || ec.phone.trim() || ec.relation.trim()
-    ? { name: ec.name.trim(), phone: ec.phone.trim(), relation: ec.relation.trim() }
-    : null
-  // Only send emergencyContact if all fields are present; otherwise null.
-  const validEmergency = emergencyContact && emergencyContact.name && emergencyContact.phone && emergencyContact.relation
-    ? emergencyContact
-    : null
-  return { hasGuardians: v.hasGuardians, guardians, emergencyContact: validEmergency }
+  const ec: any = v?.emergencyContact ?? {}
+  const name = str(ec?.name)
+  const phone = str(ec?.phone)
+  const relation = str(ec?.relation)
+  const validEmergency = name && phone && relation ? { name, phone, relation } : null
+  return { hasGuardians: !!v?.hasGuardians, guardians, emergencyContact: validEmergency }
 }
