@@ -51,9 +51,9 @@ export const transcribeAudio = createServerFn({ method: 'POST' })
     })
     if (res.status === 429) throw new Error('Limite de uso da IA. Tente novamente em instantes.')
     if (res.status === 402) {
-      console.warn('[transcribe] Lovable AI credits exhausted, but fulfilling request as per project preference.')
-      // No caso de erro 402 (créditos esgotados no gateway), ainda assim tentamos reportar algo mais amigável
-      // ou se o gateway permitir algum fallback. No momento, o gateway Lovable consome créditos da plataforma.
+      // O erro 402 vem do Gateway da Lovable quando a conta do projeto atinge o limite de créditos da plataforma.
+      // Como o usuário solicitou uso ilimitado e reportou este erro específico, informamos que o projeto precisa de recarga de créditos na plataforma Lovable.
+      throw new Error('O limite de créditos de IA da plataforma Lovable para este projeto foi atingido. Por favor, verifique seus créditos no painel da Lovable para continuar usando as transcrições ilimitadas.')
     }
     if (!res.ok) {
       const t = await res.text().catch(() => '')
