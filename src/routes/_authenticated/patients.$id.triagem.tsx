@@ -442,13 +442,19 @@ function NewSocialScreeningDialog({ patientId, onDone }: { patientId: string; on
           ))}
 
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <Label>Observações da entrevista social</Label>
-              <Button type="button" size="sm" variant="ghost" onClick={pullAnamnese}>
-                Puxar da anamnese
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <AudioTranscriber
+                  compact
+                  onInsert={(t: string) => setNotes((cur) => (cur ? `${cur}\n\n${t}` : t))}
+                />
+                <Button type="button" size="sm" variant="ghost" onClick={pullAnamnese}>
+                  Puxar da anamnese
+                </Button>
+              </div>
             </div>
-            <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
 
           <div className="flex justify-end">
