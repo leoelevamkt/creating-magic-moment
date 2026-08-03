@@ -7,13 +7,16 @@ export type Professional = { name: string; role: string; contact: string }
 
 const EMPTY: Professional = { name: '', role: '', contact: '' }
 
-export function normalizeProfessionals(list: Professional[]): Professional[] {
+const str = (v: unknown) => (v == null ? '' : String(v)).trim()
+
+export function normalizeProfessionals(list: unknown): Professional[] {
+  if (!Array.isArray(list)) return []
   return list
-    .map((p) => ({
-      name: (p.name ?? '').trim(),
-      role: (p.role ?? '').trim(),
-      contact: (p.contact ?? '').trim(),
-    }))
+    .map((p) => {
+      if (typeof p === 'string') return { name: str(p), role: '', contact: '' }
+      const o = (p ?? {}) as Partial<Professional>
+      return { name: str(o.name), role: str(o.role), contact: str(o.contact) }
+    })
     .filter((p) => p.name.length >= 2)
 }
 
