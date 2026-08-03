@@ -305,7 +305,22 @@ function PatientDetailPage() {
               )}
             </section>
 
-            <EvaluationPlan patientId={id} />
+            <div className="flex flex-col gap-6">
+              <section className="rounded-2xl border bg-card p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-serif text-xl font-semibold">Triagem de início de caso</h2>
+                  <NewScreeningDialog 
+                    patientId={id} 
+                    onDone={() => qc.invalidateQueries({ queryKey: ['screenings', id] })} 
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Realize a triagem clínica ou social diretamente por aqui para iniciar o processo.
+                </p>
+              </section>
+              
+              <EvaluationPlan patientId={id} />
+            </div>
           </main>
 
           {/* RIGHT — history */}
