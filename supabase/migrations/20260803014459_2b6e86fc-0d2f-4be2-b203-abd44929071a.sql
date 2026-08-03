@@ -81,3 +81,18 @@ WITH CHECK (bucket_id = 'patient-documents' AND public.is_team(auth.uid()));
 DROP POLICY IF EXISTS "storage delete patient docs" ON storage.objects;
 CREATE POLICY "storage delete patient docs" ON storage.objects FOR DELETE TO authenticated
 USING (bucket_id = 'patient-documents' AND (public.has_role(auth.uid(),'admin') OR owner = auth.uid()));
+
+-- Garantir que as funções de segurança são acessíveis apenas por quem deve
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_team(uuid) TO authenticated, service_role;
+
+-- Reforçar permissões na tabela de pacientes para evitar erros de RLS no update
+DROP POLICY IF EXISTS "Team updates patients" ON public.patients;
+CREATE POLICY "Team updates patients" ON public.patients 
+  FOR UPDATE TO authenticated 
+  USING (public.is_team(auth.uid()))
+  WITH CHECK (public.is_team(auth.uid()));
+
+-- Garantir GRANTs na tabela patients
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.patients TO authenticated;
+GRANT ALL ON public.patients TO service_role;
