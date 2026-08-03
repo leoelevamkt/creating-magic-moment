@@ -774,12 +774,7 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
     onError: (e: Error) => toast.error(e.message),
   })
 
-  // Bateria padrão já marcada ao abrir o plano de avaliação.
-  useEffect(() => {
-    if (!open) return
-    if (batteryTests.length === 0) return
-    setSelected((prev) => (prev.size > 0 ? prev : new Set(batteryTests.map((t) => t.id))))
-  }, [open, batteryTests])
+  // Bateria padrão vem desmarcada: o usuário marca o que será aplicado.
 
   function toggle(id: string) {
     setSelected((s) => {
@@ -1499,12 +1494,7 @@ function NoteDialog({
     [battery.data],
   )
 
-  useEffect(() => {
-    // For new session plan entries, if they aren't provided by initial data
-    if (open && !initial && batteryTests.length > 0 && items.length === 0) {
-      setItems(batteryTests.map((t) => ({ label: t.acronym || t.name, done: false })))
-    }
-  }, [open, initial, batteryTests, items.length])
+  // Checklist da bateria padrão inicia vazio; o usuário marca os testes desejados.
 
   function addItem() {
     const label = newItem.trim()
@@ -2077,11 +2067,7 @@ function PlanDialog({
     [battery.data],
   )
 
-  useEffect(() => {
-    if (open && !initial && batteryTests.length > 0 && items.length === 0) {
-      setItems(batteryTests.map((t) => ({ label: t.acronym || t.name, done: false })))
-    }
-  }, [open, initial, batteryTests, items.length])
+  // Checklist da bateria padrão inicia vazio; o usuário marca os testes desejados.
 
   function addItem() {
     const t = newItem.trim()
