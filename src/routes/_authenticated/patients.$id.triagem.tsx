@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { AudioTranscriber } from '@/components/common/AudioTranscriber'
 
 export const Route = createFileRoute('/_authenticated/patients/$id/triagem')({
   head: () => ({ meta: [{ title: 'Triagem — NeuroFlux' }] }),
@@ -257,13 +258,19 @@ export function NewScreeningDialog({ patientId, onDone }: { patientId: string; o
             ))}
           </div>
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <Label>Observações clínicas</Label>
-              <Button type="button" size="sm" variant="ghost" onClick={pullAnamnese}>
-                Puxar da anamnese
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <AudioTranscriber
+                  compact
+                  onInsert={(t: string) => setNotes((cur) => (cur ? `${cur}\n\n${t}` : t))}
+                />
+                <Button type="button" size="sm" variant="ghost" onClick={pullAnamnese}>
+                  Puxar da anamnese
+                </Button>
+              </div>
             </div>
-            <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
 
           <div className="flex justify-end">
@@ -435,13 +442,19 @@ function NewSocialScreeningDialog({ patientId, onDone }: { patientId: string; on
           ))}
 
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <Label>Observações da entrevista social</Label>
-              <Button type="button" size="sm" variant="ghost" onClick={pullAnamnese}>
-                Puxar da anamnese
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <AudioTranscriber
+                  compact
+                  onInsert={(t: string) => setNotes((cur) => (cur ? `${cur}\n\n${t}` : t))}
+                />
+                <Button type="button" size="sm" variant="ghost" onClick={pullAnamnese}>
+                  Puxar da anamnese
+                </Button>
+              </div>
             </div>
-            <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
 
           <div className="flex justify-end">
