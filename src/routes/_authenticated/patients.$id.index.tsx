@@ -2070,8 +2070,12 @@ function PlanDialog({
   const [items, setItems] = useState<ChecklistItem[]>(initial?.checklist ?? [])
   const [newItem, setNewItem] = useState('')
 
-  const battery = useQuery(listStandardBatteryQueryOptions)
-  const batteryTests = battery.data ?? []
+  const batteryFn = useServerFn(listStandardBattery)
+  const battery = useQuery({ queryKey: ['standard-battery'], queryFn: () => batteryFn() })
+  const batteryTests = useMemo<BatteryTest[]>(
+    () => ((battery.data ?? []) as Array<BatteryTest | null>).filter(Boolean) as BatteryTest[],
+    [battery.data],
+  )
 
   useEffect(() => {
     if (open && !initial && batteryTests.length > 0 && items.length === 0) {
