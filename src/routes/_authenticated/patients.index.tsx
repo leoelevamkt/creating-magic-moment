@@ -120,9 +120,11 @@ function PatientsPage() {
   const statusMut = useMutation({
     mutationFn: (v: { id: string; status: 'active' | 'archived' | 'discharged' }) => setStatus({ data: v }),
     onSuccess: (res, variables) => {
-      const isNowActive = res.status === 'active' || (typeof res.ok === 'boolean' && res.ok && !res.status && variables.status === 'active');
+      // res.ok and res.status check
+      const isNowActive = variables.status === 'active';
       toast.success(`Paciente ${isNowActive ? 'ativado' : 'desativado'} com sucesso.`);
       qc.invalidateQueries({ queryKey: ['patients'] });
+      qc.invalidateQueries({ queryKey: ['patient-detail'] });
       router.invalidate();
     },
     onError: (e: Error) => toast.error(e.message),

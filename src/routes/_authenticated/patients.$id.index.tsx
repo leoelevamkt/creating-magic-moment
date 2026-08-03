@@ -389,12 +389,12 @@ function PatientMoreMenu({
   
   const statusMut = useMutation({
     mutationFn: (s: 'active' | 'archived' | 'discharged') => setStatus({ data: { id: patientId, status: s } }),
-    onSuccess: (res) => {
-      console.log('[statusMut] Success response:', res);
-      const isNowActive = res.status === 'active' || (typeof res.ok === 'boolean' && res.ok && !res.status && !isActive);
+    onSuccess: (_, s) => {
+      const isNowActive = s === 'active';
       toast.success(`Paciente ${isNowActive ? 'ativado' : 'desativado'} com sucesso.`);
       qc.invalidateQueries({ queryKey: ['patient-detail', patientId] });
       qc.invalidateQueries({ queryKey: ['patients'] });
+      router.invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
   })
