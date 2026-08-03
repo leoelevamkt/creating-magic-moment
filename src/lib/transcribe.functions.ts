@@ -23,8 +23,10 @@ export const transcribeAudio = createServerFn({ method: 'POST' })
     const seconds = Math.max(1, Math.min(data.durationSeconds ?? 60, 900))
     await enforceRateLimit(RATE_LIMITS.aiTranscribe, `user:${context.userId}`, seconds)
 
-    const key = process.env.LOVABLE_API_KEY
-    if (!key) throw new Error('LOVABLE_API_KEY ausente.')
+    const openRouterKey = process.env.OPENROUTER_API_KEY
+    if (!openRouterKey) {
+      console.warn('OPENROUTER_API_KEY ausente. Usando Lovable AI Gateway como fallback primário.')
+    }
 
     const bin = Buffer.from(data.audioBase64, 'base64')
     if (bin.byteLength > 24 * 1024 * 1024) {
@@ -38,27 +40,87 @@ export const transcribeAudio = createServerFn({ method: 'POST' })
       : baseMime.includes('m4a') ? 'm4a'
       : 'webm'
 
-    const form = new FormData()
-    form.append('file', new Blob([bin], { type: baseMime }), `audio.${ext}`)
-    form.append('model', 'openai/gpt-4o-transcribe')
-    if (data.language) form.append('language', data.language)
-    form.append('response_format', 'json')
+    // 1. Tentar OpenRouter com DeepSeek Flash (Solicitação Principal)
+    if (openRouterKey) {
+      try {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openRouterKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://lovable.app',
+            'X-Title': 'NeuroFlux'
+          },
+          body: JSON.stringify({
+            model: 'deepseek/deepseek-v4-flash-latest',
+            messages: [
+              {
+                role: 'system',
+                content: 'Você é um transcritor de áudio de alta precisão. Transcreva exatamente o conteúdo do arquivo de áudio fornecido, mantendo pontuação e contexto clínico se houver. Retorne apenas o texto transcrito, sem comentários adicionais.'
+              },
+              {
+                role: 'user',
+                content: [
+                  { type: 'text', text: 'Transcreva este áudio:' },
+                  { 
+                    type: 'image_url', // DeepSeek Flash via OpenRouter usa multimodal para áudio/imagens
+                    image_url: {
+                      url: `data:${baseMime};base64,${data.audioBase64}`
+                    }
+                  }
+                ]
+              }
+            ]
+          }),
+        })
 
-    const res = await fetch('https://ai.gateway.lovable.dev/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}` },
-      body: form,
-    })
+        if (res.ok) {
+          const json = await res.json() as { choices?: Array<{ message?: { content?: string } }> }
+          const text = json.choices?.[0]?.message?.content?.trim() ?? ''
+          if (text) return { text }
+        } else {
+          const err = await res.text()
+          console.warn(`[transcribe] OpenRouter falhou (${res.status}): ${err}`)
+        }
+      } catch (e) {
+        console.error('[transcribe] Erro ao chamar OpenRouter:', e)
+      }
+    }
 
-    // Caso de erro 402 ou 401 (créditos ou chave), tentamos o fallback gratuito via Gemini
-    if (res.status === 402 || res.status === 401 || !res.ok) {
-      console.warn(`[transcribe] Gateway Lovable falhou (${res.status}). Tentando fallback gratuito via Gemini...`)
+    // 2. Fallback para Lovable AI Gateway (Whisper)
+    const lovableKey = process.env.LOVABLE_API_KEY
+    if (lovableKey) {
+      try {
+        const form = new FormData()
+        form.append('file', new Blob([bin], { type: baseMime }), `audio.${ext}`)
+        form.append('model', 'openai/gpt-4o-transcribe')
+        if (data.language) form.append('language', data.language)
+        form.append('response_format', 'json')
+
+        const res = await fetch('https://ai.gateway.lovable.dev/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${lovableKey}` },
+          body: form,
+        })
+
+        if (res.ok) {
+          const json = (await res.json()) as { text?: string }
+          const text = json.text?.trim() ?? ''
+          if (text) return { text }
+        }
+      } catch (e) {
+        console.warn('[transcribe] Lovable Gateway falhou:', e)
+      }
+    }
+
+    // 3. Fallback Final para Gemini via Lovable Gateway (Multimodal)
+    if (lovableKey) {
       try {
         const geminiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${lovableKey}` },
           body: JSON.stringify({
-            model: 'google/gemini-2.0-flash-exp', // Usando o modelo mais recente e eficiente da série Flash
+            model: 'google/gemini-2.0-flash-exp',
             messages: [
               {
                 role: 'system',
@@ -81,22 +143,11 @@ export const transcribeAudio = createServerFn({ method: 'POST' })
           if (text) return { text }
         }
       } catch (e) {
-        console.error('[transcribe] Fallback Gemini falhou', e)
-      }
-
-      // Se o fallback também falhar ou o erro original não for contornável
-      if (res.status === 402) {
-        throw new Error('O limite de créditos de IA da plataforma Lovable para transcrições dedicadas foi atingido. O sistema tentou o uso gratuito (Gemini Flash), mas ele também não está disponível no momento. Por favor, verifique seus créditos.')
-      }
-      if (!res.ok) {
-        const t = await res.text().catch(() => '')
-        throw new Error(`Falha na transcrição (${res.status}): ${t.slice(0, 300)}`)
+        console.error('[transcribe] Fallback final Gemini falhou', e)
       }
     }
-    const json = (await res.json()) as { text?: string }
-    const text = json.text?.trim() ?? ''
-    if (!text) throw new Error('Não foi possível transcrever o áudio.')
-    return { text }
+
+    throw new Error('Não foi possível transcrever o áudio após várias tentativas. Verifique a chave da API do OpenRouter ou os créditos da plataforma.')
   })
 
 const SessionInput = z.object({ sessionId: z.string().uuid(), transcript: z.string() })
