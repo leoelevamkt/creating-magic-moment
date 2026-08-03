@@ -7,13 +7,16 @@ export type Professional = { name: string; role: string; contact: string }
 
 const EMPTY: Professional = { name: '', role: '', contact: '' }
 
-export function normalizeProfessionals(list: Professional[]): Professional[] {
+const str = (v: unknown) => (v == null ? '' : String(v)).trim()
+
+export function normalizeProfessionals(list: unknown): Professional[] {
+  if (!Array.isArray(list)) return []
   return list
-    .map((p) => ({
-      name: (p.name ?? '').trim(),
-      role: (p.role ?? '').trim(),
-      contact: (p.contact ?? '').trim(),
-    }))
+    .map((p) => {
+      if (typeof p === 'string') return { name: str(p), role: '', contact: '' }
+      const o = (p ?? {}) as Partial<Professional>
+      return { name: str(o.name), role: str(o.role), contact: str(o.contact) }
+    })
     .filter((p) => p.name.length >= 2)
 }
 
@@ -21,10 +24,20 @@ export function ProfessionalsField({
   value,
   onChange,
 }: {
-  value: Professional[]
+  value: Professional[] | null | undefined
   onChange: (v: Professional[]) => void
 }) {
-  const rows = value.length === 0 ? [] : value
+  const rows: Professional[] = Array.isArray(value)
+    ? value.map((p) =>
+        typeof p === 'string'
+          ? { name: p, role: '', contact: '' }
+          : {
+              name: (p as Professional)?.name ?? '',
+              role: (p as Professional)?.role ?? '',
+              contact: (p as Professional)?.contact ?? '',
+            },
+      )
+    : []
 
   function set(i: number, patch: Partial<Professional>) {
     const next = rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r))
