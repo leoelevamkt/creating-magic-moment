@@ -386,39 +386,29 @@ export const setPatientStatus = createServerFn({ method: 'POST' })
     }).parse(i),
   )
   .handler(async ({ context, data }) => {
-    console.log(`[setPatientStatus] User ${context.userId} setting status ${data.status} for patient ${data.id}`);
-    
-    // Use admin client if available or double check permissions
     const { error, data: row } = await context.supabase
       .from('patients')
       .update({ status: data.status })
       .eq('id', data.id)
       .select('id, status')
-      .maybeSingle();
+      .maybeSingle()
 
     if (error) {
-      console.error('[setPatientStatus] Database Error:', error);
-      throw new Error(`Erro no banco de dados: ${error.message} (Código: ${error.code})`);
-    }
-    
-    if (!row) {
-      console.warn('[setPatientStatus] No row returned. Checking if patient exists and user has access.');
-      
-      const { data: exists } = await context.supabase
-        .from('patients')
-        .select('id, status')
-        .eq('id', data.id)
-        .maybeSingle();
-        
-      if (!exists) {
-        throw new Error('Paciente não encontrado.');
-      }
-      
-      throw new Error('Você não tem permissão para desativar este paciente.');
+      console.error('[setPatientStatus] Error:', error)
+      throw new Error(`Erro ao atualizar status: ${error.message}`)
     }
 
-    console.log(`[setPatientStatus] Success: ${row.status}`);
-    return { ok: true, status: row.status };
+    if (!row) {
+      const { data: exists } = await context.supabase
+        .from('patients')
+        .select('id')
+        .eq('id', data.id)
+        .maybeSingle()
+      if (!exists) throw new Error('Paciente não encontrado.')
+      throw new Error('Você não tem permissão para alterar o status deste paciente.')
+    }
+
+    return { ok: true, status: row.status }
   })
 
 

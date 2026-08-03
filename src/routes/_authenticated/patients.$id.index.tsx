@@ -389,12 +389,12 @@ function PatientMoreMenu({
   
   const statusMut = useMutation({
     mutationFn: (s: 'active' | 'archived' | 'discharged') => setStatus({ data: { id: patientId, status: s } }),
-    onSuccess: (res) => {
-      console.log('[statusMut] Success response:', res);
-      const isNowActive = res.status === 'active' || (typeof res.ok === 'boolean' && res.ok && !res.status && !isActive);
+    onSuccess: (_, s) => {
+      const isNowActive = s === 'active';
       toast.success(`Paciente ${isNowActive ? 'ativado' : 'desativado'} com sucesso.`);
       qc.invalidateQueries({ queryKey: ['patient-detail', patientId] });
       qc.invalidateQueries({ queryKey: ['patients'] });
+      router.invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -845,20 +845,23 @@ function NewEvaluationDialog({ patientId, onDone }: { patientId: string; onDone:
 
 
           <div className="flex flex-col gap-2">
-            <StandardBatteryChecklist
-              tests={batteryTests}
-              isLoading={battery.isLoading}
-              selected={selected}
-              onToggle={toggle}
-              onSelectAll={() => setSelected(new Set(batteryTests.map((t) => t.id)))}
-              onClear={() =>
-                setSelected((prev) => {
-                  const next = new Set(prev)
-                  for (const t of batteryTests) next.delete(t.id)
-                  return next
-                })
-              }
-            />
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <p className="mb-2 text-sm font-medium">Bateria padrão (Marque para aplicar)</p>
+              <StandardBatteryChecklist
+                tests={batteryTests}
+                isLoading={battery.isLoading}
+                selected={selected}
+                onToggle={toggle}
+                onSelectAll={() => setSelected(new Set(batteryTests.map((t) => t.id)))}
+                onClear={() =>
+                  setSelected((prev) => {
+                    const next = new Set(prev)
+                    for (const t of batteryTests) next.delete(t.id)
+                    return next
+                  })
+                }
+              />
+            </div>
             <div className="flex items-center justify-between gap-2">
               <Label>Testes a aplicar ({totalSel})</Label>
             </div>
