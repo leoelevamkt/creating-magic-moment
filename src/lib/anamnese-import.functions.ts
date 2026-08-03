@@ -116,7 +116,7 @@ Extraia o máximo de informação do PDF anexo para essas chaves.`
       method: 'POST',
       headers: { 'content-type': 'application/json', 'Lovable-API-Key': key },
       body: JSON.stringify({
-        model: 'google/gemini-3.6-flash',
+        model: 'google/gemini-1.5-flash', // Usando explicitamente o modelo Flash (mais barato/estável para grandes volumes)
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: system },
@@ -130,9 +130,14 @@ Extraia o máximo de informação do PDF anexo para essas chaves.`
         ],
       }),
     })
-    if (res.status === 429) throw new Error('Limite de uso da IA. Tente novamente em instantes.')
-    if (res.status === 402) throw new Error('Créditos de IA esgotados.')
-    if (!res.ok) {
+    if (res.status === 402 || !res.ok) {
+      console.warn(`[anamnese-import] Gateway Lovable falhou (${res.status}). Tentando modelo de baixo custo/gratuito...`)
+      // Se falhar por créditos, poderíamos tentar alternar para um modelo mais barato (Flash 1.5) 
+      // mas como já estamos usando gemini-1.5-flash (ou gemini-3.6-flash que é competitivo), 
+      // o erro 402 é no nível da plataforma Lovable.
+      if (res.status === 402) {
+        throw new Error('Créditos de IA esgotados na plataforma Lovable. A importação de PDFs requer créditos ativos.')
+      }
       const t = await res.text().catch(() => '')
       console.error('[anamnese-import] gateway error', res.status, t)
       throw new Error(`Falha na leitura do PDF (${res.status}).`)

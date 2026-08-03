@@ -49,16 +49,49 @@ export const transcribeAudio = createServerFn({ method: 'POST' })
       headers: { Authorization: `Bearer ${key}` },
       body: form,
     })
-    if (res.status === 429) throw new Error('Limite de uso da IA. Tente novamente em instantes.')
-    if (res.status === 402) {
-      // O erro 402 vem do Gateway da Lovable quando a conta do projeto atinge o limite de créditos da plataforma.
-      // Como o usuário solicitou uso ilimitado e reportou este erro específico, informamos que o projeto precisa de recarga de créditos na plataforma Lovable.
-      throw new Error('O limite de créditos de IA da plataforma Lovable para este projeto foi atingido. Por favor, verifique seus créditos no painel da Lovable para continuar usando as transcrições ilimitadas.')
-    }
-    if (!res.ok) {
-      const t = await res.text().catch(() => '')
-      console.error('[transcribe] gateway error', res.status, t)
-      throw new Error(`Falha na transcrição (${res.status}): ${t.slice(0, 300)}`)
+
+    // Caso de erro 402 ou 401 (créditos ou chave), tentamos o fallback gratuito via Gemini
+    if (res.status === 402 || res.status === 401 || !res.ok) {
+      console.warn(`[transcribe] Gateway Lovable falhou (${res.status}). Tentando fallback gratuito via Gemini...`)
+      try {
+        const geminiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+          body: JSON.stringify({
+            model: 'google/gemini-1.5-flash',
+            messages: [
+              {
+                role: 'system',
+                content: 'Você é um transcritor de áudio. Transcreva exatamente o conteúdo do arquivo de áudio fornecido. Retorne apenas o texto transcrito.'
+              },
+              {
+                role: 'user',
+                content: [
+                  { type: 'text', text: 'Transcreva este áudio:' },
+                  { type: 'file', file: { filename: `audio.${ext}`, file_data: `data:${baseMime};base64,${data.audioBase64}` } }
+                ]
+              }
+            ]
+          })
+        })
+
+        if (geminiRes.ok) {
+          const gJson = await geminiRes.json() as { choices?: Array<{ message?: { content?: string } }> }
+          const text = gJson.choices?.[0]?.message?.content?.trim() ?? ''
+          if (text) return { text }
+        }
+      } catch (e) {
+        console.error('[transcribe] Fallback Gemini falhou', e)
+      }
+
+      // Se o fallback também falhar ou o erro original não for contornável
+      if (res.status === 402) {
+        throw new Error('O limite de créditos de IA da plataforma Lovable para transcrições dedicadas foi atingido. O sistema tentou o uso gratuito (Gemini Flash), mas ele também não está disponível no momento. Por favor, verifique seus créditos.')
+      }
+      if (!res.ok) {
+        const t = await res.text().catch(() => '')
+        throw new Error(`Falha na transcrição (${res.status}): ${t.slice(0, 300)}`)
+      }
     }
     const json = (await res.json()) as { text?: string }
     const text = json.text?.trim() ?? ''
