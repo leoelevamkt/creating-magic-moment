@@ -51,11 +51,29 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
+import { ErrorCard, LoadingCard, SectionBoundary } from '@/components/common/DataBoundary'
 
 
 export const Route = createFileRoute('/_authenticated/patients/')({
   head: () => ({ meta: [{ title: 'Pacientes — NeuroFlux' }] }),
   component: PatientsPage,
+  pendingComponent: () => (
+    <div className="mx-auto max-w-7xl p-6">
+      <LoadingCard label="Carregando pacientes…" />
+    </div>
+  ),
+  errorComponent: ({ error, reset }) => (
+    <div className="mx-auto max-w-3xl p-6">
+      <ErrorCard
+        title="Não foi possível carregar os pacientes"
+        message={error.message}
+        onRetry={reset}
+      />
+    </div>
+  ),
+  notFoundComponent: () => (
+    <div className="mx-auto max-w-3xl p-6 text-sm">Página não encontrada.</div>
+  ),
 })
 
 
