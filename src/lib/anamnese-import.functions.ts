@@ -116,7 +116,7 @@ Extraia o máximo de informação do PDF anexo para essas chaves.`
       method: 'POST',
       headers: { 'content-type': 'application/json', 'Lovable-API-Key': key },
       body: JSON.stringify({
-        model: 'google/gemini-1.5-flash', // Usando explicitamente o modelo Flash (mais barato/estável para grandes volumes)
+        model: 'google/gemini-2.0-flash-exp', // Atualizado para a versão mais recente e performática do Gemini Flash
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: system },
