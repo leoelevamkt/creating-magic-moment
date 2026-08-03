@@ -2151,6 +2151,54 @@ function PlanDialog({
 
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>Checklist do que será feito</Label>
+            <div className="mb-2 rounded-lg border bg-muted/30 p-3">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                Bateria padrão (Marque para adicionar ou remover do checklist)
+              </p>
+              <StandardBatteryChecklist
+                tests={batteryTests}
+                isLoading={battery.isLoading}
+                selected={
+                  new Set(
+                    items
+                      .map((it) => {
+                        const t = batteryTests.find((bt) => (bt.acronym || bt.name) === it.label)
+                        return t?.id || ''
+                      })
+                      .filter(Boolean),
+                  )
+                }
+                onToggle={(id) => {
+                  const t = batteryTests.find((x) => x.id === id)
+                  if (t) {
+                    const label = t.acronym || t.name
+                    setItems((prev) => {
+                      if (prev.some((it) => it.label === label)) {
+                        return prev.filter((it) => it.label !== label)
+                      }
+                      return [...prev, { label, done: false }]
+                    })
+                  }
+                }}
+                onSelectAll={() => {
+                  setItems((prev) => {
+                    const next = [...prev]
+                    batteryTests.forEach((t) => {
+                      const label = t.acronym || t.name
+                      if (!next.some((it) => it.label === label)) {
+                        next.push({ label, done: false })
+                      }
+                    })
+                    return next
+                  })
+                }}
+                onClear={() => {
+                  setItems((prev) =>
+                    prev.filter((it) => !batteryTests.some((t) => (t.acronym || t.name) === it.label)),
+                  )
+                }}
+              />
+            </div>
             <div className="flex flex-col gap-1.5">
               {items.map((it, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm">
