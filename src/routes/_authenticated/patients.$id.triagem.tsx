@@ -168,8 +168,20 @@ function NewScreeningDialog({ patientId, onDone }: { patientId: string; onDone: 
   const [open, setOpen] = useState(false)
   const [domainId, setDomainId] = useState<string>(DSM5TR_DOMAINS[0]!.id)
   const domain = useMemo(() => DSM5TR_DOMAINS.find((d) => d.id === domainId)!, [domainId])
-  const [checks, setChecks] = useState<Record<string, boolean>>({})
-  const [notes, setNotes] = useState('')
+  const [checks, setChecks] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem(`screening_draft_${patientId}_dsm5`)
+    return saved ? JSON.parse(saved) : {}
+  })
+  const [notes, setNotes] = useState(() => localStorage.getItem(`screening_notes_draft_${patientId}_dsm5`) || '')
+
+  useEffect(() => {
+    localStorage.setItem(`screening_draft_${patientId}_dsm5`, JSON.stringify(checks))
+  }, [checks, patientId])
+
+  useEffect(() => {
+    localStorage.setItem(`screening_notes_draft_${patientId}_dsm5`, notes)
+  }, [notes, patientId])
+
   const save = useServerFn(saveScreening)
   const fetchAn = useServerFn(getAnamnese)
   async function pullAnamnese() {
