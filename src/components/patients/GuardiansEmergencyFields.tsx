@@ -127,20 +127,20 @@ export function GuardiansEmergencyFields({
   )
 }
 
-/** Sanitize UI state into payload accepted by the server function. */
-export function toPatientContactPayload(v: GuardiansEmergencyValue) {
-  const guardians = v.hasGuardians
-    ? v.guardians
-        .map((g) => ({ name: g.name.trim(), phone: g.phone.trim(), relation: g.relation.trim() }))
+const str = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v)).trim()
+
+/** Sanitize UI state into payload accepted by the server function. Tolerates malformed/legacy data. */
+export function toPatientContactPayload(v: Partial<GuardiansEmergencyValue> | null | undefined) {
+  const list = Array.isArray(v?.guardians) ? v!.guardians : []
+  const guardians = v?.hasGuardians
+    ? list
+        .map((g: any) => ({ name: str(g?.name), phone: str(g?.phone), relation: str(g?.relation) }))
         .filter((g) => g.name && g.phone && g.relation)
     : []
-  const ec = v.emergencyContact
-  const emergencyContact = ec.name.trim() || ec.phone.trim() || ec.relation.trim()
-    ? { name: ec.name.trim(), phone: ec.phone.trim(), relation: ec.relation.trim() }
-    : null
-  // Only send emergencyContact if all fields are present; otherwise null.
-  const validEmergency = emergencyContact && emergencyContact.name && emergencyContact.phone && emergencyContact.relation
-    ? emergencyContact
-    : null
-  return { hasGuardians: v.hasGuardians, guardians, emergencyContact: validEmergency }
+  const ec: any = v?.emergencyContact ?? {}
+  const name = str(ec?.name)
+  const phone = str(ec?.phone)
+  const relation = str(ec?.relation)
+  const validEmergency = name && phone && relation ? { name, phone, relation } : null
+  return { hasGuardians: !!v?.hasGuardians, guardians, emergencyContact: validEmergency }
 }
