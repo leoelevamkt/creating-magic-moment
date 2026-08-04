@@ -139,7 +139,7 @@ export const transcribeAudio = createServerFn({ method: 'POST' })
       }
     }
 
-    throw new Error('Não foi possível transcrever o áudio após várias tentativas. Verifique a chave da API do OpenRouter ou os créditos da plataforma.')
+    throw new Error('Não foi possível transcrever o áudio. Verifique a chave da API do Gemini ou tente novamente.')
   })
 
 const SessionInput = z.object({ sessionId: z.string().uuid(), transcript: z.string() })
