@@ -3,7 +3,4 @@ import { mcpPlugin } from '@lovable.dev/mcp-js/stacks/tanstack/vite'
 
 export default defineConfig({
   plugins: [mcpPlugin()],
-  nitro: {
-    cloudflare: { nodeCompat: false },
-  },
 })
