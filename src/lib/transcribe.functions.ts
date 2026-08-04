@@ -23,11 +23,7 @@ export const transcribeAudio = createServerFn({ method: 'POST' })
     const seconds = Math.max(1, Math.min(data.durationSeconds ?? 60, 900))
     await enforceRateLimit(RATE_LIMITS.aiTranscribe, `user:${context.userId}`, seconds)
 
-    const openRouterKey = process.env.OPENROUTER_API_KEY
-    if (!openRouterKey) {
-      console.warn('OPENROUTER_API_KEY ausente. Usando Lovable AI Gateway como fallback primário.')
-    }
-
+    const geminiKey = process.env.GEMINI_API_KEY
     const bin = Buffer.from(data.audioBase64, 'base64')
     if (bin.byteLength > 24 * 1024 * 1024) {
       throw new Error('Chunk de áudio muito grande (máx. 24 MB). Divida em trechos menores.')
@@ -40,52 +36,48 @@ export const transcribeAudio = createServerFn({ method: 'POST' })
       : baseMime.includes('m4a') ? 'm4a'
       : 'webm'
 
-    // 1. Tentar OpenRouter com DeepSeek Flash (Solicitação Principal)
-    if (openRouterKey) {
-      try {
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openRouterKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://lovable.app',
-            'X-Title': 'NeuroFlux'
-          },
-          body: JSON.stringify({
-            model: 'deepseek/deepseek-v4-flash-latest',
-            messages: [
-              {
-                role: 'system',
-                content: 'Você é um transcritor de áudio de alta precisão. Transcreva exatamente o conteúdo do arquivo de áudio fornecido, mantendo pontuação e contexto clínico se houver. Retorne apenas o texto transcrito, sem comentários adicionais.'
-              },
-              {
-                role: 'user',
-                content: [
-                  { type: 'text', text: 'Transcreva este áudio:' },
-                  { 
-                    type: 'image_url', // DeepSeek Flash via OpenRouter usa multimodal para áudio/imagens
-                    image_url: {
-                      url: `data:${baseMime};base64,${data.audioBase64}`
-                    }
-                  }
-                ]
-              }
-            ]
-          }),
-        })
+    const prompt =
+      'Transcreva integralmente o áudio em português (BR), mantendo pontuação e termos clínicos. Retorne apenas o texto transcrito, sem comentários.'
 
-        if (res.ok) {
-          const json = await res.json() as { choices?: Array<{ message?: { content?: string } }> }
-          const text = json.choices?.[0]?.message?.content?.trim() ?? ''
-          if (text) return { text }
-        } else {
-          const err = await res.text()
-          console.warn(`[transcribe] OpenRouter falhou (${res.status}): ${err}`)
+    // 1. Gemini Flash (Google AI Studio) — provedor principal
+    if (geminiKey) {
+      const models = ['gemini-flash-latest', 'gemini-2.5-flash']
+      for (const model of models) {
+        try {
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    role: 'user',
+                    parts: [
+                      { text: prompt },
+                      { inline_data: { mime_type: baseMime, data: data.audioBase64 } },
+                    ],
+                  },
+                ],
+              }),
+            },
+          )
+          if (res.ok) {
+            const json = (await res.json()) as {
+              candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+            }
+            const text =
+              json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('').trim() ?? ''
+            if (text) return { text }
+          } else {
+            console.warn(`[transcribe] Gemini ${model} falhou (${res.status}):`, await res.text())
+          }
+        } catch (e) {
+          console.error(`[transcribe] Erro Gemini ${model}:`, e)
         }
-      } catch (e) {
-        console.error('[transcribe] Erro ao chamar OpenRouter:', e)
       }
     }
+
 
     // 2. Fallback para Lovable AI Gateway (Whisper)
     const lovableKey = process.env.LOVABLE_API_KEY
